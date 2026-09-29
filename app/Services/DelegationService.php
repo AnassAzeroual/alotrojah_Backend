@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\DelegationToken;
+use App\Models\Group;
+use App\Models\User;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+
+/**
+ * Q7: responsible teacher opens time-boxed entry access for another teacher.
+ * Link travels via WhatsApp (wa.me); redeem validates expiry/revocation.
+ */
+class DelegationService
+{
+    public function generate(Group $group, User $granter, int $minutes = 30): DelegationToken
+    {
+        abort_unless(in_array($minutes, [15, 30, 60, 120], true), 422, 'Invalid duration.');
+
+        return DelegationToken::create([
+            'group_id' => $group->id,
+            'granter_teacher_id' => $granter->id,
+            'token' => Str::random(64),
+            'duration_minutes' => $minutes,
+            'expires_at' => Carbon::now()->addMinutes($minutes),
+        ]);
+    }
+
+    /** @throws ValidationException */
+    public function redeem(string $token, User $teacher): DelegationToken
+    {
+        $d = DelegationToken::where('token', $token)->first()
+            ?? throw ValidationException::withMessages(['token' => 'Invalid link.']);
+        abort_if($d->is_revoked, 410, 'Link revoked.');
+        abort_if(Carbon::now()->greaterThan($d->expires_at), 410, 'Link expired.');
+
+        if ($d->used_by_teacher_id === null) {
+            $d->update(['used_by_teacher_id' => $teacher->id, 'used_at' => Carbon::now()]);
+        }
+        abort_unless($d->used_by_teacher_id === $teacher->id, 403, 'Link bound to another teacher.');
+
+        return $d;
+    }
+
+    public function shareLink(DelegationToken $d): string
+    {
+        $base = rtrim(config('app.frontend_url', config('app.url')), '/');
+
+        return $base.'/delegate?token='.$d->token;
+    }
+}
