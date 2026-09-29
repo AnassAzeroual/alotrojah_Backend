@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\DelegationToken;
 use App\Models\Group;
+use App\Models\Student;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
@@ -49,5 +50,17 @@ class DelegationService
         $base = rtrim(config('app.frontend_url', config('app.url')), '/');
 
         return $base.'/delegate?token='.$d->token;
+    }
+
+    /** Cross-center entry allowed when the teacher redeemed a live token for the student's group. */
+    public function canActAs(User $teacher, Student $student): bool
+    {
+        if ($student->group_id === null) return false;
+
+        return DelegationToken::where('group_id', $student->group_id)
+            ->where('used_by_teacher_id', $teacher->id)
+            ->where('is_revoked', false)
+            ->where('expires_at', '>', Carbon::now())
+            ->exists();
     }
 }

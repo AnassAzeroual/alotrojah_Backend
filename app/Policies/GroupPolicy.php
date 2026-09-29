@@ -30,4 +30,10 @@ class GroupPolicy
     {
         return $this->isAdmin($user) || (int) $group->teacher_id === (int) $user->id;
     }
+
+    /** Alias used by the delegation form request. */
+    public function generate(User $user, Group $group): bool
+    {
+        return $this->delegate($user, $group);
+    }
 }

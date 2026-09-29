@@ -18,7 +18,11 @@ use Illuminate\Validation\ValidationException;
  */
 class ScoreEntryService
 {
-    public function __construct(private ScoringService $scoring, private DashboardService $dashboard) {}
+    public function __construct(
+        private ScoringService $scoring,
+        private DashboardService $dashboard,
+        private DelegationService $delegation,
+    ) {}
 
     /** @return array student_id => weekly total */
     public function storeScores(User $teacher, int $sessionId, array $rows): array
@@ -34,7 +38,8 @@ class ScoreEntryService
             $p = "records.$i";
             $student = Student::find($r['student_id'] ?? null);
             if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
-            if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id) {
+            if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
+                && ! $this->delegation->canActAs($teacher, $student)) {
                 $errors["$p.student_id"] = 'Student is in another center.'; continue;
             }
             $module = $modules[$r['module_code'] ?? ''] ?? null;
@@ -74,7 +79,8 @@ class ScoreEntryService
             $p = "records.$i";
             $student = Student::find($r['student_id'] ?? null);
             if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
-            if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id) {
+            if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
+                && ! $this->delegation->canActAs($teacher, $student)) {
                 $errors["$p.student_id"] = 'Student is in another center.'; continue;
             }
             if (! in_array($r['status'] ?? null, $valid, true)) { $errors["$p.status"] = 'Invalid status.'; continue; }
