@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CenterController;
 use App\Http\Controllers\Api\V1\GroupController;
 use App\Http\Controllers\Api\V1\GuardianController;
+use App\Http\Controllers\Api\V1\ScoreController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\UserController;
+use App\Http\Controllers\Api\V1\WeeklyGoalController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,5 +36,15 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('groups', GroupController::class);
         Route::apiResource('students', StudentController::class);
         Route::apiResource('guardians', GuardianController::class);
+
+        // S7 daily core
+        Route::post('attendance/bulk', [AttendanceController::class, 'bulk']);
+        Route::apiResource('attendance', AttendanceController::class)->only(['index', 'show', 'destroy']);
+        Route::post('scores/bulk', [ScoreController::class, 'bulk']);
+        Route::get('scores', [ScoreController::class, 'index']);
+        Route::get('sessions/{session}/scores', [ScoreController::class, 'bySession']);
+        Route::get('students/{student}/weeks/{week}/followup', [ScoreController::class, 'followup']);
+        Route::put('weekly-goals', [WeeklyGoalController::class, 'upsert']);
+        Route::apiResource('weekly-goals', WeeklyGoalController::class)->only(['index', 'show', 'destroy']);
     });
 });
