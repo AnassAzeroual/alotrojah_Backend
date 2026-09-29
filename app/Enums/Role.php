@@ -7,7 +7,6 @@ enum Role: string
     case Admin = 'admin';
     case Supervisor = 'supervisor';
     case Teacher = 'teacher';
-    case Examiner = 'examiner';
     case Guardian = 'guardian';
     case Student = 'student';
     case Board = 'board';
@@ -18,7 +17,6 @@ enum Role: string
             self::Admin => 'مدير',
             self::Supervisor => 'ناظر',
             self::Teacher => 'معلم',
-            self::Examiner => 'مختبر',
             self::Guardian => 'ولي',
             self::Student => 'طالب',
             self::Board => 'مجلس الإدارة',

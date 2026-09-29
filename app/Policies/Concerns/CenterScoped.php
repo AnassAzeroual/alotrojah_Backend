@@ -24,6 +24,6 @@ trait CenterScoped
 
     protected function isStaff(User $user): bool
     {
-        return in_array($user->role, ['admin', 'supervisor', 'teacher', 'examiner', 'board'], true);
+        return in_array($user->role, ['admin', 'supervisor', 'teacher', 'board'], true);
     }
 }

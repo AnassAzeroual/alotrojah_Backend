@@ -32,7 +32,7 @@ class CenterScope implements Scope
         }
         if (! $user) return;
         if (in_array($user->role, ['admin', 'board'], true)) return;
-        if (! in_array($user->role, ['supervisor', 'teacher', 'examiner'], true)) return;
+        if (! in_array($user->role, ['supervisor', 'teacher'], true)) return;
         if ($user->center_id === null) return;
 
         $table = $model->getTable();

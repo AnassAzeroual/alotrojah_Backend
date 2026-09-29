@@ -34,7 +34,7 @@ class Announcement extends Model
                 // same-center authors + global (admin, center NULL) authors, any audience
                 $w->orWhereHas('author', fn ($a) => $a->where('users.center_id', (int) $user->center_id));
                 $w->orWhereHas('author', fn ($a) => $a->whereNull('users.center_id'));
-            } elseif (in_array($user->role, ['teacher', 'examiner'], true)) {
+            } elseif ($user->role === 'teacher') {
                 $w->orWhere(function ($s) use ($user) {
                     $s->whereHas('author', fn ($a) => $a->where('users.center_id', (int) $user->center_id))
                       ->whereIn('announcements.audience', ['teachers', 'my_students']);

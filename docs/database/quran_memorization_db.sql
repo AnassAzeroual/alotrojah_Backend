@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(150) NOT NULL,
   `email` VARCHAR(150) NOT NULL,
   `password_hash` VARCHAR(255) NULL,
-  `role` ENUM('admin','supervisor','teacher','examiner','guardian','student','board') NOT NULL DEFAULT 'teacher',
+  `role` ENUM('admin','supervisor','teacher','guardian','student','board') NOT NULL DEFAULT 'teacher',
   `phone` VARCHAR(30) NULL,
   `center_id` BIGINT UNSIGNED NULL COMMENT 'NULL = global (system admin)',
   `teacher_type` ENUM('hifz','murajaa','both') NOT NULL DEFAULT 'both' COMMENT 'تحفيظ / مراجعة / كلاهما — enables page inputs',

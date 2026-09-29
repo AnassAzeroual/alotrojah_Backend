@@ -24,7 +24,8 @@ class ExamPolicy
 
     public function manage(User $user): bool
     {
-        return in_array($user->role, ['admin', 'supervisor', 'teacher', 'examiner'], true);
+        // any teacher conducts exams (examiner = teacher, no separate role)
+        return in_array($user->role, ['admin', 'supervisor', 'teacher'], true);
     }
 
     public function delete(User $user, Exam $exam): bool

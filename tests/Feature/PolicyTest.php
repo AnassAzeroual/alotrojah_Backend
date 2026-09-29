@@ -66,21 +66,21 @@ class PolicyTest extends TestCase
         $this->getJson('/api/v1/guardians/2')->assertForbidden();
     }
 
-    public function test_examiner_cannot_enter_weekly_scores(): void
+    public function test_murajaa_teacher_cannot_enter_weekly_scores(): void
     {
-        $this->actingAs(User::find(5), 'api')
+        $this->actingAs(User::find(19), 'api')
             ->postJson('/api/v1/scores/bulk', [
                 'session_id' => 9,
-                'records' => [['student_id' => 4, 'module_code' => 'hifz', 'score' => 10]],
+                'records' => [['student_id' => 1, 'module_code' => 'hifz', 'score' => 10]],
             ])->assertForbidden();
     }
 
-    public function test_examiner_can_conduct_exam_in_own_center(): void
+    public function test_teacher_can_conduct_exam_in_own_center(): void
     {
         $this->actingAs(User::find(5), 'api')
             ->postJson('/api/v1/exams', [
                 'student_id' => 1, 'exam_type' => 'term_batch', 'term_id' => 1,
-            ])->assertCreated();
+            ])->assertCreated()->assertJsonPath('data.examiner_id', 5);
     }
 
     public function test_student_role_sees_only_self(): void
