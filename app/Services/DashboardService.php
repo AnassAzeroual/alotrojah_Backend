@@ -26,13 +26,15 @@ class DashboardService
 
     public function centerCards(int $centerId, int $seasonId): array
     {
-        return DB::table('v_season_dashboard as d')
+        $row = DB::table('v_season_dashboard as d')
             ->join('students as s', 's.id', '=', 'd.student_id')
             ->where('s.center_id', $centerId)->where('d.season_id', $seasonId)
             ->selectRaw('COUNT(*) as students, ROUND(AVG(d.season_avg_score),2) as avg_score,
                 ROUND(AVG(d.season_avg_sarraj),2) as avg_sarraj,
                 ROUND(AVG(d.season_attendance_pct),1) as avg_attendance')
-            ->first()->toArray() ?? [];
+            ->first();
+
+        return $row ? (array) $row : [];
     }
 
     public function bust(int $studentId, int $seasonId): void

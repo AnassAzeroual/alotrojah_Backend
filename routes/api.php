@@ -1,16 +1,20 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AnnouncementController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CenterController;
 use App\Http\Controllers\Api\V1\GroupController;
 use App\Http\Controllers\Api\V1\CalendarController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DelegationController;
 use App\Http\Controllers\Api\V1\ExamController;
 use App\Http\Controllers\Api\V1\ExamQuestionController;
 use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\MurajaaController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ReferenceController;
+use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ResultController;
 use App\Http\Controllers\Api\V1\ScoreController;
 use App\Http\Controllers\Api\V1\ScoringModuleController;
@@ -96,5 +100,16 @@ Route::prefix('v1')->group(function () {
         Route::post('groups/{group}/delegations', [DelegationController::class, 'generate']);
         Route::post('delegations/redeem', [DelegationController::class, 'redeem']);
         Route::delete('delegations/{delegation}', [DelegationController::class, 'revoke']);
+
+        // S10 comms + dashboard + reports
+        Route::apiResource('announcements', AnnouncementController::class);
+        Route::apiResource('notifications', NotificationController::class)->only(['index', 'store', 'show', 'destroy']);
+        Route::patch('notifications/{notification}/status', [NotificationController::class, 'mark']);
+        Route::get('dashboard/season', [DashboardController::class, 'season']);
+        Route::get('dashboard/weekly', [DashboardController::class, 'weekly']);
+        Route::get('dashboard/center', [DashboardController::class, 'center']);
+        Route::get('dashboard/final', [DashboardController::class, 'final']);
+        Route::get('reports/term', [ReportController::class, 'term']);
+        Route::get('reports/season', [ReportController::class, 'season']);
     });
 });

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\AcademicSeason;
+use App\Models\Announcement;
 use App\Models\Attendance;
 use App\Models\Center;
 use App\Models\DelegationToken;
@@ -10,6 +11,7 @@ use App\Models\Exam;
 use App\Models\Group;
 use App\Models\Guardian;
 use App\Models\MurajaaReview;
+use App\Models\NotificationLog;
 use App\Models\RevisionLog;
 use App\Models\ScoringModule;
 use App\Models\SeasonResult;
@@ -20,6 +22,7 @@ use App\Models\TermResult;
 use App\Models\User;
 use App\Models\WeeklyGoal;
 use App\Observers\SessionScoreObserver;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\CenterPolicy;
 use App\Policies\DelegationPolicy;
@@ -27,6 +30,7 @@ use App\Policies\ExamPolicy;
 use App\Policies\GroupPolicy;
 use App\Policies\GuardianPolicy;
 use App\Policies\MurajaaPolicy;
+use App\Policies\NotificationPolicy;
 use App\Policies\ResultPolicy;
 use App\Policies\ScoringModulePolicy;
 use App\Policies\SeasonPolicy;
@@ -70,6 +74,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(TermResult::class, ResultPolicy::class);
         Gate::policy(SeasonResult::class, ResultPolicy::class);
         Gate::policy(DelegationToken::class, DelegationPolicy::class);
+        Gate::policy(Announcement::class, AnnouncementPolicy::class);
+        Gate::policy(NotificationLog::class, NotificationPolicy::class);
         SessionScore::observe(SessionScoreObserver::class);
     }
 }
