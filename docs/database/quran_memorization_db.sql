@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(150) NOT NULL,
   `email` VARCHAR(150) NOT NULL,
   `password_hash` VARCHAR(255) NULL,
-  `role` ENUM('admin','supervisor','teacher','examiner','guardian','board') NOT NULL DEFAULT 'teacher',
+  `role` ENUM('admin','supervisor','teacher','examiner','guardian','student','board') NOT NULL DEFAULT 'teacher',
   `phone` VARCHAR(30) NULL,
   `center_id` BIGINT UNSIGNED NULL COMMENT 'NULL = global (system admin)',
   `teacher_type` ENUM('hifz','murajaa','both') NOT NULL DEFAULT 'both' COMMENT 'تحفيظ / مراجعة / كلاهما — enables page inputs',
@@ -657,7 +657,7 @@ SELECT s.id AS student_id, s.full_name, s.level_id, s.group_id,
     WHERE m.student_id=s.id AND m.season_id=sp.season_id) AS season_thumn,
   (SELECT ROUND(COALESCE(AVG(t.total_score),0),2) FROM v_session_totals t
     WHERE t.student_id=s.id AND t.season_id=sp.season_id) AS season_avg_score,
-  (SELECT ROUND(COALESCE(AVG(x.avg_score),0),2) FROM v_separate_module_avgs x
+  (SELECT ROUND(AVG(x.avg_score),2) FROM v_separate_module_avgs x
     WHERE x.student_id=s.id AND x.season_id=sp.season_id AND x.module_code='sarraj') AS season_avg_sarraj,
   (SELECT ROUND(100*SUM(a.status IN ('present','late'))/COUNT(*),1) FROM attendance a
     WHERE a.student_id=s.id AND a.season_id=sp.season_id) AS season_attendance_pct,

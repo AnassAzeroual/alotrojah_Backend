@@ -12,7 +12,8 @@ class GuardianPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->isStaff($user);
+        // guardians list only their own record (query narrows by user_id)
+        return $this->isStaff($user) || $user->role === 'guardian';
     }
 
     public function view(User $user, Guardian $guardian): bool

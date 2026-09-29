@@ -9,6 +9,7 @@ enum Role: string
     case Teacher = 'teacher';
     case Examiner = 'examiner';
     case Guardian = 'guardian';
+    case Student = 'student';
     case Board = 'board';
 
     public function label(): string
@@ -19,6 +20,7 @@ enum Role: string
             self::Teacher => 'معلم',
             self::Examiner => 'مختبر',
             self::Guardian => 'ولي',
+            self::Student => 'طالب',
             self::Board => 'مجلس الإدارة',
         };
     }

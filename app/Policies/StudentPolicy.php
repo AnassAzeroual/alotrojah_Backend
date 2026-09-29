@@ -12,7 +12,8 @@ class StudentPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->isStaff($user) || $user->role === 'guardian';
+        // student/guardian lists narrow to own records in the controller
+        return $this->isStaff($user) || in_array($user->role, ['guardian', 'student'], true);
     }
 
     public function view(User $user, Student $student): bool
