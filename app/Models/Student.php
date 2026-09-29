@@ -23,6 +23,8 @@ class Student extends Model
 
     public function group(): BelongsTo { return $this->belongsTo(Group::class, 'group_id'); }
 
+    public function center(): BelongsTo { return $this->belongsTo(Center::class, 'center_id'); }
+
     public function guardian(): BelongsTo { return $this->belongsTo(Guardian::class, 'guardian_id'); }
 
     public function level(): BelongsTo { return $this->belongsTo(Level::class, 'level_id'); }

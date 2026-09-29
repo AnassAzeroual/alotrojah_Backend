@@ -20,7 +20,7 @@ class StoreStudentRequest extends FormRequest
     {
         return [
             'full_name' => ['required', 'string', 'max:150'],
-            'center_id' => ['required', 'integer', 'exists:centers,id'],
+            'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'group_id' => ['nullable', 'integer', 'exists:groups,id'],
             'level_id' => ['nullable', 'integer', 'exists:levels,id'],
             'guardian_id' => ['nullable', 'integer', 'exists:guardians,id'],

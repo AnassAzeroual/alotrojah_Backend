@@ -12,4 +12,6 @@ class Center extends Model
     protected $fillable = ['name','city','address','phone','manager_name'];
 
     public function groups(): HasMany { return $this->hasMany(Group::class, 'center_id'); }
+
+    public function students(): HasMany { return $this->hasMany(Student::class, 'center_id'); }
 }

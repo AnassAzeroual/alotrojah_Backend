@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
@@ -58,5 +59,6 @@ class User extends Authenticatable implements JWTSubject
     }
 
     public function taughtGroups(): HasMany { return $this->hasMany(Group::class, 'teacher_id'); }
+    public function center(): BelongsTo { return $this->belongsTo(Center::class, 'center_id'); }
     public function authoredAnnouncements(): HasMany { return $this->hasMany(Announcement::class, 'author_id'); }
 }

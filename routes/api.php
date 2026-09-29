@@ -1,6 +1,11 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\CenterController;
+use App\Http\Controllers\Api\V1\GroupController;
+use App\Http\Controllers\Api\V1\GuardianController;
+use App\Http\Controllers\Api\V1\StudentController;
+use App\Http\Controllers\Api\V1\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,5 +24,14 @@ Route::prefix('v1')->group(function () {
             Route::post('refresh', [AuthController::class, 'refresh']);
             Route::post('logout', [AuthController::class, 'logout']);
         });
+    });
+
+    Route::middleware('auth:api')->group(function () {
+        // S6 identity
+        Route::apiResource('users', UserController::class);
+        Route::apiResource('centers', CenterController::class);
+        Route::apiResource('groups', GroupController::class);
+        Route::apiResource('students', StudentController::class);
+        Route::apiResource('guardians', GuardianController::class);
     });
 });

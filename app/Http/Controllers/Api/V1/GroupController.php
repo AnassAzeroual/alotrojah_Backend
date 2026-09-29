@@ -1,0 +1,69 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use App\Http\Requests\StoreGroupRequest;
+use App\Http\Requests\UpdateGroupRequest;
+use App\Http\Resources\GroupResource;
+use App\Models\Group;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+class GroupController extends Controller
+{
+    public function index(Request $request): JsonResponse
+    {
+        $this->authorize('viewAny', Group::class);
+        $me = $request->user();
+
+        $q = Group::with('teacher')->withCount('students')->orderBy('id');
+        if ($me->role !== 'admin') {
+            $q->forCenter((int) $me->center_id);
+        } elseif ($request->filled('center_id')) {
+            $q->where('center_id', (int) $request->input('center_id'));
+        }
+        if ($request->filled('level_id')) $q->where('level_id', (int) $request->input('level_id'));
+        if ($request->filled('is_active')) $q->where('is_active', $request->boolean('is_active'));
+
+        return $this->ok(GroupResource::collection($q->paginate(20))->response()->getData(true));
+    }
+
+    public function store(StoreGroupRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+        $me = $request->user();
+        if ($me->role !== 'admin') $data['center_id'] = $me->center_id;
+
+        if (! empty($data['teacher_id'])) {
+            $t = User::findOrFail($data['teacher_id']);
+            if ($t->role !== 'teacher' || (int) $t->center_id !== (int) $data['center_id']) {
+                return $this->fail('Teacher must belong to the same center.', 422);
+            }
+        }
+
+        return $this->created(new GroupResource(Group::create($data)->load('teacher')));
+    }
+
+    public function show(Group $group): JsonResponse
+    {
+        $this->authorize('view', $group);
+
+        return $this->ok(new GroupResource($group->load('teacher')->loadCount('students')));
+    }
+
+    public function update(UpdateGroupRequest $request, Group $group): JsonResponse
+    {
+        $group->update($request->validated());
+
+        return $this->ok(new GroupResource($group->fresh('teacher')));
+    }
+
+    public function destroy(Group $group): JsonResponse
+    {
+        $this->authorize('delete', $group);
+        $group->delete();
+
+        return $this->ok(null, 'Deleted.');
+    }
+}
