@@ -1,0 +1,124 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mariadb:
+        image: mariadb:10.6
+        env:
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s --health-timeout=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, fileinfo, mbstring, openssl, pdo_mysql, tokenizer, sodium, zip
+          coverage: none
+          tools: composer
+
+      - run: composer install --prefer-dist --no-interaction
+
+      - name: Install MySQL client
+        run: sudo apt-get update && sudo apt-get install -y mysql-client
+
+      - name: Import canonical schema + seed
+        run: |
+          mysql -h 127.0.0.1 -u root -proot < docs/database/quran_memorization_db.sql
+          mysql -h 127.0.0.1 -u root -proot < docs/database/quran_seed_data.sql
+
+      - name: Run test suite
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: quran_memorization
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          APP_KEY: base64:Re+ogP++t/UajqAFUxiFgvg9IkJo2AiZMl5+rV3inu4=
+          JWT_SECRET: cimidonlyfortestsdonotuseinprod0000000000000000000000000000
+          JWT_TTL: 60
+          JWT_REFRESH_TTL: 20160
+          CACHE_STORE: file
+          QUEUE_CONNECTION: sync
+          SESSION_DRIVER: file
+        run: php artisan test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, fileinfo, mbstring, openssl, pdo_mysql, tokenizer, sodium, zip
+          coverage: none
+          tools: composer
+
+      - name: Production build (no dev deps)
+        run: composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction
+
+      - name: Render production .env (never committed, excluded nowhere — uploaded once per deploy)
+        run: |
+          cat > .env <<'EOF'
+          APP_NAME=AlOtrojah
+          APP_ENV=production
+          APP_DEBUG=false
+          APP_URL=https://api.alotrojah.ma
+          APP_TIMEZONE=Africa/Casablanca
+          APP_KEY=${{ secrets.APP_KEY }}
+          DB_CONNECTION=mysql
+          DB_HOST=localhost
+          DB_PORT=3306
+          DB_DATABASE=${{ secrets.PROD_DB_DATABASE }}
+          DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
+          CACHE_STORE=file
+          QUEUE_CONNECTION=sync
+          SESSION_DRIVER=file
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_TTL=60
+          JWT_REFRESH_TTL=20160
+          JWT_ALGO=HS256
+          FRONTEND_URL=https://alotrojah.ma
+          FRONTEND_URLS=https://alotrojah.ma,https://www.alotrojah.ma
+          EOF
+
+      - name: FTP deploy to /home/alotr15q/api/
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: api/
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*/**
+            **/.github/**
+            **/tests/**
+            **/docs/**
+            **/phpunit.xml
+            **/.editorconfig
+
+      - name: Verify production
+        run: |
+          set -e
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/up); test "$code" = "200"
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/api/v1/health); test "$code" = "200"
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/docs/api.json); test "$code" = "403"
+          hdr=$(curl -s -D - -o /dev/null -H 'Origin: https://alotrojah.ma' https://api.alotrojah.ma/api/v1/health); echo "$hdr" | grep -qi 'access-control-allow-origin: https://alotrojah.ma'
+          echo 'PROD VERIFIED'
