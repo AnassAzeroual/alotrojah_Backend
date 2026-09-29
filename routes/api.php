@@ -52,9 +52,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('guardians', GuardianController::class);
 
         // S7 daily core
-        Route::post('attendance/bulk', [AttendanceController::class, 'bulk']);
+        Route::post('attendance/bulk', [AttendanceController::class, 'bulk'])->middleware('throttle:30,1');
         Route::apiResource('attendance', AttendanceController::class)->only(['index', 'show', 'destroy']);
-        Route::post('scores/bulk', [ScoreController::class, 'bulk']);
+        Route::post('scores/bulk', [ScoreController::class, 'bulk'])->middleware('throttle:30,1');
         Route::get('scores', [ScoreController::class, 'index']);
         Route::get('sessions/{session}/scores', [ScoreController::class, 'bySession']);
         Route::get('students/{student}/weeks/{week}/followup', [ScoreController::class, 'followup']);
@@ -98,7 +98,7 @@ Route::prefix('v1')->group(function () {
         Route::put('season-results', [ResultController::class, 'upsertSeason']);
         Route::get('groups/{group}/delegations', [DelegationController::class, 'index']);
         Route::post('groups/{group}/delegations', [DelegationController::class, 'generate']);
-        Route::post('delegations/redeem', [DelegationController::class, 'redeem']);
+        Route::post('delegations/redeem', [DelegationController::class, 'redeem'])->middleware('throttle:30,1');
         Route::delete('delegations/{delegation}', [DelegationController::class, 'revoke']);
 
         // S10 comms + dashboard + reports

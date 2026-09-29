@@ -43,7 +43,9 @@ class ExamController extends Controller
         } else {
             $data['season_id'] = Term::findOrFail($data['term_id'])->season_id;
         }
-        $data['examiner_id'] ??= $me->id;
+        // teachers/examiners always sign their own exams
+        if (in_array($me->role, ['teacher', 'examiner'], true)) $data['examiner_id'] = $me->id;
+        else $data['examiner_id'] ??= $me->id;
 
         return $this->created(new ExamResource(Exam::create($data)));
     }

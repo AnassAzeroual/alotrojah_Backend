@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\CenterScope;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -12,6 +15,7 @@ use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
  * Auth identity. Password lives in `password_hash` (legacy schema),
  * so getAuthPassword() is overridden. Roles/center travel as JWT claims.
  */
+#[ScopedBy([CenterScope::class])]
 class User extends Authenticatable implements JWTSubject
 {
     protected $table = 'users';

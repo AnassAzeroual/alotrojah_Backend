@@ -2,9 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\CenterScope;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ScopedBy([CenterScope::class])]
 class Center extends Model
 {
     protected $table = 'centers';

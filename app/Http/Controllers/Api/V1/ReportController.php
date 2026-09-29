@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\StudentSeasonRequest;
+use App\Http\Requests\StudentTermRequest;
 use App\Models\SeasonResult;
 use App\Models\Student;
 use App\Models\Term;
@@ -14,12 +16,9 @@ use Illuminate\Support\Facades\DB;
 /** Printable pages consume these composites (book fidelity + better). */
 class ReportController extends Controller
 {
-    public function term(Request $request, ScoringService $scoring): JsonResponse
+    public function term(StudentTermRequest $request, ScoringService $scoring): JsonResponse
     {
-        $data = $request->validate([
-            'student_id' => ['required', 'integer', 'exists:students,id'],
-            'term_id' => ['required', 'integer', 'exists:terms,id'],
-        ]);
+        $data = $request->validated();
         $student = Student::findOrFail($data['student_id']);
         $this->authorize('view', $student);
         $term = Term::findOrFail($data['term_id']);
@@ -36,12 +35,9 @@ class ReportController extends Controller
         ]);
     }
 
-    public function season(Request $request, ScoringService $scoring): JsonResponse
+    public function season(StudentSeasonRequest $request, ScoringService $scoring): JsonResponse
     {
-        $data = $request->validate([
-            'student_id' => ['required', 'integer', 'exists:students,id'],
-            'season_id' => ['required', 'integer', 'exists:academic_seasons,id'],
-        ]);
+        $data = $request->validated();
         $student = Student::findOrFail($data['student_id']);
         $this->authorize('view', $student);
 

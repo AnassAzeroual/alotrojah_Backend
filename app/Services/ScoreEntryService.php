@@ -8,6 +8,7 @@ use App\Models\ScoringModule;
 use App\Models\Session;
 use App\Models\SessionScore;
 use App\Models\Student;
+use App\Models\Scopes\CenterScope;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -36,7 +37,7 @@ class ScoreEntryService
         $errors = []; $clean = [];
         foreach ($rows as $i => $r) {
             $p = "records.$i";
-            $student = Student::find($r['student_id'] ?? null);
+            $student = Student::withoutGlobalScope(CenterScope::class)->find($r['student_id'] ?? null);
             if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
             if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
                 && ! $this->delegation->canActAs($teacher, $student)) {
@@ -77,7 +78,7 @@ class ScoreEntryService
         $errors = []; $clean = [];
         foreach ($rows as $i => $r) {
             $p = "records.$i";
-            $student = Student::find($r['student_id'] ?? null);
+            $student = Student::withoutGlobalScope(CenterScope::class)->find($r['student_id'] ?? null);
             if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
             if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
                 && ! $this->delegation->canActAs($teacher, $student)) {

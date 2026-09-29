@@ -2,11 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Scopes\CenterScope;
+use Illuminate\Database\Eloquent\Attributes\ScopedBy;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 
+#[ScopedBy([CenterScope::class])]
 class Group extends Model
 {
     protected $table = 'groups';
