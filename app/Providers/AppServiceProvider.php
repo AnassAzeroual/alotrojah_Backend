@@ -2,12 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\AcademicSeason;
 use App\Models\Attendance;
 use App\Models\Center;
 use App\Models\Group;
 use App\Models\Guardian;
+use App\Models\ScoringModule;
 use App\Models\SessionScore;
 use App\Models\Student;
+use App\Models\TermPlan;
 use App\Models\User;
 use App\Models\WeeklyGoal;
 use App\Observers\SessionScoreObserver;
@@ -15,8 +18,11 @@ use App\Policies\AttendancePolicy;
 use App\Policies\CenterPolicy;
 use App\Policies\GroupPolicy;
 use App\Policies\GuardianPolicy;
+use App\Policies\ScoringModulePolicy;
+use App\Policies\SeasonPolicy;
 use App\Policies\SessionScorePolicy;
 use App\Policies\StudentPolicy;
+use App\Policies\TermPlanPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeeklyGoalPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -45,6 +51,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Attendance::class, AttendancePolicy::class);
         Gate::policy(SessionScore::class, SessionScorePolicy::class);
         Gate::policy(WeeklyGoal::class, WeeklyGoalPolicy::class);
+        Gate::policy(AcademicSeason::class, SeasonPolicy::class);
+        Gate::policy(TermPlan::class, TermPlanPolicy::class);
+        Gate::policy(ScoringModule::class, ScoringModulePolicy::class);
         SessionScore::observe(SessionScoreObserver::class);
     }
 }
