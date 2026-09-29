@@ -34,8 +34,9 @@ jobs:
 
       - name: Import canonical schema + seed
         run: |
-          mysql -h 127.0.0.1 -u root -proot < docs/database/quran_memorization_db.sql
-          mysql -h 127.0.0.1 -u root -proot < docs/database/quran_seed_data.sql
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS quran_memorization CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+          mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_memorization_db.sql
+          mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_seed_data.sql
 
       - name: Run test suite
         env:
