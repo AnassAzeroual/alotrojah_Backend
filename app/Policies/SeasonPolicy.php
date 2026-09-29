@@ -31,6 +31,12 @@ class SeasonPolicy
         return $this->manage($user);
     }
 
+    /** Calendar reads: every staff member (teachers pick sessions daily). */
+    public function viewCalendar(User $user): bool
+    {
+        return $this->isStaff($user);
+    }
+
     public function delete(User $user, AcademicSeason $season): bool
     {
         return $this->isAdmin($user);

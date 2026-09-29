@@ -42,7 +42,7 @@ class CalendarController extends Controller
 
     public function weeks(Request $request): JsonResponse
     {
-        $this->authorize('manageCalendar', AcademicSeason::class);
+        $this->authorize('viewCalendar', AcademicSeason::class);
         $q = Week::orderBy('week_number_global');
         if ($request->filled('term_id')) $q->where('term_id', (int) $request->input('term_id'));
         if ($request->filled('season_id')) $q->where('season_id', (int) $request->input('season_id'));
@@ -59,7 +59,7 @@ class CalendarController extends Controller
 
     public function sessions(Request $request): JsonResponse
     {
-        $this->authorize('manageCalendar', AcademicSeason::class);
+        $this->authorize('viewCalendar', AcademicSeason::class);
         $q = Session::orderBy('session_number_global');
         foreach (['season_id', 'term_id', 'week_id'] as $f) {
             if ($request->filled($f)) $q->where($f, (int) $request->input($f));
