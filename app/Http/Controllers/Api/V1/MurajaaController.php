@@ -47,6 +47,7 @@ class MurajaaController extends Controller
         $term = \App\Models\Term::findOrFail($data['term_id']);
         $data['season_id'] = $term->season_id;
         $data['entered_by'] = $me->id;
+        $data['weeks_covered'] = $data['week_to'] - $data['week_from'] + 1; // plain column (host MySQL rejects generated expr)
 
         $review = MurajaaReview::create($data);
 

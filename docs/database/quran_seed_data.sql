@@ -7,7 +7,7 @@
 -- Calendar: 42 weeks / 126 sessions (week 7,14,21,28,35,42 = review).
 -- Logs cover sessions 1-6 (weeks 1-2, term 1) for 7 students.
 -- ============================================================
-USE `quran_memorization`;
+-- USE `quran_memorization`;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DELETE FROM `centers` WHERE `id` = 1;
@@ -274,10 +274,10 @@ INSERT INTO `revision_logs` (`student_id`,`season_id`,`term_id`,`week_id`,`sessi
 (7,1,1,2,5,'2025-09-09',2.0,3.0,8,19),(7,1,1,2,6,'2025-09-10',2.5,3.0,8,19);
 
 -- ---------- 12. MURAJAA REVIEWS (official cycles) ----------
-INSERT INTO `murajaa_reviews` (`student_id`,`season_id`,`term_id`,`week_from`,`week_to`,`session_id`,`hizb_from`,`hizb_to`,`score`,`entered_by`,`reviewed_at`) VALUES
-(1,1,1,1,2,NULL,1.0,1.6,18.0,19,'2025-09-11'),
-(4,1,1,1,2,NULL,1.0,1.6,15.0,19,'2025-09-11'),
-(6,1,1,1,1,NULL,2.0,2.3,12.0,19,'2025-09-04');
+INSERT INTO `murajaa_reviews` (`student_id`,`season_id`,`term_id`,`week_from`,`week_to`,`weeks_covered`,`session_id`,`hizb_from`,`hizb_to`,`score`,`entered_by`,`reviewed_at`) VALUES
+(1,1,1,1,2,2,NULL,1.0,1.6,18.0,19,'2025-09-11'),
+(4,1,1,1,2,2,NULL,1.0,1.6,15.0,19,'2025-09-11'),
+(6,1,1,1,1,1,NULL,2.0,2.3,12.0,19,'2025-09-04');
 
 -- ---------- 13. ATTENDANCE ----------
 INSERT INTO `attendance` (`student_id`,`season_id`,`term_id`,`week_id`,`session_id`,`status`,`marked_by`) VALUES

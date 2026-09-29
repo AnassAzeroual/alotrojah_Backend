@@ -9,7 +9,7 @@ class MurajaaReview extends Model
 {
     protected $table = 'murajaa_reviews';
     const UPDATED_AT = null;
-    protected $fillable = ['student_id','season_id','term_id','week_from','week_to','session_id','hizb_from','hizb_to','surah_from','ayah_from','surah_to','ayah_to','score','entered_by','reviewed_at'];
+    protected $fillable = ['student_id','season_id','term_id','week_from','week_to','weeks_covered','session_id','hizb_from','hizb_to','surah_from','ayah_from','surah_to','ayah_to','score','entered_by','reviewed_at'];
     protected $casts = [
         'hizb_from' => 'decimal:2',
         'hizb_to' => 'decimal:2',

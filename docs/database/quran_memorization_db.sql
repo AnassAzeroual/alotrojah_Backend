@@ -11,11 +11,11 @@
 --  editable rows (manager can do 4+1 etc). Template button lives in UI.
 -- ============================================================
 
-CREATE DATABASE IF NOT EXISTS `quran_memorization`
-  CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE `quran_memorization`;
+-- CREATE DATABASE IF NOT EXISTS `quran_memorization`
+--   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+-- USE `quran_memorization`;
 
-SET FOREIGN_KEY_CHECKS = 0;
+-- SET FOREIGN_KEY_CHECKS = 0;
 
 -- ================= A. ORGANIZATION & PEOPLE =================
 CREATE TABLE IF NOT EXISTS `users` (
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `uq_users_email` (`email`),
   KEY `idx_users_role` (`role`),
   KEY `idx_users_center` (`center_id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `centers` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `centers` (
   `phone` VARCHAR(30) NULL,
   `manager_name` VARCHAR(150) NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `levels` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS `levels` (
   `total_ahzab` TINYINT UNSIGNED NOT NULL DEFAULT 60,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_levels_code` (`code`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `groups` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS `groups` (
   CONSTRAINT `fk_groups_center` FOREIGN KEY (`center_id`) REFERENCES `centers` (`id`),
   CONSTRAINT `fk_groups_level` FOREIGN KEY (`level_id`) REFERENCES `levels` (`id`),
   CONSTRAINT `fk_groups_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `guardians` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -90,7 +90,7 @@ CREATE TABLE IF NOT EXISTS `guardians` (
   PRIMARY KEY (`id`),
   KEY `idx_guardians_user` (`user_id`),
   CONSTRAINT `fk_guardians_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `students` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `students` (
   CONSTRAINT `fk_students_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `guardians` (`id`),
   CONSTRAINT `fk_students_group` FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`),
   CONSTRAINT `fk_students_level` FOREIGN KEY (`level_id`) REFERENCES `levels` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================= B. ACADEMIC CALENDAR (default 42w / 126s / 6t) ======
 CREATE TABLE IF NOT EXISTS `academic_seasons` (
@@ -131,7 +131,7 @@ CREATE TABLE IF NOT EXISTS `academic_seasons` (
   `is_current` TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_seasons_name` (`name`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `terms` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS `terms` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_terms_season_no` (`season_id`,`term_number`),
   CONSTRAINT `fk_terms_season` FOREIGN KEY (`season_id`) REFERENCES `academic_seasons` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `weeks` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -161,7 +161,7 @@ CREATE TABLE IF NOT EXISTS `weeks` (
   KEY `idx_weeks_term` (`term_id`),
   CONSTRAINT `fk_weeks_season` FOREIGN KEY (`season_id`) REFERENCES `academic_seasons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_weeks_term` FOREIGN KEY (`term_id`) REFERENCES `terms` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `sessions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `sessions` (
   CONSTRAINT `fk_sessions_season` FOREIGN KEY (`season_id`) REFERENCES `academic_seasons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sessions_term` FOREIGN KEY (`term_id`) REFERENCES `terms` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_sessions_week` FOREIGN KEY (`week_id`) REFERENCES `weeks` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================= C. PLANNING =================
 CREATE TABLE IF NOT EXISTS `term_plans` (
@@ -207,7 +207,7 @@ CREATE TABLE IF NOT EXISTS `term_plans` (
   CONSTRAINT `fk_termplans_season` FOREIGN KEY (`season_id`) REFERENCES `academic_seasons` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_termplans_term` FOREIGN KEY (`term_id`) REFERENCES `terms` (`id`) ON DELETE CASCADE,
   CONSTRAINT `chk_termplans_range` CHECK (`end_hizb` IS NULL OR `start_hizb` IS NULL OR `end_hizb` >= `start_hizb`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `weekly_goals` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -222,7 +222,7 @@ CREATE TABLE IF NOT EXISTS `weekly_goals` (
   UNIQUE KEY `uq_weeklygoal_student_week` (`student_id`,`week_id`),
   CONSTRAINT `fk_wgoal_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_wgoal_week` FOREIGN KEY (`week_id`) REFERENCES `weeks` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================= D. MODULAR SCORING =================
 CREATE TABLE IF NOT EXISTS `scoring_modules` (
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS `scoring_modules` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_scoringmodules_code` (`code`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `session_scores` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -259,7 +259,7 @@ CREATE TABLE IF NOT EXISTS `session_scores` (
   CONSTRAINT `fk_scores_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_scores_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_scores_module` FOREIGN KEY (`module_id`) REFERENCES `scoring_modules` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `memorization_logs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -288,7 +288,7 @@ CREATE TABLE IF NOT EXISTS `memorization_logs` (
   KEY `idx_memolog_term` (`student_id`,`term_id`),
   CONSTRAINT `fk_memolog_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_memolog_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `revision_logs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -308,7 +308,7 @@ CREATE TABLE IF NOT EXISTS `revision_logs` (
   CONSTRAINT `fk_revlog_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_revlog_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_revlog_enteredby` FOREIGN KEY (`entered_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `murajaa_reviews` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -317,7 +317,7 @@ CREATE TABLE IF NOT EXISTS `murajaa_reviews` (
   `term_id` BIGINT UNSIGNED NOT NULL,
   `week_from` SMALLINT UNSIGNED NOT NULL,
   `week_to` SMALLINT UNSIGNED NOT NULL,
-  `weeks_covered` TINYINT UNSIGNED GENERATED ALWAYS AS (`week_to`-`week_from`+1) STORED,
+  `weeks_covered` TINYINT UNSIGNED NULL COMMENT 'computed by API: week_to-week_from+1',
   `session_id` BIGINT UNSIGNED NULL COMMENT 'review session in agenda',
   `hizb_from` DECIMAL(4,1) NULL,
   `hizb_to` DECIMAL(4,1) NULL,
@@ -336,7 +336,7 @@ CREATE TABLE IF NOT EXISTS `murajaa_reviews` (
   CONSTRAINT `fk_murajaa_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_murajaa_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_murajaa_enteredby` FOREIGN KEY (`entered_by`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `attendance` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -355,7 +355,7 @@ CREATE TABLE IF NOT EXISTS `attendance` (
   KEY `idx_att_status` (`status`),
   CONSTRAINT `fk_att_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_att_session` FOREIGN KEY (`session_id`) REFERENCES `sessions` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================= E. EXAMS & REPORTS =================
 CREATE TABLE IF NOT EXISTS `exams` (
@@ -374,7 +374,7 @@ CREATE TABLE IF NOT EXISTS `exams` (
   KEY `idx_exams_type` (`exam_type`),
   CONSTRAINT `fk_exams_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_exams_examiner` FOREIGN KEY (`examiner_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `exam_questions` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -393,7 +393,7 @@ CREATE TABLE IF NOT EXISTS `exam_questions` (
   UNIQUE KEY `uq_exq_exam_qno` (`exam_id`,`question_no`),
   CONSTRAINT `fk_exq_exam` FOREIGN KEY (`exam_id`) REFERENCES `exams` (`id`) ON DELETE CASCADE,
   CONSTRAINT `chk_exq_score` CHECK (`score` IS NULL OR (`score` BETWEEN 0 AND 20))
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `term_results` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -411,7 +411,7 @@ CREATE TABLE IF NOT EXISTS `term_results` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_termres_student_term` (`student_id`,`term_id`),
   CONSTRAINT `fk_termres_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `season_results` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -428,7 +428,7 @@ CREATE TABLE IF NOT EXISTS `season_results` (
   UNIQUE KEY `uq_seasonres_student_season` (`student_id`,`season_id`),
   CONSTRAINT `fk_seasonres_student` FOREIGN KEY (`student_id`) REFERENCES `students` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_seasonres_season` FOREIGN KEY (`season_id`) REFERENCES `academic_seasons` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================= F. APP FEATURES =================
 CREATE TABLE IF NOT EXISTS `delegation_tokens` (
@@ -448,7 +448,7 @@ CREATE TABLE IF NOT EXISTS `delegation_tokens` (
   CONSTRAINT `fk_delegation_group` FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_delegation_granter` FOREIGN KEY (`granter_teacher_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_delegation_usedby` FOREIGN KEY (`used_by_teacher_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `announcements` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -462,7 +462,7 @@ CREATE TABLE IF NOT EXISTS `announcements` (
   KEY `idx_ann_audience` (`audience`),
   CONSTRAINT `fk_ann_author` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_ann_group` FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `notifications_log` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -474,7 +474,7 @@ CREATE TABLE IF NOT EXISTS `notifications_log` (
   `sent_at` TIMESTAMP NULL,
   PRIMARY KEY (`id`),
   KEY `idx_notif_status` (`status`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================= G. QURAN REFERENCE =================
 CREATE TABLE IF NOT EXISTS `surahs` (
@@ -482,14 +482,14 @@ CREATE TABLE IF NOT EXISTS `surahs` (
   `name_ar` VARCHAR(60) NOT NULL,
   `ayahs_count` SMALLINT UNSIGNED NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `quran_hizb_reference` (
   `hizb_no` TINYINT UNSIGNED NOT NULL,
   `juz_no` TINYINT UNSIGNED NOT NULL,
   `label_ar` VARCHAR(50) NOT NULL,
   PRIMARY KEY (`hizb_no`)
-) ENGINE=InnoDB;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

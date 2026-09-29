@@ -57,6 +57,9 @@ php artisan tinker                      # REPL (bypasses CenterScope: console is
 ## API contract (for the Angular client)
 
 - Base: `/api/v1/...` — envelope `{success, message, data}`, paginated `data/data+meta`.
+- Interactive docs: `GET /docs/api` (Swagger UI via Scramble, auto-generated;
+  login first, then Authorize with the bearer token). Raw spec: `/docs/api.json`.
+  On production, gate or disable docs (see `RestrictedDocsAccess`).
 - Auth: JWT bearer (`POST auth/login|refresh|logout`, `GET auth/me`), claims = role/center_id/teacher_type, 60-min TTL.
 - Roles: `admin` (global) · `supervisor` (per-center manager) · `teacher` (+`teacher_type` hifz/murajaa/both) · `guardian` · `student` (shared account) · `board` (read).
 - Scoring (locked rules): weekly /20 = active weekly-total modules (14+4+2); sarraj separate /20 (`is_in_weekly_total=0`); mowathaba manual; murajaa official = 1–3-week cycles; final = (murajaa + weekly + term quizzes) ÷ (2 + n_terms).
