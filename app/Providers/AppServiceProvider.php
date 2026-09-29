@@ -21,6 +21,8 @@ use App\Models\TermPlan;
 use App\Models\TermResult;
 use App\Models\User;
 use App\Models\WeeklyGoal;
+use App\Observers\AttendanceObserver;
+use App\Observers\MurajaaReviewObserver;
 use App\Observers\SessionScoreObserver;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\AttendancePolicy;
@@ -77,5 +79,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(NotificationLog::class, NotificationPolicy::class);
         SessionScore::observe(SessionScoreObserver::class);
+        Attendance::observe(AttendanceObserver::class);
+        MurajaaReview::observe(MurajaaReviewObserver::class);
     }
 }

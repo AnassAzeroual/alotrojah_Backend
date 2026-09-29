@@ -56,11 +56,15 @@ class DelegationService
     public function canActAs(User $teacher, Student $student): bool
     {
         if ($student->group_id === null) return false;
+        $key = $teacher->id.':'.$student->group_id;
+        if (array_key_exists($key, $this->actCache)) return $this->actCache[$key];
 
-        return DelegationToken::where('group_id', $student->group_id)
+        return $this->actCache[$key] = DelegationToken::where('group_id', $student->group_id)
             ->where('used_by_teacher_id', $teacher->id)
             ->where('is_revoked', false)
             ->where('expires_at', '>', Carbon::now())
             ->exists();
     }
+
+    private array $actCache = [];
 }

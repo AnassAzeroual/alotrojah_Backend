@@ -17,13 +17,19 @@ class ExamQuestionController extends Controller
     /** Flexible count (Q16): append a batch; overall_avg recomputed. */
     public function bulk(StoreQuestionsBulkRequest $request, Exam $exam): JsonResponse
     {
+        // preload taken numbers: one query, not one per row
+        $taken = $exam->questions()->pluck('question_no')->all();
+        $surahMax = Surah::whereIn('id', collect($request->input('questions'))->pluck('surah_ref')->filter()->unique()->all())
+            ->pluck('ayahs_count', 'id');
         $errors = [];
         foreach ($request->input('questions') as $i => $row) {
-            if (ExamQuestion::where('exam_id', $exam->id)->where('question_no', $row['question_no'])->exists()) {
+            if (in_array($row['question_no'], $taken, true)) {
                 $errors["questions.$i.question_no"] = 'Already used in this exam.';
+            } else {
+                $taken[] = $row['question_no'];
             }
             if (! empty($row['surah_ref']) && (! empty($row['ayah_from']) || ! empty($row['ayah_to']))) {
-                $max = (int) Surah::where('id', $row['surah_ref'])->value('ayahs_count');
+                $max = (int) ($surahMax[$row['surah_ref']] ?? 0);
                 foreach (['ayah_from', 'ayah_to'] as $a) {
                     if (! empty($row[$a]) && ($row[$a] < 1 || $row[$a] > $max)) {
                         $errors["questions.$i.$a"] = "Ayah out of range (1-$max).";

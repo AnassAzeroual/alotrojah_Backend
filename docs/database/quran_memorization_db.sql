@@ -674,3 +674,14 @@ SELECT a.id, a.author_id, u.full_name AS author_name, a.audience, a.group_id,
 FROM announcements a JOIN users u ON u.id=a.author_id
 LEFT JOIN `groups` g ON g.id=a.group_id
 ORDER BY a.created_at DESC;
+
+-- ================= S12 PERFORMANCE INDEXES =================
+-- Composite lookups used by season aggregates, ordering and filters.
+CREATE INDEX `idx_s12_exams_lookup` ON `exams`(`student_id`,`season_id`,`term_id`,`exam_type`);
+CREATE INDEX `idx_s12_exq_order` ON `exam_questions`(`exam_id`,`sort_order`,`question_no`);
+CREATE INDEX `idx_s12_scores_season` ON `session_scores`(`student_id`,`season_id`);
+CREATE INDEX `idx_s12_revlog_season` ON `revision_logs`(`student_id`,`season_id`);
+CREATE INDEX `idx_s12_murajaa_season` ON `murajaa_reviews`(`student_id`,`season_id`);
+CREATE INDEX `idx_s12_att_season` ON `attendance`(`student_id`,`season_id`,`term_id`);
+CREATE INDEX `idx_s12_termres_season` ON `term_results`(`student_id`,`season_id`);
+CREATE INDEX `idx_s12_memolog_season` ON `memorization_logs`(`student_id`,`season_id`);

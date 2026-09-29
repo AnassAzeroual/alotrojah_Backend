@@ -34,10 +34,15 @@ class ScoreEntryService
         }
         $modules = ScoringModule::where('is_active', true)->where('scope', 'weekly')->get()->keyBy('code');
 
+        // preload: bulk must not do one student lookup per row (N+1)
+        $students = Student::withoutGlobalScope(CenterScope::class)
+            ->whereIn('id', collect($rows)->pluck('student_id')->unique()->all())
+            ->get()->keyBy('id');
+
         $errors = []; $clean = [];
         foreach ($rows as $i => $r) {
             $p = "records.$i";
-            $student = Student::withoutGlobalScope(CenterScope::class)->find($r['student_id'] ?? null);
+            $student = $students[$r['student_id'] ?? 0] ?? null;
             if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
             if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
                 && ! $this->delegation->canActAs($teacher, $student)) {
@@ -75,10 +80,14 @@ class ScoreEntryService
         $session = Session::findOrFail($sessionId);
         $valid = array_column(AttendanceStatus::cases(), 'value');
 
+        $students = Student::withoutGlobalScope(CenterScope::class)
+            ->whereIn('id', collect($rows)->pluck('student_id')->unique()->all())
+            ->get()->keyBy('id');
+
         $errors = []; $clean = [];
         foreach ($rows as $i => $r) {
             $p = "records.$i";
-            $student = Student::withoutGlobalScope(CenterScope::class)->find($r['student_id'] ?? null);
+            $student = $students[$r['student_id'] ?? 0] ?? null;
             if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
             if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
                 && ! $this->delegation->canActAs($teacher, $student)) {
