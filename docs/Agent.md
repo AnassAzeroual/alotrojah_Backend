@@ -84,6 +84,10 @@
 - **Pre-Angular gate (passed):** full PHPUnit suite 24/58 green + 24 live end-to-end checks green (auth→S11, incl. delegation cycle, final math, CORS, cross-center). Cleanup lesson: upserts on seed rows must be RESTORED afterwards (term_results/term_plans), created rows deleted — canonical counts: scores 168, attendance 42, goals 4, plans 14, reviews 3, tokens 1.
 - **Post-S13 change — examiner role REMOVED (examiner = teacher):** `users.role` ENUM, `Role` enum, all policies/scopes/requests cleaned; `exams.examiner_id` column stays (holds the conducting teacher); seed examiners converted to teachers; 24 tests / 58 assertions green.
 
+## 10. Frontend build log (F1 → …)
+- **F1 (done):** Node 25.9 default too new (CLI warns/refuses odd versions) → installed Node **24.21.0 LTS** via existing nvm-windows, CLI **22.2.0** global under the 24 install. Project commands use the v24 paths explicitly; user default stays 25.
+- **F2 (done):** `ng new` (SCSS, routing, zoneless, strict) moved into `alotrojah_Frontend` preserving `.git`/`docs`. Fixes: CLI did not write `strict`/`strictTemplates`, added explicitly; renamed project `alotrojah_new` to `alotrojah`. Verified: no `zone.js` dep, dev build green. Angular standards (signals, standalone, zoneless, @if/@for, OnPush, lazy routes, typed forms) from this file § developments — treat as law.
+
 ---
 
 # Modern Angular Development Standards & AI Coding Guidelines
