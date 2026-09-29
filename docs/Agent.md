@@ -318,3 +318,5 @@ g build); FTP transfer with excludes; .env uploaded once via file manager then E
 - Deploy verify iteration: frontend verify now prints HTML bytes + bundle name + bundle HTTP code, and fails if dev URL leaks into prod. GitHub AI suggestions are generic - diagnose from live bytes instead.
 
 - Deploy verify lesson: grep ALL script bundles, not just main-*.js - tree-shaken shared code (ApiClient + env URL) lives in chunk-*.js. Read live bytes (fetched the actual bundle) instead of trusting pattern theories.
+
+- CI import lesson: never rely on CREATE/USE inside SQL files in CI - pass the DB explicitly (mysql db < file + pre-CREATE). Fixes the ERROR 1046 No database selected class regardless of cause.

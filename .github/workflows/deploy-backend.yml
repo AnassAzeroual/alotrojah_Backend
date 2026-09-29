@@ -72,7 +72,7 @@ jobs:
       - name: Production build (no dev deps)
         run: composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction
 
-      - name: Render production .env (never committed, excluded nowhere — uploaded once per deploy)
+      - name: Render production .env (never committed, uploaded once per deploy)
         run: |
           cat > .env <<'EOF'
           APP_NAME=AlOtrojah
@@ -98,16 +98,19 @@ jobs:
           FRONTEND_URLS=https://alotrojah.ma,https://www.alotrojah.ma
           EOF
 
-      - name: FTP deploy to /home/alotr15q/api/
+      - name: FTP deploy incremental (only changed files after first success)
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
+          protocol: ftps-legacy
+          port: 21
           local-dir: ./
           server-dir: api/
           dangerous-clean-slate: false
+          log-level: minimal
+          timeout: 600000
           exclude: |
             **/.git*/**
             **/.github/**
@@ -115,6 +118,16 @@ jobs:
             **/docs/**
             **/phpunit.xml
             **/.editorconfig
+            **/.phpunit.result.cache
+            **/database/*.sqlite
+            **/storage/logs/**
+            **/storage/framework/cache/**
+            **/storage/framework/sessions/**
+            **/storage/framework/views/**
+            **/node_modules/**
+            **/vendor/**/tests/**
+            **/vendor/**/Tests/**
+            **/vendor/**/*.md
 
       - name: Verify production
         run: |
