@@ -125,9 +125,7 @@ jobs:
             **/storage/framework/sessions/**
             **/storage/framework/views/**
             **/node_modules/**
-            **/vendor/**/tests/**
-            **/vendor/**/Tests/**
-            **/vendor/**/*.md
+            **/vendor/**
 
       - name: Verify production
         run: |
