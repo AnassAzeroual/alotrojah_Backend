@@ -107,13 +107,15 @@ jobs:
           FTP_USER: ${{ secrets.FTP_USERNAME }}
           FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
+          printf 'machine %s login %s password %s\n' "$FTP_HOST" "$FTP_USER" "$FTP_PASS" > ~/.netrc
+          chmod 600 ~/.netrc
           lftp -e "
             set ftp:ssl-force true;
             set ssl:verify-certificate no;
             set net:max-retries 5;
             set net:timeout 30;
             set net:reconnect-interval-base 5;
-            open -u $FTP_USER,\"$FTP_PASS\" $FTP_HOST;
+            open $FTP_HOST;
             mkdir -p api;
             mirror -R --continue --parallel=1 --only-newer \
               -X .git/* -X .git/ -X .github/* \
@@ -125,6 +127,7 @@ jobs:
               -X vendor/**/tests/* -X vendor/**/Tests/* -X vendor/**/*.md \
               ./ api/;
             bye"
+          rm -f ~/.netrc
 
       - name: Verify production
         run: |
