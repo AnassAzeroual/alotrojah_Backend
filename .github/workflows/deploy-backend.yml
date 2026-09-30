@@ -98,34 +98,33 @@ jobs:
           FRONTEND_URLS=https://alotrojah.ma,https://www.alotrojah.ma
           EOF
 
-      - name: FTP deploy incremental (only changed files after first success)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          port: 21
-          local-dir: ./
-          server-dir: api/
-          dangerous-clean-slate: false
-          log-level: minimal
-          timeout: 600000
-          exclude: |
-            **/.git*/**
-            **/.github/**
-            **/tests/**
-            **/docs/**
-            **/phpunit.xml
-            **/.editorconfig
-            **/.phpunit.result.cache
-            **/database/*.sqlite
-            **/storage/logs/**
-            **/storage/framework/cache/**
-            **/storage/framework/sessions/**
-            **/storage/framework/views/**
-            **/node_modules/**
-            **/vendor/**
+      - name: Install lftp (shared-host tolerant FTPS client)
+        run: sudo apt-get update && sudo apt-get install -y lftp
+
+      - name: FTP deploy via lftp mirror (sequential, resumable)
+        env:
+          FTP_HOST: ${{ secrets.FTP_HOST }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          lftp -e "
+            set ftp:ssl-force true;
+            set ssl:verify-certificate no;
+            set net:max-retries 5;
+            set net:timeout 30;
+            set net:reconnect-interval-base 5;
+            open -u $FTP_USER,\"$FTP_PASS\" $FTP_HOST;
+            mkdir -p api;
+            mirror -R --continue --parallel=1 --only-newer \
+              -X .git/* -X .git/ -X .github/* \
+              -X tests/* -X docs/* \
+              -X phpunit.xml -X .editorconfig -X .phpunit.result.cache \
+              -X database/*.sqlite \
+              -X storage/logs/* -X storage/framework/cache/* -X storage/framework/sessions/* -X storage/framework/views/* \
+              -X node_modules/* \
+              -X vendor/**/tests/* -X vendor/**/Tests/* -X vendor/**/*.md \
+              ./ api/;
+            bye"
 
       - name: Verify production
         run: |
