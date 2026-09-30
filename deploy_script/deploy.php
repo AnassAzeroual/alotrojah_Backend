@@ -1,19 +1,21 @@
 <?php
 declare(strict_types=1);
-// Server-side deploy extractor with backup.
+// Server-side deploy extractor. No on-server backup.
 // Upload to api/public/deploy.php, then call once:
 //   https://api.alotrojah.ma/deploy.php?token=YOUR_DEPLOY_TOKEN
 //
 // Flow:
 //   1. Auth via token.
-//   2. Zip EVERYTHING currently in api/ (incl. .env) into api/backup-<ts>.zip,
-//      skipping the incoming backend.zip and any previous backup-*.zip.
-//   3. Verify the backup is valid, then delete every old file/folder in api/
-//      (leaving only the backup zip and the incoming backend.zip).
-//   4. Extract the new backend.zip into api/.
-//   5. Recreate runtime dirs, reset opcache, remove backend.zip, self-delete.
-//
-// Result: api/ = fresh Laravel app + one backup-<ts>.zip of the old version.
+//   2. Delete every old file/folder in api/, EXCEPT:
+//      - backend.zip (the incoming release)
+//      - storage/app/** (user uploads referenced by the DB — preserved)
+//      Symlinks are unlinked, never followed (so public/storage can never
+//      wipe storage/app/public through the link).
+//   3. Extract the new backend.zip into api/. Files present in the zip
+//      overwrite; files only on disk survive. storage/app therefore merges:
+//      old uploads stay, new skeleton files (.gitignore) are added.
+//   4. Recreate runtime dirs (framework cache/sessions/views, logs,
+//      bootstrap/cache), reset opcache, remove backend.zip, self-delete.
 
 define('DEPLOY_TOKEN', '__DEPLOY_TOKEN__');
 header('Content-Type: application/json');
@@ -32,10 +34,8 @@ if (!class_exists('ZipArchive')) {
 
 set_time_limit(600);
 
-$dest        = dirname(__DIR__);               // api/
-$newZip      = $dest . '/backend.zip';         // incoming release
-$backupName  = 'backup-' . date('Ymd-His') . '.zip';
-$backupPath  = $dest . '/' . $backupName;      // backup lives INSIDE api/
+$dest   = dirname(__DIR__);          // api/
+$newZip = $dest . '/backend.zip';    // incoming release
 
 if (!file_exists($newZip)) {
     http_response_code(500);
@@ -43,146 +43,86 @@ if (!file_exists($newZip)) {
     exit;
 }
 
+/**
+ * Delete a path without following symlinks: links are unlinked,
+ * real dirs are emptied recursively then removed.
+ */
+function wipe_path(string $path): void
+{
+    if (is_link($path)) {
+        @unlink($path);
+        return;
+    }
+    if (is_file($path)) {
+        @unlink($path);
+        return;
+    }
+    if (!is_dir($path)) {
+        return;
+    }
+    foreach (@scandir($path) ?: [] as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+        wipe_path($path . '/' . $item);
+    }
+    @rmdir($path);
+}
+
 // -------------------------------------------------------------------------- //
-// 0. Delete any pre-existing zip in api/ FIRST (old backups etc.), except the
-//    incoming backend.zip. This guarantees the backup we build next contains
-//    only real Laravel files — never a previous backup — so it never grows/nests.
+// 1. Purge old release. Preserve backend.zip + storage/app (user uploads).
+//    storage/framework/*, storage/logs/* and everything else is rebuilt.
 // -------------------------------------------------------------------------- //
-$removedZips = [];
 foreach (@scandir($dest) ?: [] as $entry) {
+    if ($entry === '.' || $entry === '..') {
+        continue;
+    }
     if ($entry === basename($newZip)) {
-        continue; // keep the new release
+        continue; // incoming release
     }
-    if (is_file($dest . '/' . $entry) && strtolower(substr($entry, -4)) === '.zip') {
-        if (@unlink($dest . '/' . $entry)) {
-            $removedZips[] = $entry;
+    $full = $dest . '/' . $entry;
+    if ($entry === 'storage' && !is_link($full) && is_dir($full)) {
+        foreach (@scandir($full) ?: [] as $sub) {
+            if ($sub === '.' || $sub === '..') {
+                continue;
+            }
+            if ($sub === 'app') {
+                continue; // user uploads — keep, merge later
+            }
+            wipe_path($full . '/' . $sub);
         }
+        continue;
     }
-}
-
-// Names in api/ that must NOT be swept into the backup or deleted as "old".
-$protected = [
-    basename($newZip),   // backend.zip (the new release we still need)
-    $backupName,         // the backup we are about to create
-];
-
-/**
- * Recursively add a directory's contents to a zip, relative to $baseLen.
- * Skips any top-level entry whose name is in $skipTop.
- */
-function backup_add(ZipArchive $zip, string $dir, int $baseLen, array $skipTop): void
-{
-    $items = @scandir($dir);
-    if ($items === false) {
-        return;
-    }
-    foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
-            continue;
-        }
-        $full = $dir . '/' . $item;
-        // Only skip protected names at the api/ top level.
-        if ($skipTop && in_array($item, $skipTop, true)) {
-            continue;
-        }
-        $rel = substr($full, $baseLen);
-        if (is_dir($full)) {
-            $zip->addEmptyDir($rel);
-            backup_add($zip, $full, $baseLen, []); // skip list only applies at top
-        } else {
-            $zip->addFile($full, $rel);
-        }
-    }
-}
-
-/**
- * Recursively delete a directory's contents (and the dir entries themselves),
- * skipping protected top-level names. Does not remove $dir itself.
- */
-function purge_dir(string $dir, array $skipTop): void
-{
-    $items = @scandir($dir);
-    if ($items === false) {
-        return;
-    }
-    foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
-            continue;
-        }
-        if ($skipTop && in_array($item, $skipTop, true)) {
-            continue;
-        }
-        $full = $dir . '/' . $item;
-        if (is_dir($full)) {
-            purge_dir($full, []);
-            @rmdir($full);
-        } else {
-            @unlink($full);
-        }
-    }
+    wipe_path($full);
 }
 
 // -------------------------------------------------------------------------- //
-// 1. Build the backup zip of the current api/ contents.
-//    We skip ONLY the incoming backend.zip and the backup we are creating right
-//    now. Any OLD backup-*.zip from previous deploys IS included, so it ends up
-//    nested inside the new backup and then gets deleted in the purge step.
-//    Result: api/ keeps just ONE backup zip (the newest), old ones are gone.
-// -------------------------------------------------------------------------- //
-$skipForBackup = $protected; // [backend.zip, new backup name] only
-
-$backup = new ZipArchive();
-if ($backup->open($backupPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'backup-open-failed']);
-    exit;
-}
-backup_add($backup, $dest, strlen($dest) + 1, $skipForBackup);
-$backupCount = $backup->numFiles;
-$backup->close();
-
-// Verify the backup is real before we delete anything.
-$verify = new ZipArchive();
-if ($verify->open($backupPath) !== true || $verify->numFiles === 0) {
-    if ($verify) { @$verify->close(); }
-    @unlink($backupPath);
-    http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'backup-verify-failed']);
-    exit;
-}
-$verify->close();
-
-// -------------------------------------------------------------------------- //
-// 2. Delete ALL old files/folders in api/ — including any previous
-//    backup-*.zip (now safely nested inside the new backup) — keeping only the
-//    new backup zip and the incoming backend.zip.
-// -------------------------------------------------------------------------- //
-purge_dir($dest, $protected);
-
-// -------------------------------------------------------------------------- //
-// 3. Extract the new release into the now-clean api/.
+// 2. Extract the new release. Overwrites tracked files; disk-only files
+//    (uploads in storage/app) survive. Skeleton files merge in harmlessly.
 // -------------------------------------------------------------------------- //
 $zip = new ZipArchive();
 if ($zip->open($newZip) !== true) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'zip-open-failed', 'backup' => $backupName]);
+    echo json_encode(['ok' => false, 'error' => 'zip-open-failed']);
     exit;
 }
 $count = $zip->numFiles;
 if (!$zip->extractTo($dest)) {
     $zip->close();
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'extract-failed', 'backup' => $backupName]);
+    echo json_encode(['ok' => false, 'error' => 'extract-failed']);
     exit;
 }
 $zip->close();
 
 // -------------------------------------------------------------------------- //
-// 4. Recreate runtime dirs, reset opcache, clean up.
+// 3. Recreate runtime dirs, reset opcache, clean up.
 // -------------------------------------------------------------------------- //
+@mkdir($dest . '/storage/app/public', 0755, true);
 @mkdir($dest . '/storage/framework/cache/data', 0755, true);
 @mkdir($dest . '/storage/framework/sessions', 0755, true);
 @mkdir($dest . '/storage/framework/views', 0755, true);
+@mkdir($dest . '/storage/logs', 0755, true);
 @mkdir($dest . '/bootstrap/cache', 0755, true);
 if (function_exists('opcache_reset')) { @opcache_reset(); }
 
@@ -190,10 +130,4 @@ if (function_exists('opcache_reset')) { @opcache_reset(); }
 // Self-delete so the token-bearing extractor does not linger publicly.
 @unlink(__FILE__);
 
-echo json_encode([
-    'ok'            => true,
-    'files'         => $count,
-    'backup'        => $backupName,
-    'backup_files'  => $backupCount,
-    'removed_zips'  => $removedZips,
-]);
+echo json_encode(['ok' => true, 'files' => $count, 'storage_app' => 'preserved']);
