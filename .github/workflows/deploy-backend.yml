@@ -146,10 +146,10 @@ jobs:
             set net:timeout 30;
             set net:reconnect-interval-base 5;
             open $FTP_HOST;
-            mkdir -p api;
-            mkdir -p api/public;
-            put -O api deploy_script/backend.zip;
-            put -O api/public -o deploy.php deploy_script/deploy.stamped.php;
+            mkdir -f api;
+            mkdir -f api/public;
+            put deploy_script/backend.zip -o api/backend.zip;
+            put deploy_script/deploy.stamped.php -o api/public/deploy.php;
             bye"
           rm -f ~/.netrc deploy_script/deploy.stamped.php
 
