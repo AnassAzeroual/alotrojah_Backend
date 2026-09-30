@@ -320,3 +320,30 @@ g build); FTP transfer with excludes; .env uploaded once via file manager then E
 - Deploy verify lesson: grep ALL script bundles, not just main-*.js - tree-shaken shared code (ApiClient + env URL) lives in chunk-*.js. Read live bytes (fetched the actual bundle) instead of trusting pattern theories.
 
 - CI import lesson: never rely on CREATE/USE inside SQL files in CI - pass the DB explicitly (mysql db < file + pre-CREATE). Fixes the ERROR 1046 No database selected class regardless of cause.
+
+
+---
+
+# Deployment (Backend → Heberjahiz, GitHub Actions) — live, auto on push to `main`
+
+- **Constraint:** host drops FTP after ~24 min → per-file mirror never finishes.
+  **Fix = zip + server-side extract:** upload only 2 files, PHP unzips on server.
+- **Flow** (`deploy-backend.yml`, `test`→`deploy`): composer `--no-dev` → render
+  prod `.env` from Secrets → `php deploy_script/Build-Zip.php .env` → stamp
+  `DEPLOY_TOKEN` into `deploy.php` → `lftp` puts `backend.zip`→`api/` +
+  extractor→`api/public/deploy.php` → `curl .../deploy.php?token=` → verify.
+- **`deploy_script/deploy.php`** (runs server-side, scoped to `api/` only): del old
+  `*.zip` (keep incoming `backend.zip`) → zip current `api/` incl `.env` →
+  `api/backup-<ts>.zip` → verify backup (else abort, delete nothing) → purge
+  `api/` → extract new zip → remake `storage`/`bootstrap/cache`, opcache reset,
+  del `backend.zip`, self-delete. Result: fresh app + one `backup-<ts>.zip`.
+- **Secrets:** `APP_KEY`, `PROD_DB_{DATABASE,USERNAME,PASSWORD}`, `JWT_SECRET`,
+  `FTP_{HOST,USERNAME,PASSWORD}`, `DEPLOY_TOKEN` (=`openssl rand -hex 32`; stamped
+  into `deploy.php` AND sent in URL, so both match; rotate if leaked).
+- **Gotchas (cost real time):** `lftp put` has NO `-O` → use `put <l> -o <remote>`
+  (`put -O` = `invalid option 'o'`, aborts). `lftp mkdir` existing dir → 550; use
+  `mkdir -f`. `deploy.php` at `api/public/` → `dirname(__DIR__)`=`api/`; domain
+  root must map to `api/public/`. `unlink(__FILE__)` works on Linux, not Windows
+  (test artifact). Host needs PHP `ZipArchive`. No secrets in repo.
+- **Verified:** `/up` 200, `/api/v1/health` 200, `POST /auth/login` empty→422
+  (throttle `6,1`; rapid probes can give `HTTP 000` = throttled, not an error).
