@@ -23,3 +23,9 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# Heberjahiz FastCGI drops Authorization before mod_rewrite sees it:
+# re-expose it via SetEnvIf so PHP (auth:api/JWT) receives the Bearer token.
+<IfModule mod_setenvif.c>
+    SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>
