@@ -12,6 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Runs before route auth: restores Authorization from X-Auth-Token (host strips it).
+        $middleware->prependToGroup('api', \App\Http\Middleware\MapCustomAuthHeader::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\ForceJsonResponse::class);
         $middleware->redirectGuestsTo(fn () => null); // API-only: 401 JSON, never redirect
     })
