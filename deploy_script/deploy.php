@@ -86,8 +86,8 @@ foreach (@scandir($dest) ?: [] as $entry) {
             if ($sub === '.' || $sub === '..') {
                 continue;
             }
-            if ($sub === 'app') {
-                continue; // user uploads — keep, merge later
+            if ($sub === 'app' || $sub === 'logs') {
+                continue; // user uploads + prod logs — keep, merge later
             }
             wipe_path($full . '/' . $sub);
         }
