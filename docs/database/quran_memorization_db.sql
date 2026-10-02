@@ -606,15 +606,17 @@ GROUP BY sc.student_id, sc.season_id, sc.week_id, mo.code, mo.name_ar;
 
 -- season inputs for final formula (app divides by 2 + n_terms; default /8):
 -- final = (avg_murajaa + avg_weekly + SUM(term quiz avgs incl. final)) / (2 + n)
+-- inputs follow the CURRENT season (academic_seasons.is_current=1, kept exclusive
+-- by SeasonController::activate) — never a hardcoded season id
 CREATE OR REPLACE VIEW `v_student_season_avgs` AS
-SELECT s.id AS student_id, s.full_name,
+SELECT s.id AS student_id, s.full_name, se.id AS season_id,
   (SELECT ROUND(AVG(mr.score),2) FROM murajaa_reviews mr
-    WHERE mr.student_id=s.id AND mr.season_id=1) AS avg_murajaa,
+    WHERE mr.student_id=s.id AND mr.season_id=se.id) AS avg_murajaa,
   (SELECT ROUND(AVG(t.total_score),2) FROM v_session_totals t
-    WHERE t.student_id=s.id AND t.season_id=1) AS avg_weekly,
+    WHERE t.student_id=s.id AND t.season_id=se.id) AS avg_weekly,
   (SELECT ROUND(AVG(x.avg_score),2) FROM v_separate_module_avgs x
-    WHERE x.student_id=s.id AND x.season_id=1 AND x.module_code='sarraj') AS avg_sarraj
-FROM students s;
+    WHERE x.student_id=s.id AND x.season_id=se.id AND x.module_code='sarraj') AS avg_sarraj
+FROM students s JOIN academic_seasons se ON se.is_current=1;
 
 CREATE OR REPLACE VIEW `v_murajaa_cycles` AS
 SELECT mr.id, mr.student_id, s.full_name, mr.season_id, mr.term_id,
