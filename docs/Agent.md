@@ -9,9 +9,9 @@
 - Users: manager (PC), 3+ teachers (phones only, 3G/4G + *6 social pack), students use their own account/interface. Maintainer: developer. MVP: 1 month.
 
 ## 2. Locked tech
-- Backend Laravel 12 (API-only), PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_hash` column via `getAuthPassword()`, claims role/center_id/teacher_type). Swagger via Scramble (`/docs/api`, 60 paths; prod gated 403).
+- Backend Laravel 12 (API-only), PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_hash` column via `getAuthPassword()`, claims role/center_id/teacher_type). Swagger via Scramble (`/docs/api`, 65 paths; prod gated 403).
 - Frontend Angular 22 zoneless standalone (signals, `inject()`, `input()/output()/model()`, `@if/@for`, OnPush, lazy routes, typed forms), `@ngx-translate` ar(default,rtl)/fr/en, Chart.js thin wrapper, custom SCSS tokens (no component lib).
-- DB MySQL 8 `utf8mb4_unicode_ci`. Canonical: `docs/database/quran_memorization_db.sql` → `quran_seed_data.sql` → verify `quran_check_queries.sql`. Fresh schema changes → Laravel migrations; dumps stay untouched.
+- DB MySQL 8 `utf8mb4_unicode_ci`. Canonical: `docs/database/quran_memorization_db.sql` → `quran_seed_data.sql` → verify `quran_check_queries.sql`. Baseline schema = 9 Laravel migrations (`database/migrations`, commit 510d2c3) reproducing the dump exactly — 26 tables, named CHECKs, `idx_s12_*` indexes, 11 views; dev DB has them registered as batch 1. New schema changes → further Laravel migrations; dumps stay untouched. Prod (FTP-only, no SSH → artisan can never run there): schema came from the phpMyAdmin dump import; for each future migration run `php artisan migrate --pretend` on dev, copy the printed SQL, apply via phpMyAdmin — never touch prod's `migrations` table.
 - `CACHE_STORE=file`, `QUEUE_CONNECTION=sync`, `SESSION_DRIVER=file`. No Redis/cron/paid WhatsApp (`wa.me` links only).
 
 ## 3. Pedagogy (do not re-ask; from questions.md meeting)
@@ -31,20 +31,20 @@
 - Final = `(avg_murajaa + avg_weekly + Σ term quiz avgs incl. final) / (2 + n_terms)` (6 terms → ÷8); from `v_student_season_avgs` + `v_term_quiz_avgs`; never hardcode.
 - Exams: flexible count, questions generatable from thumn/hizb start ayat, teacher/manager reorders.
 
-## 5. DB map (24 tables, 11 views) + invariants
+## 5. DB map (26 tables, 11 views) + invariants
 - People: `users` (roles admin/supervisor/teacher/student/board; examiner merged into teacher; id=1 global admin `center_id` NULL), `centers` (3, isolated), `levels` (L1/L2/L3), `groups`, `students`.
 - Calendar: `academic_seasons`, `terms`, `weeks`, `sessions`. Planning: `term_plans`, `weekly_goals`.
 - Facts (all carry `student+season+term+week+session+(log_)date` chain for GROUP BY/Chart.js): `scoring_modules`, `session_scores` (UNIQUE student×session×module), `memorization_logs` (amounts only, NO scores), `revision_logs`, `murajaa_reviews`, `attendance`.
 - Reports: `exams`, `exam_questions`, `term_results`, `season_results`. Features: `delegation_tokens`, `announcements`, `notifications_log`. Ref: `surahs` (114), `quran_hizb_reference` (60).
 - Views: `v_session_totals, v_weekly_progress, v_weekly_murajaa, v_attendance_rate, v_term_quiz_avgs, v_student_season_avgs, v_separate_module_avgs, v_murajaa_cycles, v_scoring_check, v_season_dashboard, v_announcements_feed`.
 - Isolation: every operational row = exactly ONE center; audits A2/A3/A4 must be 0. Backend enforces via `CenterScope` (re-entrancy guard) + 16 policies + `DelegationService::canActAs` bypass; cross-center reads → 404 (scope) / 403 (policy in tests).
-- Seed: 3 centers, 12 users, 5 groups, 7 students (3+2+2; #3 Baqarah, #6 Nas surah-mode), 42 logs, 168 scores, 3 murajaa cycles, mixed attendance, 10 exams/44 questions, 7+7 results, 1 token, 3 announcements, 4 goals, 2 notifications; tiers ~18/~14/~12 for charts.
+- Seed: 3 centers, 19 users (1 admin, 3 supervisors, 8 teachers, 7 student accounts), 5 groups, 7 students (3+2+2; #3 Baqarah, #6 Nas surah-mode), 42 logs, 168 scores, 3 murajaa cycles, mixed attendance, 10 exams/44 questions, 7+7 results, 1 token, 3 announcements, 4 goals, 2 notifications; tiers ~18/~14/~12 for charts.
 - Conventions: hizb DECIMAL(4,1) 1–60, thumn DECIMAL(5,2); scores DECIMAL(4,1) (questions 4,2) 0–20; ENUMs for qualities, numerics for measurables; status changes by UPDATE never DELETE.
 
 ## 6. API / frontend contract
-- Envelope `{success,message,data}` (`ForceJsonResponse`); ~60 endpoints under `/api/v1` (auth, identity CRUD, attendance/scores bulk throttled 30/min, login 6/min, calendar, plans, modules, murajaa, exams, results, delegations, announcements, notifications, 4 dashboards, 2 reports).
+- Envelope `{success,message,data}` (`ForceJsonResponse`); 63 unique endpoints (103 route rows) under `/api/v1` (auth, identity CRUD, attendance/scores bulk throttled 30/min, login 6/min, API group default 60/min, calendar, plans, modules, murajaa, exams, results, delegations, announcements, notifications, 4 dashboards, 2 reports).
 - Frontend: `ApiClient` unwraps envelope; typed `api-models.ts` (snake_case, no `any` past it); 17 domain services; JWT in localStorage, interceptor attaches Bearer except login with single-flight refresh; `roleGuard` roles+teacherTypes; envs dev `localhost:8000/api/v1` / prod `api.alotrojah.ma/api/v1`.
-- Tests: backend 24 tests/58 assertions (transaction-wrapped, `actingAs`, never two tokens); frontend Vitest 25–26 + Playwright e2e (reload-persistence regression). Pages thinly covered (~63% funcs) — e2e only guards visited pages.
+- Tests: backend 26 tests/62 assertions (transaction-wrapped, `actingAs`, never two tokens); frontend Vitest 38 + Playwright e2e (reload-persistence regression). Pages thinly covered — e2e only guards visited pages.
 - Gotchas kept: PowerShell pipe destroys Arabic (import via .NET UTF-8 + `SOURCE utf8mb4`, verify `HEX(name_ar)`); `redirectGuestsTo→null` for JSON 401s; `center_id` nullable in store rules (controller forces); `resource({params})` (ng22 `request` rename); never `inject()` inside `resource()` loaders (NG0203); stale `.angular` cache lies; validate hand-edited i18n JSON; `ar.json` duplicate keys risk; non-ASCII only via edit tool, never shell literals.
 
 ## 7. Deploy — backend (Heberjahiz shared, FTP-only)
@@ -59,3 +59,4 @@
 ## 8. Open (non-blocking)
 - Real student Excel pending → import script; paper دفتر totals only if manager provides; season live (fasl 1 ends ~3 weeks post-meeting).
 - Pre-prod: rotate dev passwords (`password123`), `APP_DEBUG=false`, `FRONTEND_URLS` exact, docs gated, CORS+login smoke.
+- Fix branch `fix/priority-review` (both repos, NOT merged to `main` yet): center-scoped bySession + student-role score lists, delegation redeemer must be a teacher, 60/min default API throttle, `v_student_season_avgs` follows current season, migration baseline (§2); frontend: Chart.js tree-shake, shell interval fix, dashboard on live API data (no `DEMO_STUDENTS`).

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Runs before route auth: restores Authorization from X-Auth-Token (host strips it).
         $middleware->prependToGroup('api', \App\Http\Middleware\MapCustomAuthHeader::class);
         $middleware->appendToGroup('api', \App\Http\Middleware\ForceJsonResponse::class);
+        $middleware->throttleApi(); // default 60/min per user (IP for guests), limiter in AppServiceProvider
         $middleware->redirectGuestsTo(fn () => null); // API-only: 401 JSON, never redirect
     })
     ->withExceptions(function (Exceptions $exceptions) {

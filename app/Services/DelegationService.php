@@ -32,6 +32,8 @@ class DelegationService
     /** @throws ValidationException */
     public function redeem(string $token, User $teacher): DelegationToken
     {
+        // request-level guard lives in RedeemDelegationRequest; kept here for future callers
+        abort_unless($teacher->role === 'teacher', 403, 'Only teachers can redeem delegation links.');
         $d = DelegationToken::where('token', $token)->first()
             ?? throw ValidationException::withMessages(['token' => 'Invalid link.']);
         abort_if($d->is_revoked, 410, 'Link revoked.');

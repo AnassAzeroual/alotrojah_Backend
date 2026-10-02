@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -69,6 +70,20 @@ class DelegationScoringTest extends TestCase
     {
         $this->postJson('/api/v1/groups/1/delegations', ['minutes' => 45], $this->tok(3))
             ->assertStatus(422);
+    }
+
+    public function test_student_cannot_redeem_delegation_token(): void
+    {
+        $gen = $this->postJson('/api/v1/groups/1/delegations', ['minutes' => 15], $this->tok(3));
+        $token = $gen->json('data.token');
+
+        $u = User::create([
+            'full_name' => 'Student Redeem', 'email' => 'redeem@example.org',
+            'password_hash' => Hash::make('password123'), 'role' => 'student', 'center_id' => 2,
+        ]);
+        $this->actingAs($u, 'api')
+            ->postJson('/api/v1/delegations/redeem', ['token' => $token])
+            ->assertForbidden();
     }
 
     public function test_module_deactivation_excludes_it_everywhere(): void
