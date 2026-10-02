@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\ExamQuestionController;
 use App\Http\Controllers\Api\V1\MurajaaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ReferenceController;
+use App\Http\Controllers\Api\V1\RegistrationRequestController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ResultController;
 use App\Http\Controllers\Api\V1\ScoreController;
@@ -35,6 +36,7 @@ Route::prefix('v1')->group(function () {
 
     Route::prefix('auth')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+        Route::post('register', [AuthController::class, 'register'])->middleware('throttle:6,1');
         Route::middleware('auth:api')->group(function () {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('refresh', [AuthController::class, 'refresh']);
@@ -45,6 +47,9 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:api')->group(function () {
         // S6 identity
         Route::apiResource('users', UserController::class);
+        Route::get('registration-requests', [RegistrationRequestController::class, 'index']);
+        Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
+        Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
         Route::apiResource('groups', GroupController::class);
         Route::apiResource('students', StudentController::class);

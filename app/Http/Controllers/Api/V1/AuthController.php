@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Models\RegistrationRequest;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
@@ -18,6 +22,36 @@ class AuthController extends Controller
         }
 
         return $this->tokenResponse($token, 'Logged in.');
+    }
+
+    /**
+     * Self-registration: parks the request in the waiting room.
+     * No token — the account only exists after admin acceptance.
+     */
+    public function register(RegisterRequest $request): JsonResponse
+    {
+        $data = $request->validated();
+
+        if (User::where('email', $data['email'])->exists()) {
+            return $this->fail('Email is already registered.', 422, ['email' => ['email_taken']]);
+        }
+        if (RegistrationRequest::where('email', $data['email'])->exists()) {
+            return $this->fail('This email is already awaiting approval.', 422, ['email' => ['in_waiting_room']]);
+        }
+
+        $isStudent = $data['role'] === 'student';
+        RegistrationRequest::create([
+            'full_name' => $data['full_name'],
+            'email' => $data['email'],
+            'password_hash' => Hash::make($data['password']),
+            'role' => $data['role'],
+            'teacher_type' => $data['role'] === 'teacher' ? $data['teacher_type'] : 'both',
+            'phone' => $data['phone'],
+            'birth_date' => $isStudent ? $data['birth_date'] : null,
+            'gender' => $isStudent ? $data['gender'] : null,
+        ]);
+
+        return $this->created(null, 'Registration request received. Awaiting admin approval.');
     }
 
     public function me(): JsonResponse
