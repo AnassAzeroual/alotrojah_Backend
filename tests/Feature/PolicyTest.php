@@ -59,13 +59,6 @@ class PolicyTest extends TestCase
             ->assertOk()->assertJsonPath('data.phone', '0600000000');
     }
 
-    public function test_guardian_sees_only_own_record(): void
-    {
-        $this->actingAs(User::find(12), 'api');
-        $this->getJson('/api/v1/guardians')->assertOk()->assertJsonPath('data.meta.total', 1);
-        $this->getJson('/api/v1/guardians/2')->assertForbidden();
-    }
-
     public function test_murajaa_teacher_cannot_enter_weekly_scores(): void
     {
         $this->actingAs(User::find(19), 'api')

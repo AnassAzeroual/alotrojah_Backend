@@ -19,7 +19,7 @@ SELECT 'murajaa_reviews', COUNT(*) FROM murajaa_reviews UNION ALL
 SELECT 'attendance', COUNT(*) FROM attendance UNION ALL
 SELECT 'exams', COUNT(*) FROM exams UNION ALL
 SELECT 'exam_questions', COUNT(*) FROM exam_questions;
--- expect: centers=3 users=19 groups=5 students=7 weeks=42 sessions=126
+-- expect: centers=3 users=12 groups=5 students=7 weeks=42 sessions=126
 -- memologs=42 scores=168 murajaa_reviews=3 attendance=42 exams=10 questions=44
 
 -- A1. centers with their own totals (page: قائمة المراكز)
@@ -39,10 +39,9 @@ SELECT u.id, u.full_name, COUNT(DISTINCT g.center_id) AS centers_n
 FROM users u JOIN `groups` g ON g.teacher_id=u.id
 GROUP BY u.id, u.full_name HAVING centers_n > 1;
 
--- A4. guardians with students in >1 center (must return 0 rows)
-SELECT gu.id AS guardian_id, gu.full_name, COUNT(DISTINCT s.center_id) AS centers_n
-FROM guardians gu JOIN students s ON s.guardian_id=gu.id
-GROUP BY gu.id, gu.full_name HAVING centers_n > 1;
+-- A4. students without a group (must return 0 rows)
+SELECT s.id, s.full_name, s.center_id
+FROM students s WHERE s.group_id IS NULL;
 
 -- A5. users per center (page: طاقم كل مركز — one user = one center_id by design)
 SELECT center_id, GROUP_CONCAT(CONCAT(id,':',full_name,'[',role,']') SEPARATOR ' | ') AS staff
@@ -59,10 +58,9 @@ JOIN levels l ON l.id=g.level_id LEFT JOIN users u ON u.id=g.teacher_id
 
 -- B2. page: الطلاب + filters (center / group / level / mode / status)
 SELECT s.id, s.full_name, c.name AS center, g.name AS grp, l.name_ar AS level,
-  s.student_type, s.memorization_mode, s.status, gu.full_name AS guardian
+  s.student_type, s.memorization_mode, s.status
 FROM students s LEFT JOIN centers c ON c.id=s.center_id
 LEFT JOIN `groups` g ON g.id=s.group_id LEFT JOIN levels l ON l.id=s.level_id
-LEFT JOIN guardians gu ON gu.id=s.guardian_id
 /* filters: AND s.center_id=2 AND s.level_id=1 AND s.status='active' */
 ORDER BY s.center_id, s.id;
 
@@ -112,7 +110,7 @@ WHERE q.exam_id=10 ORDER BY q.question_no;
 
 -- B8. page: تقرير الفصل (student 1, term 1)
 SELECT s.full_name, t.name_ar, r.hifz_total, r.murajaa_total, r.exam_score,
-  r.general_avg, r.honor_flag, r.teacher_notes, r.guardian_notes, r.supervisor_note
+  r.general_avg, r.honor_flag, r.teacher_notes, r.supervisor_note
 FROM term_results r JOIN students s ON s.id=r.student_id JOIN terms t ON t.id=r.term_id
 WHERE r.student_id=1 AND r.term_id=1;
 

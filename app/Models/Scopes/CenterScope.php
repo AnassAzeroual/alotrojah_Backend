@@ -38,8 +38,6 @@ class CenterScope implements Scope
         $table = $model->getTable();
         if ($table === 'centers') {
             $builder->where($table.'.id', (int) $user->center_id);
-        } elseif ($table === 'guardians') {
-            $builder->whereHas('students', fn ($s) => $s->where('students.center_id', (int) $user->center_id));
         } else {
             $builder->where($table.'.center_id', (int) $user->center_id);
         }

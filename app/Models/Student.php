@@ -15,7 +15,7 @@ class Student extends Model
 {
     protected $table = 'students';
     const UPDATED_AT = null;
-    protected $fillable = ['user_id','guardian_id','group_id','center_id','level_id','full_name','birth_date','gender','enrollment_date','status','student_type','memorization_mode','start_hizb','notes'];
+    protected $fillable = ['user_id','group_id','center_id','level_id','full_name','birth_date','gender','enrollment_date','status','student_type','memorization_mode','start_hizb','notes'];
     protected $casts = [
         'birth_date' => 'date',
         'enrollment_date' => 'date',
@@ -28,8 +28,6 @@ class Student extends Model
     public function group(): BelongsTo { return $this->belongsTo(Group::class, 'group_id'); }
 
     public function center(): BelongsTo { return $this->belongsTo(Center::class, 'center_id'); }
-
-    public function guardian(): BelongsTo { return $this->belongsTo(Guardian::class, 'guardian_id'); }
 
     public function level(): BelongsTo { return $this->belongsTo(Level::class, 'level_id'); }
 

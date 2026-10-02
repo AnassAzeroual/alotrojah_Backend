@@ -12,14 +12,13 @@ class StudentPolicy
 
     public function viewAny(User $user): bool
     {
-        // student/guardian lists narrow to own records in the controller
-        return $this->isStaff($user) || in_array($user->role, ['guardian', 'student'], true);
+        // student lists narrow to own records in the controller
+        return $this->isStaff($user) || $user->role === 'student';
     }
 
     public function view(User $user, Student $student): bool
     {
-        if ($user->role === 'guardian') return true; // narrowed to own children in controller
-        if (in_array($user->role, ['student'], true)) return (int) $student->user_id === (int) $user->id;
+        if ($user->role === 'student') return (int) $student->user_id === (int) $user->id;
 
         return $this->sameCenter($user, $student->center_id);
     }

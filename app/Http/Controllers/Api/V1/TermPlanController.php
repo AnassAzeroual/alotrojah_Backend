@@ -19,9 +19,7 @@ class TermPlanController extends Controller
         $me = $request->user();
 
         $q = TermPlan::orderBy('id');
-        if ($me->role === 'guardian') {
-            $q->whereHas('student.guardian', fn ($g) => $g->where('user_id', $me->id));
-        } elseif ($me->role === 'student') {
+        if ($me->role === 'student') {
             $q->whereHas('student', fn ($s) => $s->where('user_id', $me->id));
         } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));

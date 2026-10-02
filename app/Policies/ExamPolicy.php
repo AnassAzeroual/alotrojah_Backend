@@ -12,7 +12,7 @@ class ExamPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->isStaff($user) || in_array($user->role, ['guardian', 'student'], true);
+        return $this->isStaff($user) || $user->role === 'student';
     }
 
     public function view(User $user, Exam $exam): bool

@@ -10,7 +10,6 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DelegationController;
 use App\Http\Controllers\Api\V1\ExamController;
 use App\Http\Controllers\Api\V1\ExamQuestionController;
-use App\Http\Controllers\Api\V1\GuardianController;
 use App\Http\Controllers\Api\V1\MurajaaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ReferenceController;
@@ -49,7 +48,6 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('centers', CenterController::class);
         Route::apiResource('groups', GroupController::class);
         Route::apiResource('students', StudentController::class);
-        Route::apiResource('guardians', GuardianController::class);
 
         // S7 daily core
         Route::post('attendance/bulk', [AttendanceController::class, 'bulk'])->middleware('throttle:30,1');

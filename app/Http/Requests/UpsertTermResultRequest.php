@@ -23,7 +23,6 @@ class UpsertTermResultRequest extends FormRequest
             'hifz_total' => $score, 'murajaa_total' => $score,
             'exam_score' => $score, 'general_avg' => $score,
             'teacher_notes' => ['nullable', 'string'],
-            'guardian_notes' => ['nullable', 'string'],
             'supervisor_note' => ['nullable', 'string'],
             'honor_flag' => ['sometimes', Rule::enum(HonorFlag::class)],
         ];

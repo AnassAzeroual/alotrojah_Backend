@@ -50,13 +50,6 @@ class Announcement extends Model
                     $w->orWhere(fn ($s) => $s->where('announcements.audience', 'my_students')
                         ->where('announcements.group_id', $myGroup));
                 }
-            } elseif ($user->role === 'guardian') {
-                $groups = Student::whereHas('guardian', fn ($g) => $g->where('user_id', $user->id))
-                    ->pluck('group_id')->filter()->unique()->all();
-                if ($groups) {
-                    $w->orWhere(fn ($s) => $s->where('announcements.audience', 'my_students')
-                        ->whereIn('announcements.group_id', $groups));
-                }
             }
         });
     }

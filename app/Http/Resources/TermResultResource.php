@@ -16,7 +16,7 @@ class TermResultResource extends JsonResource
             'term_id' => $this->term_id,
             'hifz_total' => $num($this->hifz_total), 'murajaa_total' => $num($this->murajaa_total),
             'exam_score' => $num($this->exam_score), 'general_avg' => $num($this->general_avg),
-            'teacher_notes' => $this->teacher_notes, 'guardian_notes' => $this->guardian_notes,
+            'teacher_notes' => $this->teacher_notes,
             'supervisor_note' => $this->supervisor_note, 'honor_flag' => $this->honor_flag,
         ];
     }

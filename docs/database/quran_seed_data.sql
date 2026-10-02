@@ -32,13 +32,6 @@ INSERT INTO `users` (`id`,`full_name`,`email`,`role`,`phone`,`center_id`,`teache
 (9,'ناظر الإحسان','sup3.ihsan@example.org','supervisor','0553000009',3,'both',1),
 (10,'محفظ الإحسان','teach3.ihsan@example.org','teacher','0553000010',3,'hifz',1),
 (11,'معلم الإحسان ب','teach3b.ihsan@example.org','teacher','0553000011',3,'both',1),
-(12,'ولي أحمد','g1@example.org','guardian','0551100012',1,'both',1),
-(13,'ولي بلال','g2@example.org','guardian','0551100013',1,'both',1),
-(14,'ولي يوسف','g3@example.org','guardian','0551100014',1,'both',1),
-(15,'ولي عبد الله','g4@example.org','guardian','0552000015',2,'both',1),
-(16,'ولي مصعب','g5@example.org','guardian','0552000016',2,'both',1),
-(17,'ولي حمزة','g6@example.org','guardian','0553000017',3,'both',1),
-(18,'ولي أنس','g7@example.org','guardian','0553000018',3,'both',1),
 (19,'معلم المراجعة — النور','murajaa.nour@example.org','teacher','0551000019',1,'murajaa',1)
 ON DUPLICATE KEY UPDATE `full_name`=VALUES(`full_name`),`role`=VALUES(`role`),
   `center_id`=VALUES(`center_id`),`teacher_type`=VALUES(`teacher_type`);
@@ -52,27 +45,17 @@ INSERT INTO `groups` (`id`,`center_id`,`level_id`,`teacher_id`,`name`,`academic_
 (4,2,3,7,'حلقة الفرقان — L3','2025/2026',15,'Mon,Wed,Fri',1),
 (5,3,2,10,'حلقة الإحسان — L2','2025/2026',20,'Mon,Wed,Fri',1);
 
--- ---------- 4. GUARDIANS (one center each) ----------
-INSERT INTO `guardians` (`id`,`user_id`,`full_name`,`phone`,`relation`) VALUES
-(1,12,'أبو أحمد','0551100012','father'),
-(2,13,'أبو بلال','0551100013','father'),
-(3,14,'أم يوسف','0551100014','mother'),
-(4,15,'أبو عبد الله','0552000015','father'),
-(5,16,'أبو مصعب','0552000016','father'),
-(6,17,'أبو حمزة','0553000017','father'),
-(7,18,'أم أنس','0553000018','mother');
+-- ---------- 4. STUDENTS (3+2+2; s3+s6 surah mode) ----------
+INSERT INTO `students` (`id`,`user_id`,`group_id`,`center_id`,`level_id`,`full_name`,`birth_date`,`gender`,`enrollment_date`,`status`,`student_type`,`memorization_mode`,`start_hizb`) VALUES
+(1,NULL,1,1,1,'أحمد بن يوسف','2014-03-10','male','2025-09-01','active','child','thumn',1.0),
+(2,NULL,1,1,1,'بلال مرابط','2013-07-22','male','2025-09-01','active','child','thumn',1.0),
+(3,NULL,2,1,2,'يوسف حمداني','2005-01-15','male','2025-09-01','active','adult','surah',3.0),
+(4,NULL,3,2,1,'عبد الله بن سالم','2014-11-02','male','2025-09-01','active','child','thumn',1.0),
+(5,NULL,4,2,3,'مصعب وهراني','2004-05-30','male','2025-09-01','active','adult','thumn',5.0),
+(6,NULL,5,3,2,'حمزة قسنطيني','2013-09-12','male','2025-09-01','active','child','surah',2.0),
+(7,NULL,5,3,2,'أنس بوعزيز','2014-06-18','male','2025-09-01','active','child','thumn',2.0);
 
--- ---------- 5. STUDENTS (3+2+2; s3+s6 surah mode) ----------
-INSERT INTO `students` (`id`,`user_id`,`guardian_id`,`group_id`,`center_id`,`level_id`,`full_name`,`birth_date`,`gender`,`enrollment_date`,`status`,`student_type`,`memorization_mode`,`start_hizb`) VALUES
-(1,NULL,1,1,1,1,'أحمد بن يوسف','2014-03-10','male','2025-09-01','active','child','thumn',1.0),
-(2,NULL,2,1,1,1,'بلال مرابط','2013-07-22','male','2025-09-01','active','child','thumn',1.0),
-(3,NULL,3,2,1,2,'يوسف حمداني','2005-01-15','male','2025-09-01','active','adult','surah',3.0),
-(4,NULL,4,3,2,1,'عبد الله بن سالم','2014-11-02','male','2025-09-01','active','child','thumn',1.0),
-(5,NULL,5,4,2,3,'مصعب وهراني','2004-05-30','male','2025-09-01','active','adult','thumn',5.0),
-(6,NULL,6,5,3,2,'حمزة قسنطيني','2013-09-12','male','2025-09-01','active','child','surah',2.0),
-(7,NULL,7,5,3,2,'أنس بوعزيز','2014-06-18','male','2025-09-01','active','child','thumn',2.0);
-
--- ---------- 6. CALENDAR: 42 weeks + 126 sessions (explicit ids) ----------
+-- ---------- 5. CALENDAR: 42 weeks + 126 sessions (explicit ids) ----------
 DELETE FROM `sessions`;
 DELETE FROM `weeks`;
 DELIMITER //
@@ -112,7 +95,7 @@ DELIMITER ;
 CALL `seed_sessions`();
 DROP PROCEDURE IF EXISTS `seed_sessions`;
 
--- ---------- 7. TERM PLANS (thumn + one surah-mode example) ----------
+-- ---------- 6. TERM PLANS (thumn + one surah-mode example) ----------
 INSERT INTO `term_plans` (`student_id`,`season_id`,`term_id`,`goal_text`,`plan_mode`,`start_hizb`,`end_hizb`,`plan_surah_from`,`plan_ayah_from`,`plan_surah_to`,`plan_ayah_to`,`expected_hifz_week_thumn`,`expected_hifz_term_ahzab`,`expected_hifz_season_ahzab`,`khatm_expected_at`) VALUES
 (1,1,1,'إتقان حزبين أولين','thumn',1.0,3.0,NULL,NULL,NULL,NULL,4.00,2.00,10.00,'الحزب 10'),
 (1,1,2,'مواصلة إلى الحزب 5','thumn',3.0,5.0,NULL,NULL,NULL,NULL,4.00,2.00,10.00,'الحزب 10'),
@@ -129,14 +112,14 @@ INSERT INTO `term_plans` (`student_id`,`season_id`,`term_id`,`goal_text`,`plan_m
 (7,1,1,'تأسيس','thumn',2.0,4.0,NULL,NULL,NULL,NULL,3.00,2.25,9.00,'الحزب 11'),
 (7,1,2,'مواصلة','thumn',4.0,6.0,NULL,NULL,NULL,NULL,3.00,2.25,9.00,'الحزب 11');
 
--- ---------- 8. WEEKLY GOALS ----------
+-- ---------- 7. WEEKLY GOALS ----------
 INSERT INTO `weekly_goals` (`student_id`,`season_id`,`week_id`,`target_text`,`is_completed`,`checked_by`) VALUES
 (1,1,1,'حفظ ثمنين',1,3),
 (1,1,2,'حفظ ثمنين',1,3),
 (4,1,1,'حفظ ثمنين',1,7),
 (6,1,1,'سورة الناس كاملة',0,10);
 
--- ---------- 9. MEMORIZATION LOGS: sessions 1-6 (s3 Baqarah / s6 Nas = surah mode) ----------
+-- ---------- 8. MEMORIZATION LOGS: sessions 1-6 (s3 Baqarah / s6 Nas = surah mode) ----------
 -- dates: s1=09-01 s2=09-02 s3=09-03 s4=09-08 s5=09-09 s6=09-10
 INSERT INTO `memorization_logs` (`student_id`,`season_id`,`term_id`,`week_id`,`session_id`,`log_date`,`log_mode`,`hizb_no`,`thumn_no`,`thumn_amount`,`hizb_from`,`hizb_to`,`surah_from`,`ayah_from`,`surah_to`,`ayah_to`,`created_by`) VALUES
 (1,1,1,1,1,'2025-09-01','thumn',1.0,1,1.00,1.0,1.1,NULL,NULL,NULL,NULL,3),
@@ -182,7 +165,7 @@ INSERT INTO `memorization_logs` (`student_id`,`season_id`,`term_id`,`week_id`,`s
 (7,1,1,2,5,'2025-09-09','thumn',2.0,5,1.00,2.4,2.5,NULL,NULL,NULL,NULL,10),
 (7,1,1,2,6,'2025-09-10','thumn',2.0,6,1.00,2.5,2.6,NULL,NULL,NULL,NULL,10);
 
--- ---------- 10. SESSION SCORES (modules 1=hifz 2=mowathaba 3=tajwid 5=sarraj) ----------
+-- ---------- 9. SESSION SCORES (modules 1=hifz 2=mowathaba 3=tajwid 5=sarraj) ----------
 -- center1 HIGH / center2 MEDIUM / center3 LOWER
 INSERT INTO `session_scores` (`student_id`,`season_id`,`term_id`,`week_id`,`session_id`,`log_date`,`module_id`,`score`,`entered_by`) VALUES
 -- hifz /14
@@ -249,7 +232,7 @@ INSERT INTO `session_scores` (`student_id`,`season_id`,`term_id`,`week_id`,`sess
 (7,1,1,1,1,'2025-09-01',5,12.0,10),(7,1,1,1,2,'2025-09-02',5,11.0,10),(7,1,1,1,3,'2025-09-03',5,10.0,10),
 (7,1,1,2,4,'2025-09-08',5,12.0,10),(7,1,1,2,5,'2025-09-09',5,11.0,10),(7,1,1,2,6,'2025-09-10',5,10.0,10);
 
--- ---------- 11. REVISION LOGS (practice, numeric) ----------
+-- ---------- 10. REVISION LOGS (practice, numeric) ----------
 INSERT INTO `revision_logs` (`student_id`,`season_id`,`term_id`,`week_id`,`session_id`,`log_date`,`hizb_from`,`hizb_to`,`murajaa_score`,`entered_by`) VALUES
 (1,1,1,1,1,'2025-09-01',1.0,1.5,20,19),(1,1,1,1,2,'2025-09-02',1.0,1.5,20,19),
 (1,1,1,1,3,'2025-09-03',1.0,2.0,20,19),(1,1,1,2,4,'2025-09-08',1.5,2.0,20,19),
@@ -273,13 +256,13 @@ INSERT INTO `revision_logs` (`student_id`,`season_id`,`term_id`,`week_id`,`sessi
 (7,1,1,1,3,'2025-09-03',1.5,2.5,8,19),(7,1,1,2,4,'2025-09-08',2.0,2.5,14,19),
 (7,1,1,2,5,'2025-09-09',2.0,3.0,8,19),(7,1,1,2,6,'2025-09-10',2.5,3.0,8,19);
 
--- ---------- 12. MURAJAA REVIEWS (official cycles) ----------
+-- ---------- 11. MURAJAA REVIEWS (official cycles) ----------
 INSERT INTO `murajaa_reviews` (`student_id`,`season_id`,`term_id`,`week_from`,`week_to`,`weeks_covered`,`session_id`,`hizb_from`,`hizb_to`,`score`,`entered_by`,`reviewed_at`) VALUES
 (1,1,1,1,2,2,NULL,1.0,1.6,18.0,19,'2025-09-11'),
 (4,1,1,1,2,2,NULL,1.0,1.6,15.0,19,'2025-09-11'),
 (6,1,1,1,1,1,NULL,2.0,2.3,12.0,19,'2025-09-04');
 
--- ---------- 13. ATTENDANCE ----------
+-- ---------- 12. ATTENDANCE ----------
 INSERT INTO `attendance` (`student_id`,`season_id`,`term_id`,`week_id`,`session_id`,`status`,`marked_by`) VALUES
 (1,1,1,1,1,'present',2),(1,1,1,1,2,'present',2),(1,1,1,1,3,'present',2),
 (1,1,1,2,4,'present',2),(1,1,1,2,5,'present',2),(1,1,1,2,6,'present',2),
@@ -296,7 +279,7 @@ INSERT INTO `attendance` (`student_id`,`season_id`,`term_id`,`week_id`,`session_
 (7,1,1,1,1,'present',9),(7,1,1,1,2,'late',9),(7,1,1,1,3,'present',9),
 (7,1,1,2,4,'excused',9),(7,1,1,2,5,'present',9),(7,1,1,2,6,'present',9);
 
--- ---------- 14. EXAMS + QUESTIONS ----------
+-- ---------- 13. EXAMS + QUESTIONS ----------
 INSERT INTO `exams` (`id`,`student_id`,`season_id`,`term_id`,`exam_type`,`exam_date`,`examiner_id`,`overall_avg`,`examiner_report`) VALUES
 (1,1,1,1,'hizb_completion','2025-09-20',5,18.00,'حزب متقن'),
 (2,1,1,1,'term_batch','2025-10-05',5,17.60,'ممتاز، واصل'),
@@ -338,15 +321,15 @@ INSERT INTO `exam_questions` (`exam_id`,`question_no`,`prompt_text`,`hizb_ref`,`
 (10,5,'السؤال النهائي 5',5.0,NULL,NULL,NULL,5,'single',17.00,''),(10,6,'السؤال النهائي 6',6.0,NULL,NULL,NULL,6,'single',18.00,''),
 (10,7,'السؤال النهائي 7',7.0,NULL,NULL,NULL,7,'single',18.00,'');
 
--- ---------- 15. TERM + SEASON RESULTS ----------
-INSERT INTO `term_results` (`student_id`,`season_id`,`term_id`,`hifz_total`,`murajaa_total`,`exam_score`,`general_avg`,`teacher_notes`,`guardian_notes`,`supervisor_note`,`honor_flag`) VALUES
-(1,1,1,19.00,18.80,17.60,18.47,'ممتاز','متابعة طيبة','تشجيع','tashji3'),
-(2,1,1,17.85,17.00,16.40,17.08,'جيد جدا','مستمر','تشجيع','tashji3'),
-(3,1,1,16.50,16.00,15.20,15.90,'جيد','يحتاج تنظيم وقت','عادي','none'),
-(4,1,1,15.00,14.80,14.80,14.87,'حسن','متابعة','عادي','none'),
-(5,1,1,13.75,12.00,13.60,13.12,'يحتاج مراجعة','سنتابع','انتبه','intibah'),
-(6,1,1,12.25,11.00,12.80,12.02,'اضبط أكثر','تعهد بالمتابعة','انتبه','intibah'),
-(7,1,1,12.00,10.50,12.40,11.63,'اضبط أكثر','تعهد بالمتابعة','انتبه','intibah');
+-- ---------- 14. TERM + SEASON RESULTS ----------
+INSERT INTO `term_results` (`student_id`,`season_id`,`term_id`,`hifz_total`,`murajaa_total`,`exam_score`,`general_avg`,`teacher_notes`,`supervisor_note`,`honor_flag`) VALUES
+(1,1,1,19.00,18.80,17.60,18.47,'ممتاز','تشجيع','tashji3'),
+(2,1,1,17.85,17.00,16.40,17.08,'جيد جدا','تشجيع','tashji3'),
+(3,1,1,16.50,16.00,15.20,15.90,'جيد','عادي','none'),
+(4,1,1,15.00,14.80,14.80,14.87,'حسن','عادي','none'),
+(5,1,1,13.75,12.00,13.60,13.12,'يحتاج مراجعة','انتبه','intibah'),
+(6,1,1,12.25,11.00,12.80,12.02,'اضبط أكثر','انتبه','intibah'),
+(7,1,1,12.00,10.50,12.40,11.63,'اضبط أكثر','انتبه','intibah');
 
 INSERT INTO `season_results` (`student_id`,`season_id`,`total_memorized_label`,`total_memorized_thumn`,`hifz_total`,`murajaa_total`,`overall_avg`,`board_report`,`honor_flag`) VALUES
 (1,1,'حفظ حزبين خلال الفصل الأول',6.00,19.00,18.80,18.47,'يُكرم','tashji3'),
@@ -357,7 +340,7 @@ INSERT INTO `season_results` (`student_id`,`season_id`,`total_memorized_label`,`
 (6,1,'حفظ حزب ونصف بتقطع',6.00,12.25,11.00,12.02,'إنذار ومتابعة','intibah'),
 (7,1,'حفظ حزب ونصف بتقطع',6.00,12.00,10.50,11.63,'إنذار ومتابعة','intibah');
 
--- ---------- 16. APP FEATURES DEMO ----------
+-- ---------- 15. APP FEATURES DEMO ----------
 INSERT INTO `delegation_tokens` (`group_id`,`granter_teacher_id`,`token`,`duration_minutes`,`expires_at`) VALUES
 (1,3,'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90',30,'2026-10-15 12:00:00');
 
@@ -371,6 +354,6 @@ INSERT INTO `notifications_log` (`recipient_phone`,`channel`,`message`,`status`,
 ('0553000017','whatsapp','تذكير: اجتماع أولياء الأمور','queued',9);
 
 SET FOREIGN_KEY_CHECKS = 1;
--- counts: centers=3 users=19 groups=5 guardians=7 students=7 weeks=42 sessions=126
+-- counts: centers=3 users=12 groups=5 students=7 weeks=42 sessions=126
 -- plans=14 goals=4 memologs=42 scores=168 revlogs=42 murajaa_reviews=3 attendance=42
 -- exams=10 questions=44 term_results=7 season_results=7 tokens=1 announcements=3 notif=2

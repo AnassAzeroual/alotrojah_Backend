@@ -22,7 +22,6 @@ class UpdateStudentRequest extends FormRequest
             'full_name' => ['sometimes', 'string', 'max:150'],
             'group_id' => ['sometimes', 'nullable', 'integer', 'exists:groups,id'],
             'level_id' => ['sometimes', 'nullable', 'integer', 'exists:levels,id'],
-            'guardian_id' => ['sometimes', 'nullable', 'integer', 'exists:guardians,id'],
             'birth_date' => ['sometimes', 'nullable', 'date', 'before:today'],
             'gender' => ['sometimes', 'nullable', Rule::enum(Gender::class)],
             'status' => ['sometimes', Rule::enum(StudentStatus::class)],

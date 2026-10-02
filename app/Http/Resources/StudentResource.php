@@ -15,7 +15,6 @@ class StudentResource extends JsonResource
             'center_id' => $this->center_id,
             'group' => $this->whenLoaded('group', fn () => ['id' => $this->group->id, 'name' => $this->group->name]),
             'level_id' => $this->level_id,
-            'guardian' => $this->whenLoaded('guardian', fn () => ['id' => $this->guardian->id, 'full_name' => $this->guardian->full_name]),
             'birth_date' => $this->birth_date?->toDateString(),
             'gender' => $this->gender,
             'status' => $this->status,

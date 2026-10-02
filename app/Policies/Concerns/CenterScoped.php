@@ -6,7 +6,7 @@ use App\Models\User;
 
 /**
  * Center isolation invariant: staff see only their own center.
- * Admin (center_id NULL) is global. Guardian/student see own records (handled per-policy).
+ * Admin (center_id NULL) is global. Student sees own records (handled per-policy).
  */
 trait CenterScoped
 {

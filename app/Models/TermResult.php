@@ -9,7 +9,7 @@ class TermResult extends Model
 {
     protected $table = 'term_results';
     public $timestamps = false;
-    protected $fillable = ['student_id','season_id','term_id','hifz_total','murajaa_total','exam_score','general_avg','teacher_notes','guardian_notes','supervisor_note','honor_flag'];
+    protected $fillable = ['student_id','season_id','term_id','hifz_total','murajaa_total','exam_score','general_avg','teacher_notes','supervisor_note','honor_flag'];
     protected $casts = [
         'hifz_total' => 'decimal:2',
         'murajaa_total' => 'decimal:2',

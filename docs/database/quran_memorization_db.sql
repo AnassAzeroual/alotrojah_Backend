@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `full_name` VARCHAR(150) NOT NULL,
   `email` VARCHAR(150) NOT NULL,
   `password_hash` VARCHAR(255) NULL,
-  `role` ENUM('admin','supervisor','teacher','guardian','student','board') NOT NULL DEFAULT 'teacher',
+  `role` ENUM('admin','supervisor','teacher','student','board') NOT NULL DEFAULT 'teacher',
   `phone` VARCHAR(30) NULL,
   `center_id` BIGINT UNSIGNED NULL COMMENT 'NULL = global (system admin)',
   `teacher_type` ENUM('hifz','murajaa','both') NOT NULL DEFAULT 'both' COMMENT 'تحفيظ / مراجعة / كلاهما — enables page inputs',
@@ -81,21 +81,9 @@ CREATE TABLE IF NOT EXISTS `groups` (
   CONSTRAINT `fk_groups_teacher` FOREIGN KEY (`teacher_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `guardians` (
-  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` BIGINT UNSIGNED NULL COMMENT 'student+guardian share one account (same interface)',
-  `full_name` VARCHAR(150) NOT NULL,
-  `phone` VARCHAR(30) NULL COMMENT 'used for wa.me links',
-  `relation` ENUM('father','mother','other') NOT NULL DEFAULT 'father',
-  PRIMARY KEY (`id`),
-  KEY `idx_guardians_user` (`user_id`),
-  CONSTRAINT `fk_guardians_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE IF NOT EXISTS `students` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` BIGINT UNSIGNED NULL,
-  `guardian_id` BIGINT UNSIGNED NULL,
   `group_id` BIGINT UNSIGNED NULL,
   `center_id` BIGINT UNSIGNED NULL,
   `level_id` INT UNSIGNED NULL,
@@ -114,7 +102,6 @@ CREATE TABLE IF NOT EXISTS `students` (
   KEY `idx_students_level` (`level_id`),
   KEY `idx_students_center` (`center_id`),
   KEY `idx_students_status` (`status`),
-  CONSTRAINT `fk_students_guardian` FOREIGN KEY (`guardian_id`) REFERENCES `guardians` (`id`),
   CONSTRAINT `fk_students_group` FOREIGN KEY (`group_id`) REFERENCES `groups` (`id`),
   CONSTRAINT `fk_students_level` FOREIGN KEY (`level_id`) REFERENCES `levels` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -405,7 +392,6 @@ CREATE TABLE IF NOT EXISTS `term_results` (
   `exam_score` DECIMAL(4,2) NULL,
   `general_avg` DECIMAL(4,2) NULL,
   `teacher_notes` TEXT NULL,
-  `guardian_notes` TEXT NULL,
   `supervisor_note` TEXT NULL,
   `honor_flag` ENUM('none','tashji3','intibah') NOT NULL DEFAULT 'none',
   PRIMARY KEY (`id`),

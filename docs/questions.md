@@ -18,7 +18,7 @@
 5) من سيدخل البيانات فعليا: المعلمون بهواتفهم بعد كل حصة؟ أم كاتب على حاسوب مرة في الأسبوع؟ (مهم)
 5: the teachers enter the points every day using there phones, surprisingly all teachers using phone not laptops , but the manager use the PC and he want the solution to use Mobile first then the laptop when talking about UI/UX,
 6) هل يحتاج أولياء الأمور حسابات لرؤية تقدم أبنائهم، أم يكفي التقرير الورقي؟
-6: yes , the students and there guardians need accounts, but in our solution will be one account used by student and there guardians (students or Guardians the same interface for both and one account),
+6: yes, the students need accounts to see their progress (one account per student, same student interface),
 7) من يحق له تعديل أو حذف نقطة بعد إدخالها: المعلم؟ الناظر فقط؟ لا أحد؟ (مهم)
 7: teachers, the responsible one for that group, the teacher associated to that group specifically, if the responsible not there and send the not's using WhatsApp to other teacher, the responsible need to give access to the other teacher using the a token for 2 h of time using a link (button to give access to others by generating a link with a token in parameter to the teacher class students, the link can be 15 min or 30min 1h or 2 h, depending on the params in the page giving access , then the link will be sent using WhatsApp to the other teacher , i hope there is a free API to WhatsApp to send link using the teacher number that we have in database ) ,
 8) اللغة: العربية فقط أم العربية + الفرنسية؟
@@ -50,7 +50,7 @@ now that we said that even the reviewer of memorization has a not itself like 18
 so the way they calculate it the 
 ((total of all the weeks for the reviewer notes/all the weeks) + (total of all the weeks for (the Hifed + mowathaba + Tajwid notes)/all the weeks) + quiz fasle 1 note + quiz fasle 2 note + quiz fasle 3 note + quiz fasle 4 note + quiz fasle 5 note) / 8
 18) لوحة الشرف (تشجيع / انتبه): من يقررها؟ وهل تترتب عليها نتائج مثل جائزة أو استدعاء ولي؟
-the teacher and the manager both should have the access to do it , yes there is gifts adn the guardians are called a they celebrate , the final note are sent using the WhatsApp API to the guardians number or Students number 
+the teacher and the manager both should have the access to do it , yes there is gifts and the families are called and they celebrate , the final note are sent using the WhatsApp API to the family number or Students number 
 ## 5. التقارير والإحصائيات
 
 19) ما هي التقارير التي يجب طباعتها مطابقة لصفحات الكتاب (المتابعة الأسبوعية، تقرير الفصل، تقرير الموسم)؟ رتبوها بالأولوية.
@@ -116,7 +116,7 @@ X : the week can have 3 sessions or more, one of them can be review session (wit
 
 ### نقاط تقنية ثابتة
 - Mobile-first (المعلمون هواتف، المدير PC). عربي أولا + fr/en عبر ngx-translate.
-- لا WhatsApp API مدفوع: روابط wa.me بأرقام الأولياء من قاعدة البيانات.
+- لا WhatsApp API مدفوع: روابط wa.me بأرقام الطلاب/الأسر من قاعدة البيانات.
 - تفويض الدخول عبر token links (15/30/60/120 دقيقة) تُرسل في WhatsApp.
 - الأخبار: all / teachers / manager / my_students.
 - النطاق alotrojah.ma. الصيانة: أنا. MVP شهر واحد. Excel لاحقا عند توفره.

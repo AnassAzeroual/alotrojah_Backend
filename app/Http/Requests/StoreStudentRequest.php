@@ -23,7 +23,6 @@ class StoreStudentRequest extends FormRequest
             'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'group_id' => ['nullable', 'integer', 'exists:groups,id'],
             'level_id' => ['nullable', 'integer', 'exists:levels,id'],
-            'guardian_id' => ['nullable', 'integer', 'exists:guardians,id'],
             'birth_date' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', Rule::enum(Gender::class)],
             'enrollment_date' => ['nullable', 'date'],

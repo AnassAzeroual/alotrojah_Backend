@@ -17,11 +17,9 @@ class StudentController extends Controller
         $this->authorize('viewAny', Student::class);
         $me = $request->user();
 
-        $q = Student::with(['group', 'guardian'])->orderBy('id');
+        $q = Student::with(['group'])->orderBy('id');
 
-        if ($me->role === 'guardian') {
-            $q->whereHas('guardian', fn ($g) => $g->where('user_id', $me->id));
-        } elseif ($me->role === 'student') {
+        if ($me->role === 'student') {
             $q->where('user_id', $me->id);
         } elseif ($me->role !== 'admin') {
             $q->forCenter((int) $me->center_id);
@@ -57,7 +55,7 @@ class StudentController extends Controller
     {
         $this->authorize('view', $student);
 
-        return $this->ok(new StudentResource($student->load(['group', 'guardian'])));
+        return $this->ok(new StudentResource($student->load(['group'])));
     }
 
     public function update(UpdateStudentRequest $request, Student $student): JsonResponse
@@ -67,7 +65,7 @@ class StudentController extends Controller
 
         $student->update($data);
 
-        return $this->ok(new StudentResource($student->fresh(['group', 'guardian'])));
+        return $this->ok(new StudentResource($student->fresh(['group'])));
     }
 
     public function destroy(Student $student): JsonResponse
