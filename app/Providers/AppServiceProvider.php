@@ -39,7 +39,10 @@ use App\Policies\StudentPolicy;
 use App\Policies\TermPlanPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeeklyGoalPolicy;
+use Illuminate\Http\Request;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -57,6 +60,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // default v1 group limiter; stricter per-route throttles (login 6,1 etc.) stack on top
+        RateLimiter::for('api', function (Request $request) {
+            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+        });
+
         Gate::policy(Student::class, StudentPolicy::class);
         Gate::policy(Group::class, GroupPolicy::class);
         Gate::policy(Center::class, CenterPolicy::class);
