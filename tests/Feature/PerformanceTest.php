@@ -72,11 +72,19 @@ class PerformanceTest extends TestCase
 
     public function test_final_matches_hand_math(): void
     {
-        // (18 + 18.25 + 17.6 + 17.43) / 4 — questions.md formula, /(2+n)
+        // Transparent math: final must equal the formula applied to the
+        // response's own displayed components — no hardcoded seed values,
+        // so dev-data edits (e.g. avg_weekly 18.25 → 18.3) can't stale it.
         $r = $this->getJson('/api/v1/dashboard/final?student_id=1&season_id=1', $this->auth());
-        $r->assertOk()
-            ->assertJsonPath('data.final', 17.82)
-            ->assertJsonPath('data.divisor', 4);
+        $r->assertOk()->assertJsonPath('data.divisor', 4);
+        $inputs = $r->json('data.inputs');
+        $quizSum = collect($r->json('data.quizzes'))->sum(fn ($q) => (float) $q['avg_score']);
+        $expected = round(
+            ((float) $inputs['avg_murajaa'] + (float) $inputs['avg_weekly'] + $quizSum)
+            / (int) $r->json('data.divisor'),
+            2,
+        );
+        $this->assertSame($expected, $r->json('data.final'));
     }
 
     public function test_scoring_guard_stays_twenty(): void
