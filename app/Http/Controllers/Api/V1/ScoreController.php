@@ -34,7 +34,9 @@ class ScoreController extends Controller
         $me = $request->user();
 
         $q = SessionScore::with('module')->orderBy('id');
-        if ($me->role !== 'admin') {
+        if ($me->role === 'student') {
+            $q->where('student_id', Student::where('user_id', $me->id)->value('id') ?? 0);
+        } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         } elseif ($request->filled('center_id')) {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $request->input('center_id')));
@@ -47,11 +49,18 @@ class ScoreController extends Controller
     }
 
     /** All scores of one session, grouped per student with totals (marking sheet). */
-    public function bySession(int $session, ScoringService $scoring): JsonResponse
+    public function bySession(Request $request, int $session, ScoringService $scoring): JsonResponse
     {
         $this->authorize('viewAny', SessionScore::class);
+        $me = $request->user();
 
-        $rows = SessionScore::with('module')->where('session_id', $session)->get()->groupBy('student_id');
+        $q = SessionScore::with('module')->where('session_id', $session);
+        if ($me->role === 'student') {
+            $q->where('student_id', Student::where('user_id', $me->id)->value('id') ?? 0);
+        } elseif ($me->role !== 'admin') {
+            $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
+        }
+        $rows = $q->get()->groupBy('student_id');
         $out = [];
         foreach ($rows as $sid => $scores) {
             $out[] = [

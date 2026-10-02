@@ -95,4 +95,29 @@ class PolicyTest extends TestCase
         $this->putJson('/api/v1/scoring-modules', ['modules' => [['code' => 'hifz', 'max_points' => 14]]])
             ->assertForbidden();
     }
+
+    public function test_by_session_scores_are_center_scoped(): void
+    {
+        $this->actingAs(User::find(3), 'api'); // teacher, center 1
+        $r = $this->getJson('/api/v1/sessions/1/scores')->assertOk();
+        $this->assertEquals(
+            [1, 2, 3],
+            collect($r->json('data'))->pluck('student_id')->sort()->values()->all()
+        );
+
+        $this->actingAs(User::find(7), 'api'); // teacher, center 2
+        $r = $this->getJson('/api/v1/sessions/1/scores')->assertOk();
+        $this->assertEquals([4, 5], collect($r->json('data'))->pluck('student_id')->sort()->values()->all());
+    }
+
+    public function test_student_role_sees_only_own_session_scores(): void
+    {
+        $u = User::create([
+            'full_name' => 'Student Sheet', 'email' => 'sheet@example.org',
+            'password_hash' => Hash::make('password123'), 'role' => 'student', 'center_id' => 1,
+        ]);
+        DB::table('students')->where('id', 2)->update(['user_id' => $u->id]);
+        $r = $this->actingAs($u, 'api')->getJson('/api/v1/sessions/1/scores')->assertOk();
+        $this->assertEquals([2], collect($r->json('data'))->pluck('student_id')->all());
+    }
 }
