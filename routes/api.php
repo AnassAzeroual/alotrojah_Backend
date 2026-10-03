@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:api')->group(function () {
         // S6 identity
+        Route::post('users/{user}/replace', [UserController::class, 'replace']);
         Route::apiResource('users', UserController::class);
         Route::get('registration-requests', [RegistrationRequestController::class, 'index']);
         Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);

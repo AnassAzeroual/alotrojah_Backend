@@ -5,9 +5,16 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
+use App\Models\Announcement;
+use App\Models\DelegationToken;
+use App\Models\Exam;
+use App\Models\Group;
+use App\Models\MurajaaReview;
+use App\Models\RevisionLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -73,8 +80,108 @@ class UserController extends Controller
     public function destroy(User $user): JsonResponse
     {
         $this->authorize('delete', $user);
-        $user->delete();
+
+        $groups = Group::where('teacher_id', $user->id)->where('is_active', true)
+            ->get(['id', 'name']);
+        if ($groups->isNotEmpty()) {
+            return $this->fail('This teacher owns active groups — choose a replacer.', 422, [
+                'code' => 'NEED_REPLACER',
+                'teacher' => [
+                    'id' => $user->id,
+                    'full_name' => $user->full_name,
+                    'teacher_type' => $user->teacher_type,
+                    'center_id' => $user->center_id,
+                ],
+                'groups' => $groups,
+                'counts' => $this->referenceCounts($user->id),
+            ]);
+        }
+
+        DB::transaction(function () use ($user) {
+            // Only inactive groups can remain here (active ones returned 422 above).
+            Group::where('teacher_id', $user->id)->update(['teacher_id' => null]);
+            $this->clearTransferableReferences($user->id, null);
+            Announcement::where('author_id', $user->id)->delete();
+            $this->deleteTokens($user->id);
+            $user->delete();
+        });
 
         return $this->ok(null, 'Deleted.');
+    }
+
+    /**
+     * Delete a teacher by transferring their groups + history to a replacer.
+     * Replacer must be: role=teacher, active, same center, same teacher_type
+     * (or 'both' — strict, so a 'both' teacher needs a 'both' replacer), and
+     * free (no active group assigned). Announcements authored + delegation
+     * tokens involving the deleted teacher are removed.
+     */
+    public function replace(Request $request, User $user): JsonResponse
+    {
+        $this->authorize('delete', $user);
+
+        $data = $request->validate(['replacer_id' => ['required', 'integer', 'exists:users,id']]);
+        $replacer = User::findOrFail($data['replacer_id']);
+
+        if ((int) $replacer->id === (int) $user->id) {
+            return $this->fail('The replacer cannot be the deleted teacher.', 422);
+        }
+        if ($replacer->role !== 'teacher' || ! $replacer->is_active) {
+            return $this->fail('The replacer must be an active teacher.', 422);
+        }
+        if ((int) $replacer->center_id !== (int) $user->center_id) {
+            return $this->fail('The replacer must be in the same center.', 422);
+        }
+        if ($replacer->teacher_type !== $user->teacher_type && $replacer->teacher_type !== 'both') {
+            return $this->fail('The replacer must have the same type (or both).', 422);
+        }
+        if (Group::where('teacher_id', $replacer->id)->where('is_active', true)->exists()) {
+            return $this->fail('The replacer already owns an active group.', 422);
+        }
+
+        $moved = [];
+        DB::transaction(function () use ($user, $replacer, &$moved) {
+            $moved['groups'] = Group::where('teacher_id', $user->id)
+                ->where('is_active', true)->update(['teacher_id' => $replacer->id]);
+            Group::where('teacher_id', $user->id)->update(['teacher_id' => null]);
+            $moved['exams'] = $this->clearTransferableReferences($user->id, $replacer->id);
+            $moved['announcements'] = Announcement::where('author_id', $user->id)->delete();
+            $moved['tokens'] = $this->deleteTokens($user->id);
+            $user->delete();
+        });
+
+        return $this->ok(['replacer_id' => $replacer->id, 'moved' => $moved], 'Replaced and deleted.');
+    }
+
+    /** Counts of rows referencing the user (for the NEED_REPLACER dialog). */
+    private function referenceCounts(int $userId): array
+    {
+        return [
+            'exams' => Exam::where('examiner_id', $userId)->count(),
+            'entered_scores' => RevisionLog::where('entered_by', $userId)->count()
+                + MurajaaReview::where('entered_by', $userId)->count(),
+            'announcements' => Announcement::where('author_id', $userId)->count(),
+            'tokens' => DelegationToken::where('granter_teacher_id', $userId)
+                ->orWhere('used_by_teacher_id', $userId)->count(),
+        ];
+    }
+
+    /**
+     * Point nullable history references at $targetId (replacer) or NULL when
+     * there is no replacer. Returns the exams count for the moved summary.
+     */
+    private function clearTransferableReferences(int $userId, ?int $targetId): int
+    {
+        $exams = Exam::where('examiner_id', $userId)->update(['examiner_id' => $targetId]);
+        RevisionLog::where('entered_by', $userId)->update(['entered_by' => $targetId]);
+        MurajaaReview::where('entered_by', $userId)->update(['entered_by' => $targetId]);
+
+        return $exams;
+    }
+
+    private function deleteTokens(int $userId): int
+    {
+        return DelegationToken::where('granter_teacher_id', $userId)
+            ->orWhere('used_by_teacher_id', $userId)->delete();
     }
 }
