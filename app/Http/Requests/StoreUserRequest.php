@@ -24,6 +24,7 @@ class StoreUserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:30'],
             'center_id' => ['nullable', 'integer', 'exists:centers,id'],
             'teacher_type' => ['sometimes', Rule::enum(TeacherType::class)],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 }

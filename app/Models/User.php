@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 /**
@@ -18,12 +19,14 @@ use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 #[ScopedBy([CenterScope::class])]
 class User extends Authenticatable implements JWTSubject
 {
+    use HasFactory;
+
     protected $table = 'users';
 
     const UPDATED_AT = null;
 
     protected $fillable = [
-        'full_name', 'email', 'role', 'phone', 'center_id', 'teacher_type', 'is_active',
+        'full_name', 'email', 'role', 'phone', 'center_id', 'teacher_type', 'is_active', 'password_hash'
     ];
 
     protected $hidden = ['password_hash'];

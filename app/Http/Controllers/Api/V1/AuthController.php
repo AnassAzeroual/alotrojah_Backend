@@ -15,7 +15,8 @@ class AuthController extends Controller
 {
     public function login(LoginRequest $request): JsonResponse
     {
-        $credentials = $request->only('email', 'password');
+        // is_active is matched as a WHERE clause: deactivated accounts get the same generic 401.
+        $credentials = $request->only('email', 'password') + ['is_active' => true];
 
         if (! $token = Auth::guard('api')->attempt($credentials)) {
             return $this->fail('Invalid credentials.', 401);

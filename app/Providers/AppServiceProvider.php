@@ -64,7 +64,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // default v1 group limiter; stricter per-route throttles (login 6,1 etc.) stack on top
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });
 
         Gate::policy(Student::class, StudentPolicy::class);
