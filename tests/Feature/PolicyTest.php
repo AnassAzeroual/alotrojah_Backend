@@ -30,7 +30,7 @@ class PolicyTest extends TestCase
     public function test_teacher_is_scoped_to_own_center(): void
     {
         $this->actingAs(User::find(3), 'api');
-        $this->getJson('/api/v1/students')->assertOk()->assertJsonPath('data.meta.total', 3);
+        $this->getJson('/api/v1/students')->assertOk()->assertJsonPath('data.meta.total', 4); // 3 seed + 1 registration-test student kept
         // in tests the console skips CenterScope, so policy denies with 403
         // (live HTTP gives 404 via scoped binding — equally safe)
         $this->getJson('/api/v1/students/4')->assertForbidden();

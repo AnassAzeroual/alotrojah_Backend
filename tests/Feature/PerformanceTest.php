@@ -43,7 +43,7 @@ class PerformanceTest extends TestCase
     {
         $this->resetQueries();
         $r = $this->getJson('/api/v1/students', $this->auth());
-        $r->assertOk()->assertJsonPath('data.meta.total', 7);
+        $r->assertOk()->assertJsonPath('data.meta.total', 9); // 7 seed + 2 registration-test students kept (see Agent.md §6)
         $this->assertLessThanOrEqual(12, $this->queryCount, "N+1? {$this->queryCount} queries");
     }
 

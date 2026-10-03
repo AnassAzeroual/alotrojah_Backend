@@ -51,6 +51,8 @@ Route::prefix('v1')->group(function () {
         Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
         Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
+        Route::get('groups/stats', [GroupController::class, 'stats']);
+        Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
         Route::apiResource('students', StudentController::class);
 
