@@ -11,7 +11,7 @@
 ## 2. Locked tech
 - Backend Laravel 12 (API-only), PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_hash` column via `getAuthPassword()`, claims role/center_id/teacher_type). Swagger via Scramble (`/docs/api`, 65 paths; prod gated 403).
 - Frontend Angular 22 zoneless standalone (signals, `inject()`, `input()/output()/model()`, `@if/@for`, OnPush, lazy routes, typed forms), `@ngx-translate` ar(default,rtl)/fr/en, Chart.js thin wrapper, custom SCSS tokens (no component lib).
-- DB MySQL 8 `utf8mb4_unicode_ci`. Canonical: `docs/database/quran_memorization_db.sql` → `quran_seed_data.sql` → verify `quran_check_queries.sql`. Baseline schema = 9 Laravel migrations (`database/migrations`, commit 510d2c3) reproducing the dump exactly — 26 tables, named CHECKs, `idx_s12_*` indexes, 11 views; dev DB has them registered as batch 1. New schema changes → further Laravel migrations; dumps stay untouched. Prod (FTP-only, no SSH → artisan can never run there): schema came from the phpMyAdmin dump import; for each future migration run `php artisan migrate --pretend` on dev, copy the printed SQL, apply via phpMyAdmin — never touch prod's `migrations` table.
+- DB MySQL 8 `utf8mb4_unicode_ci`. Canonical: `docs/database/quran_memorization_db.sql` → `quran_seed_data.sql` → verify `quran_check_queries.sql`. Baseline schema = 9 Laravel migrations (`database/migrations`, commit 510d2c3) reproducing the dump — 26 tables (+ `registration_requests` from migration 10, added to the dump 2026-10-03 → 27), named CHECKs, `idx_s12_*` indexes, 11 views; dev DB has them registered as batch 1. New schema changes → further Laravel migrations; dumps stay untouched. Prod (FTP-only, no SSH → artisan can never run there): schema came from the phpMyAdmin dump import; for each future migration run `php artisan migrate --pretend` on dev, copy the printed SQL, apply via phpMyAdmin — never touch prod's `migrations` table.
 - `CACHE_STORE=file`, `QUEUE_CONNECTION=sync`, `SESSION_DRIVER=file`. No Redis/cron/paid WhatsApp (`wa.me` links only).
 
 ## 3. Pedagogy (do not re-ask; from questions.md meeting)
@@ -31,7 +31,7 @@
 - Final = `(avg_murajaa + avg_weekly + Σ term quiz avgs incl. final) / (2 + n_terms)` (6 terms → ÷8); from `v_student_season_avgs` + `v_term_quiz_avgs`; never hardcode.
 - Exams: flexible count, questions generatable from thumn/hizb start ayat, teacher/manager reorders.
 
-## 5. DB map (26 tables, 11 views) + invariants
+## 5. DB map (27 tables incl. `registration_requests`, 11 views) + invariants
 - People: `users` (roles admin/supervisor/teacher/student/board; examiner merged into teacher; id=1 global admin `center_id` NULL), `centers` (3, isolated), `levels` (L1/L2/L3), `groups`, `students`.
 - Calendar: `academic_seasons`, `terms`, `weeks`, `sessions`. Planning: `term_plans`, `weekly_goals`.
 - Facts (all carry `student+season+term+week+session+(log_)date` chain for GROUP BY/Chart.js): `scoring_modules`, `session_scores` (UNIQUE student×session×module), `memorization_logs` (amounts only, NO scores), `revision_logs`, `murajaa_reviews`, `attendance`.
@@ -62,4 +62,4 @@
 - Real student Excel pending → import script; paper دفتر totals only if manager provides; season live (fasl 1 ends ~3 weeks post-meeting).
 - Pre-prod: rotate dev passwords (`password123`), `APP_DEBUG=false`, `FRONTEND_URLS` exact, docs gated, CORS+login smoke.
 - Fix branch `fix/priority-review` (both repos) MERGED into `feature/registration` (current branch, 2026-10): center-scoped bySession + student-role score lists, delegation redeemer must be a teacher, 60/min default API throttle, `v_student_season_avgs` follows current season, migration baseline (§2); frontend: Chart.js tree-shake, shell interval fix, dashboard on live API data (no `DEMO_STUDENTS`).
-- Prod DB (`alotr15q_prod`) predates the `v_student_season_avgs` fix — patch SQL from `migrate --pretend` was handed over 2026-10-02 to apply via phpMyAdmin (prod has no artisan); application unconfirmed.
+- Prod DB (`alotr15q_prod`): patch `docs/database/prod_patch_2026-10-02.sql` APPLIED and verified 2026-10-03 (guardians removed, `v_student_season_avgs` follows current season, role ENUM shrunk, `registration_requests` created → 27 tables, matches dump).
