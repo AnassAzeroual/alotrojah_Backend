@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Resources\RegistrationRequestResource;
 use App\Http\Resources\UserResource;
+use App\Models\Group;
 use App\Models\RegistrationRequest;
 use App\Models\Student;
 use App\Models\User;
@@ -23,8 +24,10 @@ class RegistrationRequestController extends Controller
     }
 
     /**
-     * Copy the request into users (+ students row when role=student),
-     * then drop it from the waiting room.
+     * Copy the request into users (+ students row when role=student), optionally
+     * linking the new account to a group of the chosen center (teacher →
+     * groups.teacher_id, student → students.group_id), then drop it from the
+     * waiting room.
      */
     public function accept(Request $request, RegistrationRequest $registrationRequest): JsonResponse
     {
@@ -32,10 +35,24 @@ class RegistrationRequestController extends Controller
 
         $data = $request->validate([
             'center_id' => ['required', 'integer', 'exists:centers,id'],
+            'group_id' => ['nullable', 'integer', 'exists:groups,id'],
         ]);
         $centerId = (int) $data['center_id'];
+        $groupId = isset($data['group_id']) ? (int) $data['group_id'] : null;
 
-        $user = DB::transaction(function () use ($registrationRequest, $centerId) {
+        if ($groupId !== null) {
+            if (! in_array($registrationRequest->role, ['teacher', 'student'], true)) {
+                return $this->fail('Group assignment only applies to teachers and students.', 422);
+            }
+
+            $group = Group::findOrFail($groupId);
+
+            if ((int) $group->center_id !== $centerId) {
+                return $this->fail('Group belongs to another center.', 422);
+            }
+        }
+
+        $user = DB::transaction(function () use ($registrationRequest, $centerId, $groupId) {
             $user = new User([
                 'full_name' => $registrationRequest->full_name,
                 'email' => $registrationRequest->email,
@@ -52,6 +69,7 @@ class RegistrationRequestController extends Controller
                 Student::create([
                     'user_id' => $user->id,
                     'center_id' => $centerId,
+                    'group_id' => $groupId,
                     'full_name' => $registrationRequest->full_name,
                     'birth_date' => $registrationRequest->birth_date,
                     'gender' => $registrationRequest->gender,
@@ -59,6 +77,8 @@ class RegistrationRequestController extends Controller
                         && $registrationRequest->birth_date->diffInYears(now()) >= 18 ? 'adult' : 'child',
                     'enrollment_date' => now()->toDateString(),
                 ]);
+            } elseif ($groupId !== null) {
+                Group::whereKey($groupId)->update(['teacher_id' => $user->id]);
             }
 
             $registrationRequest->delete();

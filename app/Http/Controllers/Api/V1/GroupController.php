@@ -83,7 +83,16 @@ class GroupController extends Controller
 
     public function update(UpdateGroupRequest $request, Group $group): JsonResponse
     {
-        $group->update($request->validated());
+        $data = $request->validated();
+
+        if (! empty($data['teacher_id'])) {
+            $t = User::findOrFail($data['teacher_id']);
+            if ($t->role !== 'teacher' || (int) $t->center_id !== (int) $group->center_id) {
+                return $this->fail('Teacher must belong to the same center.', 422);
+            }
+        }
+
+        $group->update($data);
 
         return $this->ok(new GroupResource($group->fresh('teacher')));
     }

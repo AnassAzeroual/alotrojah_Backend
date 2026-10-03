@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Center;
+use App\Models\Group;
 use App\Models\RegistrationRequest;
 use App\Models\Student;
 use App\Models\User;
@@ -219,5 +221,112 @@ class RegistrationTest extends TestCase
         $this->postJson('/api/v1/auth/register', $this->payload([
             'role' => 'teacher', 'teacher_type' => 'hifz',
         ]))->assertCreated();
+    }
+
+    public function test_accept_teacher_with_group_assigns_group_teacher(): void
+    {
+        $group = Group::firstOrFail();
+
+        $request = RegistrationRequest::create([
+            'full_name' => 'Teacher G', 'email' => 'teacher-g@example.org',
+            'password_hash' => 'x', 'role' => 'teacher', 'phone' => '0612345678',
+        ]);
+
+        $this->actingAs(User::find(1), 'api')
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                'center_id' => (int) $group->center_id,
+                'group_id' => (int) $group->id,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.role', 'teacher')
+            ->assertJsonPath('data.center_id', (int) $group->center_id);
+
+        $user = User::where('email', 'teacher-g@example.org')->first();
+        $this->assertNotNull($user);
+        $this->assertSame((int) $user->id, (int) $group->fresh()->teacher_id);
+    }
+
+    public function test_accept_student_with_group_assigns_student_group(): void
+    {
+        $group = Group::firstOrFail();
+
+        $request = RegistrationRequest::create([
+            'full_name' => 'Student G', 'email' => 'student-g@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'phone' => '0612345678',
+            'birth_date' => '2015-05-10', 'gender' => 'female',
+        ]);
+
+        $this->actingAs(User::find(1), 'api')
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                'center_id' => (int) $group->center_id,
+                'group_id' => (int) $group->id,
+            ])
+            ->assertOk();
+
+        $student = Student::where('full_name', 'Student G')->first();
+        $this->assertNotNull($student);
+        $this->assertSame((int) $group->id, (int) $student->group_id);
+        $this->assertSame((int) $group->center_id, (int) $student->center_id);
+    }
+
+    public function test_accept_rejects_group_from_another_center(): void
+    {
+        $group = Group::firstOrFail();
+        $otherCenterId = (int) Center::where('id', '<>', $group->center_id)->firstOrFail()->id;
+
+        $request = RegistrationRequest::create([
+            'full_name' => 'Wrong Center', 'email' => 'wrong-center@example.org',
+            'password_hash' => 'x', 'role' => 'teacher', 'phone' => '0612345678',
+        ]);
+
+        $this->actingAs(User::find(1), 'api')
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                'center_id' => $otherCenterId,
+                'group_id' => (int) $group->id,
+            ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Group belongs to another center.');
+
+        $this->assertDatabaseHas('registration_requests', ['id' => $request->id]);
+        $this->assertDatabaseMissing('users', ['email' => 'wrong-center@example.org']);
+    }
+
+    public function test_accept_rejects_group_assignment_for_non_teaching_roles(): void
+    {
+        $group = Group::firstOrFail();
+
+        foreach (['supervisor', 'board'] as $role) {
+            $request = RegistrationRequest::create([
+                'full_name' => "Role {$role}", 'email' => "{$role}@example.org",
+                'password_hash' => 'x', 'role' => $role, 'phone' => '0612345678',
+            ]);
+
+            $this->actingAs(User::find(1), 'api')
+                ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                    'center_id' => (int) $group->center_id,
+                    'group_id' => (int) $group->id,
+                ])
+                ->assertStatus(422)
+                ->assertJsonPath('message', 'Group assignment only applies to teachers and students.');
+        }
+    }
+
+    public function test_accept_teacher_without_group_leaves_groups_untouched(): void
+    {
+        $group = Group::firstOrFail();
+        $teacherBefore = $group->teacher_id;
+
+        $request = RegistrationRequest::create([
+            'full_name' => 'Teacher NoGroup', 'email' => 'teacher-nogroup@example.org',
+            'password_hash' => 'x', 'role' => 'teacher', 'phone' => '0612345678',
+        ]);
+
+        $this->actingAs(User::find(1), 'api')
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                'center_id' => (int) $group->center_id,
+            ])
+            ->assertOk();
+
+        $this->assertSame($teacherBefore, $group->fresh()->teacher_id);
     }
 }

@@ -63,6 +63,13 @@ class StudentController extends Controller
         $data = $request->validated();
         unset($data['center_id']); // center never moves via update
 
+        if (! empty($data['group_id'])) {
+            $group = Group::findOrFail($data['group_id']);
+            if ((int) $group->center_id !== (int) $student->center_id) {
+                return $this->fail('Group belongs to another center.', 422);
+            }
+        }
+
         $student->update($data);
 
         return $this->ok(new StudentResource($student->fresh(['group'])));
