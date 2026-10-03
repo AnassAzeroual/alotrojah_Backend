@@ -29,6 +29,14 @@ class UserController extends Controller
         elseif ($request->filled('center_id')) $q->where('center_id', (int) $request->input('center_id'));
         if ($request->filled('role')) $q->where('role', $request->input('role'));
         if ($request->filled('q')) $q->where('full_name', 'like', '%'.$request->input('q').'%');
+        // Free teachers: no ACTIVE group assigned (inactive groups don't count).
+        if ($request->boolean('unassigned')) {
+            $q->whereNotExists(function ($sq) {
+                $sq->select(DB::raw(1))->from('groups')
+                    ->whereColumn('groups.teacher_id', 'users.id')
+                    ->where('groups.is_active', true);
+            });
+        }
 
         return $this->ok(UserResource::collection($q->paginate(20))->response()->getData(true));
     }
