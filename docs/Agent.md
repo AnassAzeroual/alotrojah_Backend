@@ -1,7 +1,7 @@
 # Agent.md — Project Reference (AlOtrojah Quran Memorization App)
 
 > Read this file first in any new session. It holds every decision made so far.
-> Details of the meeting live in `questions.md` (same folder). Compacted and verified against live repo state as of 2026-10-01.
+> Details of the meeting live in `questions.md` (same folder). Compacted and verified against live repo state as of 2026-10-03.
 
 ## 1. What / who / where
 - Non-profit Quran memorization association, Morocco. Digitizes paper logbook (البرنامج المقترح لحفظ القرآن الكريم — فئة غير المتفرغ). Ref: `https://ahlquran.com/`.
@@ -45,6 +45,8 @@
 - Envelope `{success,message,data}` (`ForceJsonResponse`); 63 unique endpoints (103 route rows) under `/api/v1` (auth, identity CRUD, attendance/scores bulk throttled 30/min, login 6/min, API group default 60/min, calendar, plans, modules, murajaa, exams, results, delegations, announcements, notifications, 4 dashboards, 2 reports).
 - Frontend: `ApiClient` unwraps envelope; typed `api-models.ts` (snake_case, no `any` past it); 17 domain services; JWT in localStorage, interceptor attaches Bearer except login with single-flight refresh; `roleGuard` roles+teacherTypes; envs dev `localhost:8000/api/v1` / prod `api.alotrojah.ma/api/v1`.
 - Tests: backend 26 tests/62 assertions (transaction-wrapped, `actingAs`, never two tokens); frontend Vitest 38 + Playwright e2e (reload-persistence regression). Pages thinly covered — e2e only guards visited pages.
+- Registration (added 2026-10, `feature/registration`): `registration_requests` table (Laravel migration) holds public signups; `POST /auth/register` (throttle 6/min, validated, dedup by email/phone); admin-only `GET /registration-requests` + `POST /registration-requests/{id}/accept` (creates the user) + `DELETE` (reject). Feature tests green. Frontend: register form at `/register` + admin approval page.
+- UI/branding (2026-10): register/login pages restyled to manager mockup — style-only SCSS work (`styles/_auth.scss`), inputs/logic untouched. New app logo: `public/assets/logo.jpg` (sidebar brand tile + regenerated 64x64 favicon); old logo still baked into the auth carousel photos (`public/assets/auth/slide-1.jpg`, `slide-2.jpg`) — needs new slide images to change. Verified by headless screenshots; register spec 10/10 + build green.
 - Gotchas kept: PowerShell pipe destroys Arabic (import via .NET UTF-8 + `SOURCE utf8mb4`, verify `HEX(name_ar)`); `redirectGuestsTo→null` for JSON 401s; `center_id` nullable in store rules (controller forces); `resource({params})` (ng22 `request` rename); never `inject()` inside `resource()` loaders (NG0203); stale `.angular` cache lies; validate hand-edited i18n JSON; `ar.json` duplicate keys risk; non-ASCII only via edit tool, never shell literals.
 
 ## 7. Deploy — backend (Heberjahiz shared, FTP-only)
@@ -59,4 +61,5 @@
 ## 8. Open (non-blocking)
 - Real student Excel pending → import script; paper دفتر totals only if manager provides; season live (fasl 1 ends ~3 weeks post-meeting).
 - Pre-prod: rotate dev passwords (`password123`), `APP_DEBUG=false`, `FRONTEND_URLS` exact, docs gated, CORS+login smoke.
-- Fix branch `fix/priority-review` (both repos, NOT merged to `main` yet): center-scoped bySession + student-role score lists, delegation redeemer must be a teacher, 60/min default API throttle, `v_student_season_avgs` follows current season, migration baseline (§2); frontend: Chart.js tree-shake, shell interval fix, dashboard on live API data (no `DEMO_STUDENTS`).
+- Fix branch `fix/priority-review` (both repos) MERGED into `feature/registration` (current branch, 2026-10): center-scoped bySession + student-role score lists, delegation redeemer must be a teacher, 60/min default API throttle, `v_student_season_avgs` follows current season, migration baseline (§2); frontend: Chart.js tree-shake, shell interval fix, dashboard on live API data (no `DEMO_STUDENTS`).
+- Prod DB (`alotr15q_prod`) predates the `v_student_season_avgs` fix — patch SQL from `migrate --pretend` was handed over 2026-10-02 to apply via phpMyAdmin (prod has no artisan); application unconfirmed.
