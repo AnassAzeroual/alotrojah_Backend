@@ -21,6 +21,7 @@ class UserController extends Controller
         if ($me->role !== 'admin') $q->forCenter((int) $me->center_id);
         elseif ($request->filled('center_id')) $q->where('center_id', (int) $request->input('center_id'));
         if ($request->filled('role')) $q->where('role', $request->input('role'));
+        if ($request->filled('q')) $q->where('full_name', 'like', '%'.$request->input('q').'%');
 
         return $this->ok(UserResource::collection($q->paginate(20))->response()->getData(true));
     }

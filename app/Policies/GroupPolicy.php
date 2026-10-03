@@ -20,6 +20,11 @@ class GroupPolicy
         return $this->sameCenter($user, $group->center_id);
     }
 
+    public function create(User $user): bool
+    {
+        return in_array($user->role, ['admin', 'supervisor'], true);
+    }
+
     public function update(User $user, Group $group): bool
     {
         return in_array($user->role, ['admin', 'supervisor'], true)
