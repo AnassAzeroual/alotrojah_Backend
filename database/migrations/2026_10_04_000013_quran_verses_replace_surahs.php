@@ -51,12 +51,17 @@ return new class extends Migration
             throw new RuntimeException('Item 11: expected 114 surahs, got '.$names->count());
         }
 
-        $path = base_path('../quran-simple.sql');
+        // Verse source: repo-local copy first (fresh clones + CI), legacy
+        // sibling-of-backend path as fallback (original checkout layout).
+        $path = database_path('data/quran-simple.sql');
+        if (! is_file($path)) {
+            $path = base_path('../quran-simple.sql');
+        }
         if (! is_file($path)) {
             $path = dirname(base_path()).DIRECTORY_SEPARATOR.'quran-simple.sql';
         }
         if (! is_file($path)) {
-            throw new RuntimeException('Item 11: quran-simple.sql not found next to the backend checkout.');
+            throw new RuntimeException('Item 11: quran-simple.sql not found (looked in database/data/).');
         }
         $sql = file_get_contents($path);
         if ($sql === false || $sql === '') {

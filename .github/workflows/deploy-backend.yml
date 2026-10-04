@@ -39,6 +39,27 @@ jobs:
           mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_memorization_db.sql
           mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_seed_data.sql
 
+      # The dumps predate the newest migrations — bring the schema up to date
+      # (exam weights, reference data, quran_verses) the same way prod does.
+      # --path is required: with no ledger table a bare migrate would replay
+      # all 13 over existing tables. When adding migration 000014+, append its
+      # --path here (proven locally: full suite 90/90 on dump+seed+this step).
+      - name: Run pending migrations
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: quran_memorization
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          APP_KEY: base64:Re+ogP++t/UajqAFUxiFgvg9IkJo2AiZMl5+rV3inu4=
+        run: >
+          php artisan migrate --force
+          --path=database/migrations/2026_10_04_000011_exam_question_weights.php
+          --path=database/migrations/2026_10_04_000012_seed_reference_data.php
+          --path=database/migrations/2026_10_04_000013_quran_verses_replace_surahs.php
+
       - name: Run test suite
         env:
           APP_ENV: testing
