@@ -153,6 +153,7 @@ class ExamQuestionController extends Controller
         $total = round((float) $exam->questions()->sum('max_score'), 2);
         if (abs($total - 20) > 0.009) {
             throw ValidationException::withMessages([
+                'code' => 'WEIGHTS_TOTAL',
                 'weights' => "Weights must total 20 (got $total).",
             ]);
         }
