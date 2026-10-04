@@ -30,6 +30,8 @@ class StudentController extends Controller
             if ($request->filled($f)) $q->where($f, $request->input($f));
         }
         if ($request->filled('q')) $q->where('full_name', 'like', '%'.$request->input('q').'%');
+        // Pupils with no group assigned.
+        if ($request->boolean('unassigned')) $q->whereNull('group_id');
 
         return $this->ok(StudentResource::collection($q->paginate(20))->response()->getData(true));
     }

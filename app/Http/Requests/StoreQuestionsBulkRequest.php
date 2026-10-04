@@ -26,6 +26,7 @@ class StoreQuestionsBulkRequest extends FormRequest
             'questions.*.ayah_to' => ['nullable', 'integer', 'min:1'],
             'questions.*.sort_order' => ['sometimes', 'integer', 'min:0'],
             'questions.*.model_type' => ['sometimes', Rule::enum(QuestionModel::class)],
+            'questions.*.max_score' => ['required', 'numeric', 'min:0.01', 'max:20'],
             'questions.*.score' => ['nullable', 'numeric', 'min:0', 'max:20'],
             'questions.*.notes' => ['nullable', 'string', 'max:500'],
         ];

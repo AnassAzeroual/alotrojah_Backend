@@ -96,6 +96,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('revision-logs/{revisionLog}', [MurajaaController::class, 'destroyLog']);
         Route::apiResource('exams', ExamController::class);
         Route::post('exams/{exam}/questions', [ExamQuestionController::class, 'bulk']);
+        Route::put('exams/{exam}/question-weights', [ExamQuestionController::class, 'reweight']);
         Route::apiResource('exam-questions', ExamQuestionController::class)->only(['show', 'update', 'destroy']);
         Route::get('term-results', [ResultController::class, 'indexTerms']);
         Route::put('term-results', [ResultController::class, 'upsertTerm']);

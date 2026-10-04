@@ -67,9 +67,11 @@ class ScoringService
         if ($avgs['avg_murajaa'] === null || $avgs['avg_weekly'] === null) return null;
 
         $quizzes = Exam::where('student_id', $studentId)->where('season_id', $seasonId)
-            ->whereIn('exam_type', ['term_batch', 'final_season'])
-            ->withAvg('questions as qavg', 'score')->get()
-            ->pluck('qavg')->filter(fn ($v) => $v !== null)->values();
+            ->whereIn('exam_type', ['term_batch', 'final_season'])->get()
+            ->map(fn ($e) => $e->questions()->whereNotNull('score')->exists()
+                ? round((float) $e->questions()->whereNotNull('score')->sum('score'), 2)
+                : null)
+            ->filter(fn ($v) => $v !== null)->values();
         if ($quizzes->isEmpty()) return null;
 
         $n = $quizzes->count();
