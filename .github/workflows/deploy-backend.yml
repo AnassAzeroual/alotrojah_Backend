@@ -154,14 +154,23 @@ jobs:
           rm -f ~/.netrc deploy_script/deploy.stamped.php
 
       # 6. Trigger the server-side extractor over HTTPS (PHP unzips in seconds).
-      - name: Trigger server-side extract
+      #    &action=migrate boots the fresh release and runs pending migrations;
+      #    the JSON (incl. migrate output) is logged AND kept as a workflow artifact.
+      - name: Trigger server-side extract + migrate
         env:
           DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
           set -euo pipefail
-          RESP=$(curl -s --max-time 300 "https://api.alotrojah.ma/deploy.php?token=${DEPLOY_TOKEN}")
-          echo "extractor response: $RESP"
+          RESP=$(curl -s --max-time 590 "https://api.alotrojah.ma/deploy.php?token=${DEPLOY_TOKEN}&action=migrate")
+          echo "$RESP" | tee deploy.log
           echo "$RESP" | grep -q '"ok":true'
+
+      - name: Keep deploy log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-log
+          path: deploy.log
 
       # 7. Verify production is healthy.
       - name: Verify production

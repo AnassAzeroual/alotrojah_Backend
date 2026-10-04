@@ -22,6 +22,17 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Resume-guard: if a previous run was killed after the work but
+        // before the ledger write (e.g. HTTP timeout on web-triggered
+        // migrate), re-running must be a harmless no-op, not a crash.
+        if (
+            ! Schema::hasTable('surahs')
+            && Schema::hasTable('quran_verses')
+            && DB::table('quran_verses')->count() === 6236
+        ) {
+            return;
+        }
+
         Schema::create('quran_verses', function (Blueprint $table) {
             $table->charset = 'utf8mb4';
             $table->collation = 'utf8mb4_unicode_ci';
