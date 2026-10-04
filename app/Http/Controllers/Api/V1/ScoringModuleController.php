@@ -7,6 +7,7 @@ use App\Http\Requests\StoreModuleRequest;
 use App\Http\Requests\UpdateModuleRequest;
 use App\Http\Resources\ScoringModuleResource;
 use App\Models\ScoringModule;
+use App\Models\SessionScore;
 use App\Services\ScoringService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -79,5 +80,16 @@ class ScoringModuleController extends Controller
         $this->authorize('viewAny', ScoringModule::class);
 
         return $this->ok($scoring->scoringCheck());
+    }
+
+    public function destroy(ScoringModule $scoringModule): JsonResponse
+    {
+        $this->authorize('delete', $scoringModule);
+        if (SessionScore::where('module_id', $scoringModule->id)->exists()) {
+            return $this->fail('Module has recorded scores and cannot be deleted.', 422);
+        }
+        $scoringModule->delete();
+
+        return $this->ok(null, 'Deleted.');
     }
 }

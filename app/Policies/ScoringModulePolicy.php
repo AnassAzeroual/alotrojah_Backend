@@ -6,7 +6,7 @@ use App\Models\ScoringModule;
 use App\Models\User;
 use App\Policies\Concerns\CenterScoped;
 
-/** Manager-only page (admin + supervisor). Teachers read via scoring-check. */
+/** Admin-only writes (Item 10). Teachers read via scoring-check. */
 class ScoringModulePolicy
 {
     use CenterScoped;
@@ -23,6 +23,11 @@ class ScoringModulePolicy
 
     public function manage(User $user): bool
     {
-        return in_array($user->role, ['admin', 'supervisor'], true);
+        return $this->isAdmin($user);
+    }
+
+    public function delete(User $user, ScoringModule $module): bool
+    {
+        return $this->isAdmin($user);
     }
 }

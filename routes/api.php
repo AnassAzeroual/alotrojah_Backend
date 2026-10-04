@@ -81,7 +81,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('term-plans', TermPlanController::class)->only(['index', 'show', 'destroy']);
         Route::put('scoring-modules', [ScoringModuleController::class, 'bulk']);
         Route::get('scoring-check', [ScoringModuleController::class, 'scoringCheck']);
-        Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update']);
+        Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('reference/levels', [ReferenceController::class, 'levels']);
         Route::get('reference/surahs', [ReferenceController::class, 'surahs']);
 

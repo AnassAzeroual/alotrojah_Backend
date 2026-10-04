@@ -34,6 +34,7 @@ abstract class Controller extends BaseController
         'Score exceeds the question weight.' => 'SCORE_OVER_MAX',
         'Weights must total 20' => 'WEIGHTS_TOTAL',
         'Season has recorded facts and cannot be deleted.' => 'SEASON_HAS_FACTS',
+        'Module has recorded scores and cannot be deleted.' => 'MODULE_HAS_SCORES',
         'A term is required for this exam type.' => 'TERM_REQUIRED',
         'Review must cover 1 to 3 weeks.' => 'SPAN_INVALID',
         'End hizb must be >= start hizb.' => 'RANGE_INVALID',
