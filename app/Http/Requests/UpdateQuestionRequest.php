@@ -18,7 +18,7 @@ class UpdateQuestionRequest extends FormRequest
         return [
             'prompt_text' => ['sometimes', 'nullable', 'string', 'max:500'],
             'hizb_ref' => ['sometimes', 'nullable', 'numeric', 'between:1,60'],
-            'surah_ref' => ['sometimes', 'nullable', 'integer', 'exists:surahs,id'],
+            'surah_ref' => ['sometimes', 'nullable', 'integer', 'exists:quran_verses,sura_no'],
             'ayah_from' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'ayah_to' => ['sometimes', 'nullable', 'integer', 'min:1'],
             'sort_order' => ['sometimes', 'integer', 'min:0'],

@@ -4,6 +4,11 @@ Quran-memorization management API for a Moroccan non-profit association.
 Full context: `docs/Agent.md` (read first), meeting notes: `docs/questions.md`,
 schema + seed + checks: `docs/database/`.
 
+Quran text: `quran_verses` ships the Tanzil Quran Text (Simple, v1.1),
+Copyright (C) 2007-2026 Tanzil Project, under Creative Commons
+Attribution 3.0 — source: https://tanzil.net. Machine-imported from the
+read-only `quran-simple.sql` dump (never hand-typed).
+
 ## Prerequisites
 
 | Tool | Version | Install (Windows) |

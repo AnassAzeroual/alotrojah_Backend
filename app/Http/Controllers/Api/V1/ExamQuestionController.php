@@ -8,7 +8,7 @@ use App\Http\Resources\ExamQuestionResource;
 use App\Http\Resources\ExamResource;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
-use App\Models\Surah;
+use App\Models\QuranVerse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,8 +21,10 @@ class ExamQuestionController extends Controller
     {
         // preload taken numbers: one query, not one per row
         $taken = $exam->questions()->pluck('question_no')->all();
-        $surahMax = Surah::whereIn('id', collect($request->input('questions'))->pluck('surah_ref')->filter()->unique()->all())
-            ->pluck('ayahs_count', 'id');
+        $surahMax = QuranVerse::whereIn('sura_no', collect($request->input('questions'))->pluck('surah_ref')->filter()->unique()->all())
+            ->groupBy('sura_no')
+            ->selectRaw('sura_no, MAX(ayah_no) as m')
+            ->pluck('m', 'sura_no');
         $errors = [];
         foreach ($request->input('questions') as $i => $row) {
             if (in_array($row['question_no'], $taken, true)) {
