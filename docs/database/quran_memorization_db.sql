@@ -9,6 +9,7 @@
 --  (manager adds books like السراج without code changes).
 -- Default template: 6 terms x 7 weeks (6 study + 1 review) = 42 weeks,
 --  editable rows (manager can do 4+1 etc). Template button lives in UI.
+-- Updated 2026-10-03: + registration_requests (27 tables, 11 views).
 -- ============================================================
 
 -- CREATE DATABASE IF NOT EXISTS `quran_memorization`
@@ -475,6 +476,25 @@ CREATE TABLE IF NOT EXISTS `quran_hizb_reference` (
   `juz_no` TINYINT UNSIGNED NOT NULL,
   `label_ar` VARCHAR(50) NOT NULL,
   PRIMARY KEY (`hizb_no`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ================= H. SELF-REGISTRATION (migration 2026_10_02_000010) =================
+-- Waiting room for public signups. Accept copies the row into users (+students),
+-- reject deletes it. Staging table: no FKs, never center-scoped (admin-only).
+CREATE TABLE IF NOT EXISTS `registration_requests` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `full_name` VARCHAR(150) NOT NULL,
+  `email` VARCHAR(150) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `role` ENUM('supervisor','teacher','student','board') NOT NULL DEFAULT 'teacher',
+  `teacher_type` ENUM('hifz','murajaa','both') NOT NULL DEFAULT 'both',
+  `phone` VARCHAR(30) NULL,
+  `birth_date` DATE NULL,
+  `gender` ENUM('male','female') NULL,
+  `requested_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_regrequests_email` (`email`),
+  KEY `idx_regrequests_role` (`role`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 SET FOREIGN_KEY_CHECKS = 1;

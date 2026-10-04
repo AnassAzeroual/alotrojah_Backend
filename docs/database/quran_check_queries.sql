@@ -88,9 +88,9 @@ ORDER BY sc.session_id, mo.sort_order;
 
 -- B4c. surah-mode logs (students 3+6: Baqarah + Nas)
 SELECT m.student_id, s.full_name, m.session_id, m.surah_from, m.ayah_from, m.surah_to, m.ayah_to,
-  su.name_ar AS surah_name
+  su.surah_name
 FROM memorization_logs m JOIN students s ON s.id=m.student_id
-LEFT JOIN surahs su ON su.id=m.surah_from
+LEFT JOIN (SELECT DISTINCT sura_no, surah_name FROM quran_verses) su ON su.sura_no=m.surah_from
 WHERE m.log_mode='surah' ORDER BY m.student_id, m.session_id;
 
 -- B5. page: جدول المواظبة (student 1, sessions 1-21 = term 1 now)

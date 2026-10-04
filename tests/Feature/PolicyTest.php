@@ -30,7 +30,9 @@ class PolicyTest extends TestCase
     public function test_teacher_is_scoped_to_own_center(): void
     {
         $this->actingAs(User::find(3), 'api');
-        $this->getJson('/api/v1/students')->assertOk()->assertJsonPath('data.meta.total', 3);
+        // count from the shared dev DB rather than hardcoding — the seed drifts
+        $expected = DB::table('students')->where('center_id', 1)->count();
+        $this->getJson('/api/v1/students')->assertOk()->assertJsonPath('data.meta.total', $expected);
         // in tests the console skips CenterScope, so policy denies with 403
         // (live HTTP gives 404 via scoped binding — equally safe)
         $this->getJson('/api/v1/students/4')->assertForbidden();
@@ -119,5 +121,40 @@ class PolicyTest extends TestCase
         DB::table('students')->where('id', 2)->update(['user_id' => $u->id]);
         $r = $this->actingAs($u, 'api')->getJson('/api/v1/sessions/1/scores')->assertOk();
         $this->assertEquals([2], collect($r->json('data'))->pluck('student_id')->all());
+    }
+
+    public function test_users_index_filters_by_name_query(): void
+    {
+        $this->actingAs(User::find(1), 'api'); // admin sees all centers
+        $r = $this->getJson('/api/v1/users?q=zzz-no-such-name')->assertOk();
+        $this->assertEquals(0, $r->json('data.meta.total'));
+        $known = User::find(3)->full_name;
+        $r = $this->getJson('/api/v1/users?q='.urlencode(mb_substr($known, 0, 4)))->assertOk();
+        $this->assertGreaterThanOrEqual(1, $r->json('data.meta.total'));
+    }
+
+    public function test_supervisor_creates_group_forced_to_own_center(): void
+    {
+        $r = $this->actingAs(User::find(2), 'api') // supervisor, center 1
+            ->postJson('/api/v1/groups', [
+                'name' => 'Policy Test Group', 'center_id' => 2, 'level_id' => 1, // tries center 2
+            ])->assertStatus(201);
+        $this->assertEquals(1, $r->json('data.center_id'));
+        $this->assertDatabaseHas('groups', ['name' => 'Policy Test Group', 'center_id' => 1]);
+    }
+
+    public function test_teacher_cannot_create_group(): void
+    {
+        $this->actingAs(User::find(3), 'api')
+            ->postJson('/api/v1/groups', ['name' => 'X', 'center_id' => 1, 'level_id' => 1])
+            ->assertForbidden();
+    }
+
+    public function test_admin_cannot_assign_other_center_teacher_to_new_group(): void
+    {
+        $this->actingAs(User::find(1), 'api') // admin, center NULL
+            ->postJson('/api/v1/groups', [
+                'name' => 'Bad Teacher Group', 'center_id' => 1, 'level_id' => 1, 'teacher_id' => 7, // teacher of center 2
+            ])->assertStatus(422);
     }
 }

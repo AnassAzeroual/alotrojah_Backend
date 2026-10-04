@@ -14,7 +14,12 @@ declare(strict_types=1);
 //   3. Extract the new backend.zip into api/. Files present in the zip
 //      overwrite; files only on disk survive. storage/app therefore merges:
 //      old uploads stay, new skeleton files (.gitignore) are added.
-//   4. Recreate runtime dirs (framework cache/sessions/views, logs,
+//   4. Optional `&action=migrate`: boot the fresh app and run
+//      `artisan migrate --force` (prod .env ships inside the zip, so the DB
+//      is localhost — no remote MySQL needed). Output is persisted to
+//      storage/logs/migrate-<stamp>.log (that dir survives purges) AND
+//      returned in the JSON response for the workflow log.
+//   5. Recreate runtime dirs (framework cache/sessions/views, logs,
 //      bootstrap/cache), reset opcache, remove backend.zip, self-delete.
 
 define('DEPLOY_TOKEN', '__DEPLOY_TOKEN__');
@@ -116,7 +121,31 @@ if (!$zip->extractTo($dest)) {
 $zip->close();
 
 // -------------------------------------------------------------------------- //
-// 3. Recreate runtime dirs, reset opcache, clean up.
+// 3. Optional migrate (only with &action=migrate). Boots the FRESH code so
+//    pending migrations run against the release that needs them.
+// -------------------------------------------------------------------------- //
+$migrateOk = null;
+$migrateLog = null;
+if (($_GET['action'] ?? '') === 'migrate') {
+    try {
+        require $dest . '/vendor/autoload.php';
+        $app = require $dest . '/bootstrap/app.php';
+        $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+        $code = Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+        $migrateLog = Illuminate\Support\Facades\Artisan::output();
+        $migrateOk = $code === 0;
+    } catch (Throwable $e) {
+        $migrateOk = false;
+        $migrateLog = get_class($e) . ': ' . $e->getMessage();
+    }
+    @file_put_contents(
+        $dest . '/storage/logs/migrate-' . date('Ymd-His') . '.log',
+        $migrateLog ?? '(no output)'
+    );
+}
+
+// -------------------------------------------------------------------------- //
+// 4. Recreate runtime dirs, reset opcache, clean up.
 // -------------------------------------------------------------------------- //
 @mkdir($dest . '/storage/app/public', 0755, true);
 @mkdir($dest . '/storage/framework/cache/data', 0755, true);
@@ -129,5 +158,16 @@ if (function_exists('opcache_reset')) { @opcache_reset(); }
 @unlink($newZip);
 // Self-delete so the token-bearing extractor does not linger publicly.
 @unlink(__FILE__);
+$extractorGone = !file_exists(__FILE__);
 
-echo json_encode(['ok' => true, 'files' => $count, 'storage_app' => 'preserved']);
+$ok = ($migrateOk === null || $migrateOk) && $extractorGone;
+if (!$ok) {
+    http_response_code(500);
+}
+echo json_encode([
+    'ok' => $ok,
+    'files' => $count,
+    'migrate' => $migrateLog,
+    'extractor_deleted' => $extractorGone,
+    'storage_app' => 'preserved',
+]);

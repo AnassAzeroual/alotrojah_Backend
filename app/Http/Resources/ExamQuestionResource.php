@@ -15,6 +15,7 @@ class ExamQuestionResource extends JsonResource
             'hizb_ref' => $this->hizb_ref !== null ? (float) $this->hizb_ref : null,
             'surah_ref' => $this->surah_ref, 'ayah_from' => $this->ayah_from, 'ayah_to' => $this->ayah_to,
             'sort_order' => $this->sort_order, 'model_type' => $this->model_type,
+            'max_score' => $this->max_score !== null ? (float) $this->max_score : null,
             'score' => $this->score !== null ? (float) $this->score : null,
             'notes' => $this->notes,
         ];

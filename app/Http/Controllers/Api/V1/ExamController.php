@@ -59,7 +59,20 @@ class ExamController extends Controller
 
     public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
     {
-        $exam->update($request->validated());
+        $data = $request->validated();
+        // Same term/season derivation as store: final exams carry no term,
+        // other types derive their season from the term.
+        $type = $data['exam_type'] ?? $exam->exam_type;
+        if ($type === 'final_season') {
+            $data['term_id'] = null;
+        } else {
+            $termId = $data['term_id'] ?? $exam->term_id;
+            if ($termId === null) {
+                return $this->fail('A term is required for this exam type.', 422);
+            }
+            $data['season_id'] = Term::findOrFail($termId)->season_id;
+        }
+        $exam->update($data);
 
         return $this->ok(new ExamResource($exam->fresh('questions')));
     }

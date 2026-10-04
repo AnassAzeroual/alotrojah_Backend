@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\V1\ExamQuestionController;
 use App\Http\Controllers\Api\V1\MurajaaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ReferenceController;
+use App\Http\Controllers\Api\V1\RegistrationRequestController;
 use App\Http\Controllers\Api\V1\ReportController;
 use App\Http\Controllers\Api\V1\ResultController;
 use App\Http\Controllers\Api\V1\ScoreController;
@@ -34,7 +35,8 @@ Route::prefix('v1')->group(function () {
     Route::get('health', fn () => response()->json(['success' => true, 'data' => ['status' => 'ok']]));
 
     Route::prefix('auth')->group(function () {
-        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:6,1');
+        Route::post('login', [AuthController::class, 'login'])->middleware('throttle:60,1');
+        Route::post('register', [AuthController::class, 'register'])->middleware('throttle:60,1');
         Route::middleware('auth:api')->group(function () {
             Route::get('me', [AuthController::class, 'me']);
             Route::post('refresh', [AuthController::class, 'refresh']);
@@ -44,8 +46,14 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth:api')->group(function () {
         // S6 identity
+        Route::post('users/{user}/replace', [UserController::class, 'replace']);
         Route::apiResource('users', UserController::class);
+        Route::get('registration-requests', [RegistrationRequestController::class, 'index']);
+        Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
+        Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
+        Route::get('groups/stats', [GroupController::class, 'stats']);
+        Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
         Route::apiResource('students', StudentController::class);
 
@@ -73,10 +81,9 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('term-plans', TermPlanController::class)->only(['index', 'show', 'destroy']);
         Route::put('scoring-modules', [ScoringModuleController::class, 'bulk']);
         Route::get('scoring-check', [ScoringModuleController::class, 'scoringCheck']);
-        Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update']);
+        Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('reference/levels', [ReferenceController::class, 'levels']);
         Route::get('reference/surahs', [ReferenceController::class, 'surahs']);
-        Route::get('reference/hizb', [ReferenceController::class, 'hizb']);
 
         // S9 reviews + exams + results + delegation
         Route::get('murajaa-reviews', [MurajaaController::class, 'indexReviews']);
@@ -89,6 +96,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('revision-logs/{revisionLog}', [MurajaaController::class, 'destroyLog']);
         Route::apiResource('exams', ExamController::class);
         Route::post('exams/{exam}/questions', [ExamQuestionController::class, 'bulk']);
+        Route::put('exams/{exam}/question-weights', [ExamQuestionController::class, 'reweight']);
         Route::apiResource('exam-questions', ExamQuestionController::class)->only(['show', 'update', 'destroy']);
         Route::get('term-results', [ResultController::class, 'indexTerms']);
         Route::put('term-results', [ResultController::class, 'upsertTerm']);

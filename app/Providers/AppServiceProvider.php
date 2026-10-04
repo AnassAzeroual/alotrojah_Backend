@@ -11,6 +11,7 @@ use App\Models\Exam;
 use App\Models\Group;
 use App\Models\MurajaaReview;
 use App\Models\NotificationLog;
+use App\Models\RegistrationRequest;
 use App\Models\RevisionLog;
 use App\Models\ScoringModule;
 use App\Models\SeasonResult;
@@ -31,6 +32,7 @@ use App\Policies\ExamPolicy;
 use App\Policies\GroupPolicy;
 use App\Policies\MurajaaPolicy;
 use App\Policies\NotificationPolicy;
+use App\Policies\RegistrationRequestPolicy;
 use App\Policies\ResultPolicy;
 use App\Policies\ScoringModulePolicy;
 use App\Policies\SeasonPolicy;
@@ -62,13 +64,14 @@ class AppServiceProvider extends ServiceProvider
     {
         // default v1 group limiter; stricter per-route throttles (login 6,1 etc.) stack on top
         RateLimiter::for('api', function (Request $request) {
-            return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });
 
         Gate::policy(Student::class, StudentPolicy::class);
         Gate::policy(Group::class, GroupPolicy::class);
         Gate::policy(Center::class, CenterPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(RegistrationRequest::class, RegistrationRequestPolicy::class);
         Gate::policy(Attendance::class, AttendancePolicy::class);
         Gate::policy(SessionScore::class, SessionScorePolicy::class);
         Gate::policy(WeeklyGoal::class, WeeklyGoalPolicy::class);

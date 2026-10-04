@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\UpsertTermPlanRequest;
 use App\Http\Resources\TermPlanResource;
 use App\Models\Student;
-use App\Models\Surah;
+use App\Models\QuranVerse;
 use App\Models\Term;
 use App\Models\TermPlan;
 use Illuminate\Http\JsonResponse;
@@ -81,7 +81,7 @@ class TermPlanController extends Controller
     {
         foreach ([['plan_surah_from', 'plan_ayah_from'], ['plan_surah_to', 'plan_ayah_to']] as [$ss, $aa]) {
             if ($d[$ss] === null || $d[$aa] === null) return 'Surah range needs surah + ayah on both ends.';
-            $max = (int) Surah::where('id', $d[$ss])->value('ayahs_count');
+            $max = (int) QuranVerse::where('sura_no', $d[$ss])->max('ayah_no');
             if ($d[$aa] < 1 || $d[$aa] > $max) return "Ayah out of range for surah {$d[$ss]} (1-$max).";
         }
         $a = [$d['plan_surah_from'], $d['plan_ayah_from']];

@@ -43,7 +43,9 @@ class PerformanceTest extends TestCase
     {
         $this->resetQueries();
         $r = $this->getJson('/api/v1/students', $this->auth());
-        $r->assertOk()->assertJsonPath('data.meta.total', 7);
+        // Admin sees the whole students table; the shared dev DB grows over
+        // time (e2e/registration flows), so assert against its live count.
+        $r->assertOk()->assertJsonPath('data.meta.total', DB::table('students')->count());
         $this->assertLessThanOrEqual(12, $this->queryCount, "N+1? {$this->queryCount} queries");
     }
 

@@ -16,10 +16,20 @@
 -- If SHOW TABLES LIKE 'guardians' returns NOTHING, only run STEP 2.
 
 -- STEP 1 — remove guardians structure (order matters: FK before table)
-ALTER TABLE `students` DROP FOREIGN KEY `fk_students_guardian`;
+-- Prod's FK name may differ from dev's (error #1091 on `fk_students_guardian`).
+-- Run this FIRST to get the real name(s) and which pieces still exist:
+--   SELECT CONSTRAINT_NAME, TABLE_NAME, COLUMN_NAME, REFERENCED_TABLE_NAME
+--     FROM information_schema.KEY_COLUMN_USAGE
+--    WHERE TABLE_SCHEMA = DATABASE()
+--      AND (COLUMN_NAME = 'guardian_id' OR REFERENCED_TABLE_NAME = 'guardians');
+--   SHOW COLUMNS FROM students LIKE 'guardian_id';
+--   SHOW COLUMNS FROM term_results LIKE 'guardian_notes';
+-- Then replace <FK_NAME> below with the CONSTRAINT_NAME returned.
+-- Skip any line whose column/table no longer exists (empty result = already done).
+ALTER TABLE `students` DROP FOREIGN KEY `<FK_NAME>`;
 ALTER TABLE `students` DROP COLUMN `guardian_id`;
 ALTER TABLE `term_results` DROP COLUMN `guardian_notes`;
-DROP TABLE `guardians`;
+DROP TABLE IF EXISTS `guardians`;
 
 -- STEP 2 — view fix: follow the CURRENT season, not hardcoded id 1
 CREATE OR REPLACE VIEW `v_student_season_avgs` AS
@@ -41,10 +51,28 @@ ALTER TABLE `users`
   MODIFY `role` ENUM('admin','supervisor','teacher','student','board')
   NOT NULL DEFAULT 'teacher';
 
--- STEP 5 — verify afterwards (expect):
+-- STEP 5 — registration feature (migration 2026_10_02_000010)
+-- Skip if SHOW TABLES LIKE 'registration_requests' already returns a row.
+CREATE TABLE IF NOT EXISTS `registration_requests` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `full_name` VARCHAR(150) NOT NULL,
+  `email` VARCHAR(150) NOT NULL,
+  `password_hash` VARCHAR(255) NOT NULL,
+  `role` ENUM('supervisor','teacher','student','board') NOT NULL DEFAULT 'teacher',
+  `teacher_type` ENUM('hifz','murajaa','both') NOT NULL DEFAULT 'both',
+  `phone` VARCHAR(30) NULL,
+  `birth_date` DATE NULL,
+  `gender` ENUM('male','female') NULL,
+  `requested_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_regrequests_email` (`email`),
+  KEY `idx_regrequests_role` (`role`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- STEP 6 — verify afterwards (expect):
 --   SHOW TABLES LIKE 'guardians';                          -> empty
 --   SELECT role, COUNT(*) FROM users GROUP BY role;        -> no 'guardian'
 --   SELECT COUNT(*) FROM information_schema.tables
 --     WHERE table_schema = DATABASE()
---       AND table_type = 'BASE TABLE';                     -> 26
+--       AND table_type = 'BASE TABLE';                     -> 27
 --   SELECT * FROM v_student_season_avgs;                   -> rows with real averages
