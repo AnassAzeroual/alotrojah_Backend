@@ -84,7 +84,6 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update']);
         Route::get('reference/levels', [ReferenceController::class, 'levels']);
         Route::get('reference/surahs', [ReferenceController::class, 'surahs']);
-        Route::get('reference/hizb', [ReferenceController::class, 'hizb']);
 
         // S9 reviews + exams + results + delegation
         Route::get('murajaa-reviews', [MurajaaController::class, 'indexReviews']);
