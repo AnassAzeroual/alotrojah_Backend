@@ -48,4 +48,16 @@ class UserCenterRequiredTest extends TestCase
         $this->postJson('/api/v1/users', $this->payload('admin', null))
             ->assertCreated()->assertJsonPath('data.center_id', null);
     }
+
+    public function test_supervisor_create_defaults_to_own_center(): void
+    {
+        // The supervisor never sees the center field — the request carries no
+        // center_id, yet must not 422 (prepareForValidation defaults it).
+        $sup = User::find(2);
+        $this->actingAs($sup, 'api');
+        $this->postJson('/api/v1/users', [
+            'full_name' => 'Sup Created', 'email' => 'sup-created@example.org',
+            'password' => 'password123', 'role' => 'teacher', 'teacher_type' => 'hifz',
+        ])->assertCreated()->assertJsonPath('data.center_id', $sup->center_id);
+    }
 }

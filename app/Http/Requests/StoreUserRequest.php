@@ -14,6 +14,16 @@ class StoreUserRequest extends FormRequest
         return $this->user()->can('create', \App\Models\User::class);
     }
 
+    protected function prepareForValidation(): void
+    {
+        // Non-admin creators never see the center field — default to their own
+        // center BEFORE validation, or the required rule below 422s a payload
+        // the UI could never complete (§2.8 follow-up).
+        if ($this->user()?->role !== 'admin' && empty($this->input('center_id'))) {
+            $this->merge(['center_id' => $this->user()->center_id]);
+        }
+    }
+
     public function rules(): array
     {
         return [
