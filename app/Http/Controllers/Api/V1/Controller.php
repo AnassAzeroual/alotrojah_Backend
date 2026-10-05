@@ -24,6 +24,7 @@ abstract class Controller extends BaseController
         'Only admin can assign admin role.' => 'ADMIN_ONLY',
         'Centers cannot be deleted.' => 'ADMIN_ONLY',
         'Groups cannot be deleted.' => 'ADMIN_ONLY',
+        'Level is used by groups or pupils and cannot be deleted.' => 'LEVEL_IN_USE',
         'You may only address your own students.' => 'OWN_STUDENTS',
         'The replacer cannot be the deleted teacher.' => 'REPLACER_SELF',
         'The replacer must be an active teacher.' => 'REPLACER_INACTIVE',

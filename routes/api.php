@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CenterController;
 use App\Http\Controllers\Api\V1\GroupController;
+use App\Http\Controllers\Api\V1\LevelController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DelegationController;
@@ -52,6 +53,7 @@ Route::prefix('v1')->group(function () {
         Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
         Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
+        Route::apiResource('levels', LevelController::class)->only(['index', 'update', 'destroy']);
         Route::get('groups/stats', [GroupController::class, 'stats']);
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
