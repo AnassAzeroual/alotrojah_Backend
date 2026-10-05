@@ -82,6 +82,19 @@ class RegistrationTest extends TestCase
         $this->assertDatabaseMissing('registration_requests', ['email' => 'new-student@example.org']);
     }
 
+    public function test_supervisor_and_board_roles_cannot_self_register(): void
+    {
+        // The waiting room can only ever mint teacher/student accounts
+        // (accept rejects anything else), so these roles are refused upfront.
+        foreach (['supervisor', 'board'] as $role) {
+            $this->postJson('/api/v1/auth/register', $this->payload([
+                'role' => $role, 'birth_date' => null, 'gender' => null,
+            ]))->assertStatus(422)->assertJsonValidationErrors('role');
+        }
+
+        $this->assertDatabaseMissing('registration_requests', ['email' => 'new-student@example.org']);
+    }
+
     public function test_taken_email_is_rejected_with_code(): void
     {
         User::create([
