@@ -9,7 +9,7 @@ class AcademicSeason extends Model
 {
     protected $table = 'academic_seasons';
     public $timestamps = false;
-    protected $fillable = ['name','hijri_year','start_date','end_date','total_weeks','total_sessions','is_current'];
+    protected $fillable = ['name','hijri_year','start_date','end_date','total_weeks','total_sessions','is_current','center_id'];
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',

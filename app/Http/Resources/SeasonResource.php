@@ -14,6 +14,7 @@ class SeasonResource extends JsonResource
             'start_date' => $this->start_date?->toDateString(), 'end_date' => $this->end_date?->toDateString(),
             'total_weeks' => $this->total_weeks, 'total_sessions' => $this->total_sessions,
             'is_current' => (bool) $this->is_current,
+            'center_id' => $this->center_id,
             'terms_count' => $this->whenCounted('terms'),
             'first_term_id' => $this->first_term_id ?? null,
         ];

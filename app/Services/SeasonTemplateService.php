@@ -23,17 +23,18 @@ class SeasonTemplateService
         int $sessionsPerWeek = 3,
         int $reviewWeeksPerTerm = 1,
         ?string $hijriYear = null,
+        ?int $centerId = null,
     ): AcademicSeason {
         if ($terms === []) {
             $names = ['الفصل الأول','الفصل الثاني','الفصل الثالث','الفصل الرابع','الفصل الخامس','الفصل السادس'];
             $terms = array_map(fn ($n) => ['name' => $n, 'weeks' => 7], $names);
         }
 
-        return DB::transaction(function () use ($name, $startDate, $terms, $sessionsPerWeek, $reviewWeeksPerTerm, $hijriYear) {
+        return DB::transaction(function () use ($name, $startDate, $terms, $sessionsPerWeek, $reviewWeeksPerTerm, $hijriYear, $centerId) {
             $totalWeeks = array_sum(array_column($terms, 'weeks'));
             $season = AcademicSeason::create([
                 'name' => $name, 'hijri_year' => $hijriYear,
-                'start_date' => $startDate,
+                'start_date' => $startDate, 'center_id' => $centerId,
                 'total_weeks' => $totalWeeks,
                 'total_sessions' => $totalWeeks * $sessionsPerWeek,
                 'is_current' => false,

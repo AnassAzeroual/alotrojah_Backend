@@ -17,7 +17,7 @@ abstract class Controller extends BaseController
      */
     protected const array ERROR_CODES = [
         'Student is in another center.' => 'CROSS_CENTER',
-        'Group belongs to another center.' => 'CROSS_CENTER',
+        'Season belongs to another center.' => 'CROSS_CENTER',        'Group belongs to another center.' => 'CROSS_CENTER',
         'Group is in another center.' => 'CROSS_CENTER',
         'Teacher must belong to the same center.' => 'CROSS_CENTER',
         'Only admin can create admins.' => 'ADMIN_ONLY',

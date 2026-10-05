@@ -35,6 +35,7 @@ class CalendarController extends Controller
 
     public function updateTerm(UpdateTermRequest $request, Term $term): JsonResponse
     {
+        if ($refused = $this->refuseForeignSeason($request->user(), $term->season?->center_id)) return $refused;
         $term->update($request->validated());
 
         return $this->ok(new TermResource($term->fresh()));
@@ -52,6 +53,7 @@ class CalendarController extends Controller
 
     public function updateWeek(UpdateWeekRequest $request, Week $week): JsonResponse
     {
+        if ($refused = $this->refuseForeignSeason($request->user(), $week->season?->center_id)) return $refused;
         $week->update($request->validated());
 
         return $this->ok(new WeekResource($week->fresh()));
@@ -74,8 +76,20 @@ class CalendarController extends Controller
 
     public function updateSession(UpdateSessionRequest $request, Session $session): JsonResponse
     {
+        if ($refused = $this->refuseForeignSeason($request->user(), $session->season?->center_id)) return $refused;
         $session->update($request->validated());
 
         return $this->ok(new SessionResource($session->fresh()));
+    }
+
+    /** Center-owned calendar rows: non-admins touch only their own center (never shared NULL rows). */
+    private function refuseForeignSeason($user, ?int $centerId): ?JsonResponse
+    {
+        if ($user->role !== 'admin'
+            && ($centerId === null || (int) $centerId !== (int) $user->center_id)) {
+            return $this->fail('Season belongs to another center.', 403);
+        }
+
+        return null;
     }
 }
