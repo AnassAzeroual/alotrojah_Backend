@@ -33,6 +33,7 @@ class MurajaaPolicy
 
     public function delete(User $user, MurajaaReview|RevisionLog $review): bool
     {
-        return in_array($user->role, ['admin', 'supervisor'], true);
+        return in_array($user->role, ['admin', 'supervisor'], true)
+            && $this->sameCenter($user, $review->student?->center_id);
     }
 }

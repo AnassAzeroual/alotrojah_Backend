@@ -27,7 +27,9 @@ class GroupPolicy
 
     public function update(User $user, Group $group): bool
     {
+        // Supervisors touch only their own center's groups (admin is global).
         return in_array($user->role, ['admin', 'supervisor'], true)
+            && $this->sameCenter($user, $group->center_id)
             || ($user->role === 'teacher' && (int) $group->teacher_id === (int) $user->id);
     }
 

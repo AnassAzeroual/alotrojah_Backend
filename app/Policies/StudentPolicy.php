@@ -30,7 +30,9 @@ class StudentPolicy
 
     public function update(User $user, Student $student): bool
     {
+        // Supervisors touch only their own center's pupils (admin is global).
         return in_array($user->role, ['admin', 'supervisor'], true)
+            && $this->sameCenter($user, $student->center_id)
             || ($user->role === 'teacher' && $this->sameCenter($user, $student->center_id));
     }
 

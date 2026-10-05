@@ -30,6 +30,14 @@ class ExamPolicy
 
     public function delete(User $user, Exam $exam): bool
     {
-        return in_array($user->role, ['admin', 'supervisor'], true);
+        return in_array($user->role, ['admin', 'supervisor'], true)
+            && $this->sameCenter($user, $exam->student?->center_id);
+    }
+
+    /** Exam writes (edit, questions, reweight): own center only, admin global. */
+    public function manageExam(User $user, Exam $exam): bool
+    {
+        return in_array($user->role, ['admin', 'supervisor', 'teacher'], true)
+            && $this->sameCenter($user, $exam->student?->center_id);
     }
 }

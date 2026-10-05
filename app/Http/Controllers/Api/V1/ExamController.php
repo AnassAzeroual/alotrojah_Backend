@@ -59,6 +59,7 @@ class ExamController extends Controller
 
     public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
     {
+        $this->authorize('manageExam', $exam);
         $data = $request->validated();
         // Same term/season derivation as store: final exams carry no term,
         // other types derive their season from the term.

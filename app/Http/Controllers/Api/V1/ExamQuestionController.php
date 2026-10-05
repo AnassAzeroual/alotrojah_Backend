@@ -76,7 +76,7 @@ class ExamQuestionController extends Controller
      */
     public function reweight(Request $request, Exam $exam): JsonResponse
     {
-        $this->authorize('manage', $exam);
+        $this->authorize('manageExam', $exam);
         $data = $request->validate([
             'weights' => ['required', 'array', 'min:1'],
             'weights.*.id' => ['required', 'integer'],
@@ -134,7 +134,7 @@ class ExamQuestionController extends Controller
 
     public function destroy(ExamQuestion $examQuestion): JsonResponse
     {
-        $this->authorize('manage', $examQuestion->exam);
+        $this->authorize('manageExam', $examQuestion->exam);
         $exam = $examQuestion->exam;
         $examQuestion->delete();
         $this->recompute($exam);

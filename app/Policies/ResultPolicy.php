@@ -31,6 +31,7 @@ class ResultPolicy
 
     public function delete(User $user, TermResult|SeasonResult $result): bool
     {
-        return in_array($user->role, ['admin', 'supervisor'], true);
+        return in_array($user->role, ['admin', 'supervisor'], true)
+            && $this->sameCenter($user, $result->student?->center_id);
     }
 }
