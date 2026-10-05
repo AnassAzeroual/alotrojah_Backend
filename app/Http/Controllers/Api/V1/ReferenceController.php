@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Models\Center;
 use App\Models\Level;
 use App\Models\QuranVerse;
 use Illuminate\Http\JsonResponse;
@@ -10,9 +11,16 @@ use Illuminate\Http\Request;
 /** Read-only dropdown feeds (any authenticated user). */
 class ReferenceController extends Controller
 {
-    public function levels(): JsonResponse
+    public function levels(Request $request): JsonResponse
     {
-        return $this->ok(Level::orderBy('id')->get());
+        // Copy-on-write sets: overrides win, shared defaults fill the gaps.
+        // No param (or unknown center) = the default template, as before.
+        $centerId = $request->filled('center_id') ? (int) $request->input('center_id') : null;
+        if ($centerId !== null && ! Center::where('id', $centerId)->exists()) {
+            $centerId = null;
+        }
+
+        return $this->ok(Level::effectiveFor($centerId)->values());
     }
 
     public function surahs(Request $request): JsonResponse

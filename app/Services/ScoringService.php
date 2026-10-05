@@ -25,10 +25,11 @@ class ScoringService
             ->sum('score');
     }
 
-    /** Manager guard: active weekly-total modules must sum to exactly 20. */
-    public function scoringCheck(): array
+    /** Manager guard: active weekly-total modules must sum to exactly 20 (per set). */
+    public function scoringCheck(?int $centerId = null): array
     {
-        $total = (float) ScoringModule::where('is_active', true)
+        $total = (float) ScoringModule::effectiveFor($centerId)
+            ->where('is_active', true)
             ->where('is_in_weekly_total', true)->where('scope', 'weekly')->sum('max_points');
 
         return ['valid' => abs($total - 20.0) < 0.001, 'total' => $total];

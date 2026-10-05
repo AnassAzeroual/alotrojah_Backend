@@ -14,6 +14,7 @@ class BulkModulesRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'modules' => ['required', 'array', 'min:1', 'max:50'],
             'modules.*.code' => ['required', 'string', 'exists:scoring_modules,code'],
             'modules.*.max_points' => ['sometimes', 'numeric', 'min:0', 'max:20'],
