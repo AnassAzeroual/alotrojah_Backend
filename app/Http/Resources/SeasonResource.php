@@ -15,6 +15,7 @@ class SeasonResource extends JsonResource
             'total_weeks' => $this->total_weeks, 'total_sessions' => $this->total_sessions,
             'is_current' => (bool) $this->is_current,
             'terms_count' => $this->whenCounted('terms'),
+            'first_term_id' => $this->first_term_id ?? null,
         ];
     }
 }

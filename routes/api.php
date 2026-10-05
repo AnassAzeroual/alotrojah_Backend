@@ -111,6 +111,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('announcements', AnnouncementController::class);
         Route::apiResource('notifications', NotificationController::class)->only(['index', 'store', 'show', 'destroy']);
         Route::patch('notifications/{notification}/status', [NotificationController::class, 'mark']);
+        Route::get('dashboard/me', [DashboardController::class, 'me']);
         Route::get('dashboard/season', [DashboardController::class, 'season']);
         Route::get('dashboard/weekly', [DashboardController::class, 'weekly']);
         Route::get('dashboard/center', [DashboardController::class, 'center']);

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\CenterSeasonRequest;
 use App\Http\Requests\StudentSeasonRequest;
+use App\Http\Resources\StudentResource;
+use App\Models\AcademicSeason;
 use App\Models\Student;
 use App\Services\DashboardService;
 use App\Services\ScoringService;
@@ -13,6 +15,34 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    /**
+     * §2.16: the student's own dashboard. No parameters to tamper with — the
+     * pupil is resolved from the token and the season is the current one.
+     * Returns null when no pupil record is linked to the account.
+     */
+    public function me(Request $request, DashboardService $dash, ScoringService $scoring): JsonResponse
+    {
+        $me = $request->user();
+        abort_unless($me->role === 'student', 403);
+        $pupil = Student::where('user_id', $me->id)->first();
+        if (! $pupil) return $this->ok(null);
+        $seasonId = AcademicSeason::where('is_current', true)->value('id')
+            ?? AcademicSeason::max('id');
+        if (! $seasonId) {
+            return $this->ok([
+                'student' => new StudentResource($pupil->load('group')),
+                'season' => null, 'weekly' => [], 'final' => null,
+            ]);
+        }
+
+        return $this->ok([
+            'student' => new StudentResource($pupil->load('group')),
+            'season' => $dash->seasonRow($pupil->id, $seasonId),
+            'weekly' => $dash->weeklyProgress($pupil->id, $seasonId),
+            'final' => $scoring->finalAverage($pupil->id, $seasonId),
+        ]);
+    }
+
     public function season(StudentSeasonRequest $request, DashboardService $dash): JsonResponse
     {
         $data = $request->validated();

@@ -51,7 +51,7 @@ class DelegationService
     {
         $base = rtrim(config('app.frontend_url', config('app.url')), '/');
 
-        return $base.'/delegate?token='.$d->token;
+        return $base.'/delegate/redeem?token='.$d->token;
     }
 
     /** Cross-center entry allowed when the teacher redeemed a live token for the student's group. */

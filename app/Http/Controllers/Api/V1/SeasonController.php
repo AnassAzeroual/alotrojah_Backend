@@ -21,7 +21,7 @@ class SeasonController extends Controller
         $this->authorize('viewAny', AcademicSeason::class);
 
         return $this->ok(SeasonResource::collection(
-            AcademicSeason::withCount('terms')->orderByDesc('id')->paginate(20)
+            AcademicSeason::withCount('terms')->withMin('terms as first_term_id', 'id')->orderByDesc('id')->paginate(20)
         )->response()->getData(true));
     }
 
@@ -35,14 +35,14 @@ class SeasonController extends Controller
             $request->input('hijri_year'),
         );
 
-        return $this->created(new SeasonResource($season->loadCount('terms')));
+        return $this->created(new SeasonResource($season->loadCount('terms')->loadMin('terms as first_term_id', 'id')));
     }
 
     public function show(AcademicSeason $season): JsonResponse
     {
         $this->authorize('view', $season);
 
-        return $this->ok(new SeasonResource($season->loadCount('terms')));
+        return $this->ok(new SeasonResource($season->loadCount('terms')->loadMin('terms as first_term_id', 'id')));
     }
 
     public function update(UpdateSeasonRequest $request, AcademicSeason $season): JsonResponse

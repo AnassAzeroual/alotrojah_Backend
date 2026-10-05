@@ -59,6 +59,7 @@ jobs:
           --path=database/migrations/2026_10_04_000011_exam_question_weights.php
           --path=database/migrations/2026_10_04_000012_seed_reference_data.php
           --path=database/migrations/2026_10_04_000013_quran_verses_replace_surahs.php
+          --path=database/migrations/2026_10_05_000014_season_dashboard_null_avgs.php
 
       - name: Run test suite
         env:

@@ -20,6 +20,7 @@ class UpdateStudentRequest extends FormRequest
     {
         return [
             'full_name' => ['sometimes', 'string', 'max:150'],
+            'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'group_id' => ['sometimes', 'nullable', 'integer', 'exists:groups,id'],
             'level_id' => ['sometimes', 'nullable', 'integer', 'exists:levels,id'],
             'birth_date' => ['sometimes', 'nullable', 'date', 'before:today'],
