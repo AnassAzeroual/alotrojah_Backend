@@ -23,6 +23,7 @@
 - **R12 Migrations discipline:** new migration → apply to dev+verify+testing+audit AND append to CI `--path` list in `deploy-backend.yml`, same turn. Never edit an already-deployed migration — fix forward. Every `down()` must work.
 - **R13 E2E only via `npm run e2e`** (wrapper swaps/verifies/restores backend `.env`). Never raw `playwright test` against dev.
 - **R14 Never trust truncated output.** Check full output + exit state (`Select -Last 2` once hid a failed typecheck).
+- **R15 Dead code.** After every change, hunt what it orphaned: unused imports/symbols, unreachable branches, orphaned routes/keys/files/temp scripts. Verify by grepping every usage surface (code, specs, e2e, i18n, CI) — never assume. Remove it or justify it in the report. (Frontend twin: R11.)
 
 ## §NOTBUGS — investigated live, do NOT "fix"
 - 2.7 teacher review-delete 403: by design (button never rendered; `MurajaaPolicy::delete` admin/supervisor).
