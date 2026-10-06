@@ -89,6 +89,24 @@ class ScoringModuleController extends Controller
         return $this->ok($scoring->scoringCheck($centerId));
     }
 
+    /** Delete one center's override set, revealing the shared defaults. */
+    public function reset(Request $request): JsonResponse
+    {
+        $this->authorize('manage', ScoringModule::class);
+        $centerId = (int) $request->validate([
+            'center_id' => ['required', 'integer', 'exists:centers,id'],
+        ])['center_id'];
+
+        $ids = ScoringModule::where('center_id', $centerId)->pluck('id');
+        if ($ids->isEmpty()) return $this->ok(['deleted' => 0]);
+        if (SessionScore::whereIn('module_id', $ids)->exists()) {
+            return $this->fail('Module has recorded scores and cannot be deleted.', 422);
+        }
+        $deleted = ScoringModule::where('center_id', $centerId)->delete();
+
+        return $this->ok(['deleted' => $deleted]);
+    }
+
     public function destroy(ScoringModule $scoringModule): JsonResponse
     {
         $this->authorize('delete', $scoringModule);

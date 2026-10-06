@@ -53,6 +53,7 @@ Route::prefix('v1')->group(function () {
         Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
         Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
+        Route::delete('levels/reset', [LevelController::class, 'reset']);
         Route::apiResource('levels', LevelController::class)->only(['index', 'update', 'destroy']);
         Route::get('groups/stats', [GroupController::class, 'stats']);
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
@@ -82,6 +83,7 @@ Route::prefix('v1')->group(function () {
         Route::put('term-plans', [TermPlanController::class, 'upsert']);
         Route::apiResource('term-plans', TermPlanController::class)->only(['index', 'show', 'destroy']);
         Route::put('scoring-modules', [ScoringModuleController::class, 'bulk']);
+        Route::delete('scoring-modules/reset', [ScoringModuleController::class, 'reset']);
         Route::get('scoring-check', [ScoringModuleController::class, 'scoringCheck']);
         Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('reference/levels', [ReferenceController::class, 'levels']);

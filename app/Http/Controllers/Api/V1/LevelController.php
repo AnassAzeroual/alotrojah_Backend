@@ -41,6 +41,25 @@ class LevelController extends Controller
         return $this->ok($level->fresh());
     }
 
+    /** Delete one center's override set, revealing the shared defaults. */
+    public function reset(Request $request): JsonResponse
+    {
+        $this->authorize('manage', Level::class);
+        $centerId = (int) $request->validate([
+            'center_id' => ['required', 'integer', 'exists:centers,id'],
+        ])['center_id'];
+
+        $ids = Level::where('center_id', $centerId)->pluck('id');
+        if ($ids->isEmpty()) return $this->ok(['deleted' => 0]);
+        if (Group::whereIn('level_id', $ids)->exists()
+            || Student::whereIn('level_id', $ids)->exists()) {
+            return $this->fail('Level is used by groups or pupils and cannot be deleted.', 422);
+        }
+        $deleted = Level::where('center_id', $centerId)->delete();
+
+        return $this->ok(['deleted' => $deleted]);
+    }
+
     public function destroy(Level $level): JsonResponse
     {
         $this->authorize('delete', $level);
