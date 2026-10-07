@@ -19,7 +19,8 @@ class Level extends Model
      */
     public static function effectiveFor(?int $centerId): \Illuminate\Support\Collection
     {
-        $rows = static::orderBy('id')->get();
+        $rows = static::when($centerId !== null, fn ($q) => $q->where(fn ($q2) => $q2->whereNull('center_id')->orWhere('center_id', $centerId)))
+            ->orderBy('id')->get();
         if ($centerId === null) return $rows->whereNull('center_id')->keyBy('code');
         $out = $rows->whereNull('center_id')->keyBy('code');
         foreach ($rows->where('center_id', $centerId)->keyBy('code') as $code => $row) {
