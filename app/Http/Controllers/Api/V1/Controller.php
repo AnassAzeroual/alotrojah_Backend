@@ -43,6 +43,7 @@ abstract class Controller extends BaseController
         'Surah range needs surah + ayah on both ends.' => 'RANGE_INVALID',
         'Range end must be after range start.' => 'RANGE_INVALID',
         'Group assignment only applies to teachers and students.' => 'GROUP_ROLE',
+        'Student approval requires a group and a level.' => 'PLACEMENT_REQUIRED',
         'Admin accounts cannot be deleted.' => 'ADMIN_DELETE',
         'Admins cannot deactivate their own account.' => 'ADMIN_SELF_DISABLE',
         'The last active admin cannot be deactivated.' => 'ADMIN_LAST_ACTIVE',

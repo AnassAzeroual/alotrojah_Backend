@@ -9,6 +9,7 @@ use App\Models\Student;
 use App\Models\User;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -141,13 +142,24 @@ class RegistrationTest extends TestCase
     {
         $request = RegistrationRequest::create([
             'full_name' => 'طالب تجريبي', 'email' => 'accepted@example.org',
-            'password_hash' => \Illuminate\Support\Facades\Hash::make('password123'),
+            'password_hash' => Hash::make('password123'),
             'role' => 'student', 'phone' => '0612345678',
             'birth_date' => '2000-01-01', 'gender' => 'female',
         ]);
+        $teacher = User::create([
+            'full_name' => 'Accept Teacher', 'email' => 'accept-teacher@example.org',
+            'password_hash' => 'x', 'role' => 'teacher',
+            'center_id' => 2, 'teacher_type' => 'hifz', 'is_active' => true,
+        ]);
+        $group = Group::create([
+            'name' => 'Accept Group', 'center_id' => 2, 'level_id' => 1,
+            'teacher_id' => $teacher->id, 'is_active' => true,
+        ]);
 
         $this->actingAs(User::find(1), 'api')
-            ->postJson("/api/v1/registration-requests/{$request->id}/accept", ['center_id' => 2])
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                'center_id' => 2, 'group_id' => $group->id, 'level_id' => 1,
+            ])
             ->assertOk()
             ->assertJsonPath('data.email', 'accepted@example.org')
             ->assertJsonPath('data.center_id', 2)
@@ -155,15 +167,35 @@ class RegistrationTest extends TestCase
 
         $user = User::where('email', 'accepted@example.org')->first();
         $this->assertNotNull($user);
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('password123', $user->password_hash));
+        $this->assertTrue(Hash::check('password123', $user->password_hash));
 
         $student = Student::where('user_id', $user->id)->first();
         $this->assertNotNull($student);
         $this->assertSame('adult', $student->student_type); // born 2000 → 26 years old
         $this->assertSame(2, (int) $student->center_id);
         $this->assertSame('female', $student->gender);
+        $this->assertSame($group->id, (int) $student->group_id);
+        $this->assertSame(1, (int) $student->level_id);
 
         $this->assertDatabaseMissing('registration_requests', ['id' => $request->id]);
+    }
+
+    public function test_accept_student_without_placement_is_refused(): void
+    {
+        $request = RegistrationRequest::create([
+            'full_name' => 'Ungrouped', 'email' => 'ungrouped@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'phone' => '0612345678',
+            'birth_date' => '2015-05-10', 'gender' => 'male',
+        ]);
+
+        // NOT NULL world: a pupil row cannot exist without group + level.
+        $this->actingAs(User::find(1), 'api')
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", ['center_id' => 1])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Student approval requires a group and a level.');
+
+        $this->assertDatabaseHas('registration_requests', ['id' => $request->id]);
+        $this->assertDatabaseMissing('users', ['email' => 'ungrouped@example.org']);
     }
 
     public function test_accept_child_student_sets_child_type(): void
@@ -175,7 +207,9 @@ class RegistrationTest extends TestCase
         ]);
 
         $this->actingAs(User::find(1), 'api')
-            ->postJson("/api/v1/registration-requests/{$request->id}/accept", ['center_id' => 1])
+            ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
+                'center_id' => 1, 'group_id' => Group::firstOrFail()->id, 'level_id' => 1,
+            ])
             ->assertOk();
 
         $userId = User::where('email', 'child@example.org')->value('id');
@@ -273,6 +307,7 @@ class RegistrationTest extends TestCase
             ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
                 'center_id' => (int) $group->center_id,
                 'group_id' => (int) $group->id,
+                'level_id' => 1,
             ])
             ->assertOk();
 

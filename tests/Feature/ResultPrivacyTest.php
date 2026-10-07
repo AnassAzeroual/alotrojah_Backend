@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Level;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -27,11 +28,13 @@ class ResultPrivacyTest extends TestCase
         $this->actingAs(User::find(1), 'api');
         $mine = $this->postJson('/api/v1/students', [
             'full_name' => 'Mine', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 1,
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $other = $this->postJson('/api/v1/students', [
             'full_name' => 'Other', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 1,
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $this->putJson('/api/v1/term-results', ['student_id' => $mine, 'term_id' => 1])->assertCreated();
         $this->putJson('/api/v1/term-results', ['student_id' => $other, 'term_id' => 1])->assertCreated();

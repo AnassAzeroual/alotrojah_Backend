@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Level;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +26,7 @@ class StudentDashboardTest extends TestCase
     private function makeStudentUser(string $email): User
     {
         return User::create([
-            'full_name' => 'Pupil ' . $email, 'email' => $email,
+            'full_name' => 'Pupil '.$email, 'email' => $email,
             'password_hash' => Hash::make('password123'),
             'role' => 'student', 'center_id' => 1, 'is_active' => true,
         ]);
@@ -42,7 +43,8 @@ class StudentDashboardTest extends TestCase
         $this->actingAs(User::find(1), 'api');
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'Linked Pupil', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 1,
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $s = $this->makeStudentUser('linked@example.org');
         DB::table('students')->where('id', $id)->update(['user_id' => $s->id]);

@@ -77,6 +77,15 @@ class PerformanceTest extends TestCase
         // Transparent math: final must equal the formula applied to the
         // response's own displayed components — no hardcoded seed values,
         // so dev-data edits (e.g. avg_weekly 18.25 → 18.3) can't stale it.
+        // The murajaa leg is built in-test (dump residue carries none since
+        // the NOT NULL cleanup removed session-less legacy reviews).
+        $sessionId = DB::table('sessions')->where('term_id', 1)->value('id');
+        $this->assertNotNull($sessionId);
+        $this->postJson('/api/v1/murajaa-reviews', [
+            'student_id' => 1, 'term_id' => 1, 'week_from' => 1, 'week_to' => 2,
+            'session_id' => $sessionId, 'score' => 16,
+        ], $this->auth())->assertCreated();
+
         $r = $this->getJson('/api/v1/dashboard/final?student_id=1&season_id=1', $this->auth());
         $r->assertOk()->assertJsonPath('data.divisor', 4);
         $inputs = $r->json('data.inputs');

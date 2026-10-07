@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Level;
 use App\Models\ScoringModule;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -72,7 +73,8 @@ class ModuleOverrideTest extends TestCase
         ])->assertOk();
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'Capped Pupil', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 1,
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
 
         // C1 cap is 10 now (default would allow 14).

@@ -137,7 +137,7 @@ class PolicyTest extends TestCase
     {
         $r = $this->actingAs(User::find(2), 'api') // supervisor, center 1
             ->postJson('/api/v1/groups', [
-                'name' => 'Policy Test Group', 'center_id' => 2, 'level_id' => 1, // tries center 2
+                'name' => 'Policy Test Group', 'center_id' => 2, 'level_id' => 1, 'teacher_id' => 3, // tries center 2
             ])->assertStatus(201);
         $this->assertEquals(1, $r->json('data.center_id'));
         $this->assertDatabaseHas('groups', ['name' => 'Policy Test Group', 'center_id' => 1]);

@@ -73,7 +73,7 @@ class UserReplaceTest extends TestCase
         $new = $this->makeTeacher('new@example.org', 'hifz');
         $g = $this->makeGroup($old->id);
         Announcement::create([
-            'author_id' => $old->id, 'audience' => 'all', 'title' => 'Gone', 'body' => 'Gone',
+            'author_id' => $old->id, 'group_id' => $g->id, 'audience' => 'all', 'title' => 'Gone', 'body' => 'Gone',
         ]);
 
         $this->actingAs(User::find(1), 'api')
@@ -131,20 +131,50 @@ class UserReplaceTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_delete_removes_tokens_and_nulls_inactive_groups(): void
+    public function test_delete_refused_when_inactive_groups_exist(): void
     {
         $old = $this->makeTeacher('old5@example.org', 'hifz');
-        $g = $this->makeGroup($old->id, 1, false); // inactive only → direct delete
+        $g = $this->makeGroup($old->id, 1, false); // inactive groups need a replacer too — no nulling
         DelegationToken::create([
             'group_id' => $g->id, 'granter_teacher_id' => $old->id,
+            'used_by_teacher_id' => $old->id,
             'token' => hash('sha256', 'tok-old5'), 'duration_minutes' => 30,
             'expires_at' => now()->addHour(),
         ]);
         $this->actingAs(User::find(1), 'api')
             ->deleteJson("/api/v1/users/{$old->id}")
+            ->assertStatus(422)
+            ->assertJsonPath('errors.code', 'NEED_REPLACER');
+        $this->assertNotNull(User::find($old->id));
+        $this->assertSame($old->id, Group::find($g->id)->teacher_id);
+    }
+
+    public function test_replace_moves_inactive_groups_to_replacer(): void
+    {
+        $old = $this->makeTeacher('old6@example.org', 'hifz');
+        $new = $this->makeTeacher('new6@example.org', 'hifz');
+        $g = $this->makeGroup($old->id, 1, false);
+        $this->actingAs(User::find(1), 'api')
+            ->postJson("/api/v1/users/{$old->id}/replace", ['replacer_id' => $new->id])
             ->assertOk();
         $this->assertNull(User::find($old->id));
-        $this->assertNull(Group::find($g->id)->teacher_id);
-        $this->assertEquals(0, DelegationToken::where('granter_teacher_id', $old->id)->count());
+        $this->assertSame($new->id, Group::find($g->id)->teacher_id);
+    }
+
+    public function test_delete_removes_only_tokens_of_a_clean_teacher(): void
+    {
+        $t = $this->makeTeacher('old7@example.org', 'hifz');
+        $g = $this->makeGroup(User::find(3)->id); // someone else's group holds the token
+        DelegationToken::create([
+            'group_id' => $g->id, 'granter_teacher_id' => $t->id,
+            'used_by_teacher_id' => $t->id,
+            'token' => hash('sha256', 'tok-old7'), 'duration_minutes' => 30,
+            'expires_at' => now()->addHour(),
+        ]);
+        $this->actingAs(User::find(1), 'api')
+            ->deleteJson("/api/v1/users/{$t->id}")
+            ->assertOk();
+        $this->assertNull(User::find($t->id));
+        $this->assertEquals(0, DelegationToken::where('granter_teacher_id', $t->id)->count());
     }
 }

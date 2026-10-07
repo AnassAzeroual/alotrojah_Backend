@@ -40,6 +40,7 @@ class DelegationController extends Controller
 
         return $this->ok([
             'group_id' => $token->group_id,
+            'group_name' => $token->group?->name,
             'expires_at' => $token->expires_at,
         ], 'Access granted. You may now enter marks for this group.');
     }

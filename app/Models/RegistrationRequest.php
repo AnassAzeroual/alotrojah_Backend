@@ -13,6 +13,7 @@ class RegistrationRequest extends Model
     protected $table = 'registration_requests';
 
     const CREATED_AT = 'requested_at';
+
     const UPDATED_AT = null;
 
     protected $fillable = [

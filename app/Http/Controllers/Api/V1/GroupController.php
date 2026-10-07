@@ -25,8 +25,12 @@ class GroupController extends Controller
         } elseif ($request->filled('center_id')) {
             $q->where('center_id', (int) $request->input('center_id'));
         }
-        if ($request->filled('level_id')) $q->where('level_id', (int) $request->input('level_id'));
-        if ($request->filled('is_active')) $q->where('is_active', $request->boolean('is_active'));
+        if ($request->filled('level_id')) {
+            $q->where('level_id', (int) $request->input('level_id'));
+        }
+        if ($request->filled('is_active')) {
+            $q->where('is_active', $request->boolean('is_active'));
+        }
 
         return $this->ok(GroupResource::collection($q->paginate(20))->response()->getData(true));
     }
@@ -63,7 +67,9 @@ class GroupController extends Controller
     {
         $data = $request->validated();
         $me = $request->user();
-        if ($me->role !== 'admin') $data['center_id'] = $me->center_id;
+        if ($me->role !== 'admin') {
+            $data['center_id'] = $me->center_id;
+        }
 
         if (! empty($data['teacher_id'])) {
             $t = User::findOrFail($data['teacher_id']);

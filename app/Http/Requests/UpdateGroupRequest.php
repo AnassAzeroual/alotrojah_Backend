@@ -18,7 +18,7 @@ class UpdateGroupRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:120'],
             'level_id' => ['sometimes', 'integer', 'exists:levels,id'],
-            'teacher_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            'teacher_id' => ['sometimes', 'integer', 'exists:users,id'],
             'academic_year' => ['sometimes', 'nullable', 'string', 'max:20'],
             'capacity' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:500'],
             'schedule_days' => ['sometimes', 'array', 'max:7'],

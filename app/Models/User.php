@@ -4,12 +4,10 @@ namespace App\Models;
 
 use App\Models\Scopes\CenterScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
-
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 
 /**
@@ -26,7 +24,7 @@ class User extends Authenticatable implements JWTSubject
     const UPDATED_AT = null;
 
     protected $fillable = [
-        'full_name', 'email', 'role', 'phone', 'center_id', 'teacher_type', 'is_active', 'password_hash'
+        'full_name', 'email', 'role', 'phone', 'center_id', 'teacher_type', 'is_active', 'password_hash',
     ];
 
     protected $hidden = ['password_hash'];
@@ -79,7 +77,18 @@ class User extends Authenticatable implements JWTSubject
         $q->where('users.is_active', true);
     }
 
-    public function taughtGroups(): HasMany { return $this->hasMany(Group::class, 'teacher_id'); }
-    public function center(): BelongsTo { return $this->belongsTo(Center::class, 'center_id'); }
-    public function authoredAnnouncements(): HasMany { return $this->hasMany(Announcement::class, 'author_id'); }
+    public function taughtGroups(): HasMany
+    {
+        return $this->hasMany(Group::class, 'teacher_id');
+    }
+
+    public function center(): BelongsTo
+    {
+        return $this->belongsTo(Center::class, 'center_id');
+    }
+
+    public function authoredAnnouncements(): HasMany
+    {
+        return $this->hasMany(Announcement::class, 'author_id');
+    }
 }

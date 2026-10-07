@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Level;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -32,6 +33,7 @@ class StudentCenterRepairTest extends TestCase
         // Multi-center install: omitting the center still stores NULL.
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'Repair Me', 'memorization_mode' => 'thumn', 'status' => 'active',
+            'group_id' => 1, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $this->assertNull(Student::find($id)->center_id);
 
@@ -56,6 +58,7 @@ class StudentCenterRepairTest extends TestCase
         $this->actingAs($sup, 'api');
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'Sup Pupil', 'memorization_mode' => 'thumn', 'status' => 'active',
+            'group_id' => 1, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $this->assertSame((int) $sup->center_id, (int) Student::find($id)->center_id);
 

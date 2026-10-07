@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Group;
+use App\Models\Level;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-/** `GET /students?unassigned=1` — pupils with no group. Transaction-wrapped. */
+/** `GET /students?unassigned=1` — NOT NULL world: every pupil is placed, so the filter is always empty (kept for UI compat). */
 class StudentFilterTest extends TestCase
 {
     protected function setUp(): void
@@ -22,21 +24,27 @@ class StudentFilterTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_unassigned_returns_only_groupless_students(): void
+    public function test_unassigned_returns_empty_when_every_pupil_is_placed(): void
     {
-        $free = Student::create([
-            'full_name' => 'Filter Free Pupil', 'center_id' => 1,
+        $teacher = User::create([
+            'full_name' => 'Filter Teacher', 'email' => 'filter-teacher@example.org',
+            'password_hash' => 'x', 'role' => 'teacher',
+            'center_id' => 1, 'teacher_type' => 'hifz', 'is_active' => true,
+        ]);
+        $group = Group::create([
+            'name' => 'Filter Group',
+            'center_id' => 1, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'teacher_id' => $teacher->id, 'is_active' => true,
+        ]);
+        Student::create([
+            'full_name' => 'Filter Placed Pupil', 'center_id' => 1,
+            'group_id' => $group->id, 'level_id' => $group->level_id,
             'memorization_mode' => 'thumn',
         ]);
-        $groupedId = DB::table('students')->whereNotNull('group_id')->value('id');
-        $this->assertNotNull($groupedId);
 
         $ids = $this->actingAs(User::find(1), 'api')
-            ->getJson('/api/v1/students?unassigned=1&q=Filter Free Pupil')
+            ->getJson('/api/v1/students?unassigned=1')
             ->assertOk()->json('data.data');
-        $ids = collect($ids)->pluck('id')->all();
-
-        $this->assertContains($free->id, $ids);
-        $this->assertNotContains($groupedId, $ids);
+        $this->assertSame([], $ids);
     }
 }

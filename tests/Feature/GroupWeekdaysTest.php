@@ -27,12 +27,22 @@ class GroupWeekdaysTest extends TestCase
         parent::tearDown();
     }
 
+    private function teacherId(): int
+    {
+        return User::create([
+            'full_name' => 'Weekday Teacher', 'email' => 'weekday-teacher@example.org',
+            'password_hash' => 'x', 'role' => 'teacher',
+            'center_id' => 1, 'teacher_type' => 'hifz', 'is_active' => true,
+        ])->id;
+    }
+
     public function test_create_stores_days_as_rows_and_reads_joined_string(): void
     {
         $this->actingAs(User::find(1), 'api');
         $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
             'name' => 'Weekday Group', 'center_id' => 1, 'level_id' => $level,
+            'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Wed', 'Mon'],
         ])->assertCreated()->json('data.id');
 
@@ -48,6 +58,7 @@ class GroupWeekdaysTest extends TestCase
         $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
             'name' => 'Swap Group', 'center_id' => 1, 'level_id' => $level,
+            'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Mon'],
         ])->assertCreated()->json('data.id');
 
@@ -61,6 +72,7 @@ class GroupWeekdaysTest extends TestCase
         $level = Level::where('code', 'L1')->firstOrFail()->id;
         $this->postJson('/api/v1/groups', [
             'name' => 'Bad Days', 'center_id' => 1, 'level_id' => $level,
+            'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Funday'],
         ])->assertStatus(422);
     }
@@ -71,6 +83,7 @@ class GroupWeekdaysTest extends TestCase
         $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
             'name' => 'Dateless Group', 'center_id' => 1, 'level_id' => $level,
+            'teacher_id' => $this->teacherId(),
         ])->assertCreated()->json('data.id');
 
         $this->assertSame('', Group::find($id)->schedule_days);
@@ -82,6 +95,7 @@ class GroupWeekdaysTest extends TestCase
         $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
             'name' => 'Dup Group', 'center_id' => 1, 'level_id' => $level,
+            'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Mon'],
         ])->assertCreated()->json('data.id');
 

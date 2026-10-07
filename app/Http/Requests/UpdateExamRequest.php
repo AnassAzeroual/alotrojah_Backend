@@ -19,7 +19,7 @@ class UpdateExamRequest extends FormRequest
             'exam_type' => ['sometimes', Rule::enum(ExamType::class)],
             'term_id' => ['sometimes', 'nullable', 'integer', 'exists:terms,id'],
             'exam_date' => ['sometimes', 'nullable', 'date'],
-            'examiner_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
+            'examiner_id' => ['sometimes', 'integer', 'exists:users,id'],
             'examiner_report' => ['sometimes', 'nullable', 'string'],
         ];
     }
