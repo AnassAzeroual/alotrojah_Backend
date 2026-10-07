@@ -32,7 +32,12 @@ class ScoreEntryService
         if ($teacher->role !== 'admin' && $teacher->teacher_type === 'murajaa') {
             abort(403, 'Review teachers enter murajaa cycles, not weekly scores.');
         }
-        $modules = ScoringModule::where('is_active', true)->where('scope', 'weekly')->get()->keyBy('code');
+        // Modules resolve per student center: a center's override rows win over
+        // the shared defaults (copy-on-write sets). Preload both, merge per row.
+        $defaults = ScoringModule::whereNull('center_id')
+            ->where('is_active', true)->where('scope', 'weekly')->get()->keyBy('code');
+        $overrides = ScoringModule::whereNotNull('center_id')
+            ->where('is_active', true)->where('scope', 'weekly')->get()->groupBy('center_id');
 
         // preload: bulk must not do one student lookup per row (N+1)
         $students = Student::withoutGlobalScope(CenterScope::class)
@@ -48,7 +53,10 @@ class ScoreEntryService
                 && ! $this->delegation->canActAs($teacher, $student)) {
                 $errors["$p.student_id"] = 'Student is in another center.'; continue;
             }
-            $module = $modules[$r['module_code'] ?? ''] ?? null;
+            $set = $defaults->toBase()->merge(
+                ($overrides[$student->center_id] ?? collect())->keyBy('code')
+            );
+            $module = $set[$r['module_code'] ?? ''] ?? null;
             if (! $module) { $errors["$p.module_code"] = 'Unknown or inactive module.'; continue; }
             $score = $r['score'] ?? null;
             if (! is_numeric($score) || $score < 0 || $score > (float) $module->max_points) {

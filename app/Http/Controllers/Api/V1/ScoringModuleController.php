@@ -10,16 +10,18 @@ use App\Models\ScoringModule;
 use App\Models\SessionScore;
 use App\Services\ScoringService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ScoringModuleController extends Controller
 {
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', ScoringModule::class);
+        $centerId = $request->filled('center_id') ? (int) $request->input('center_id') : null;
 
         return $this->ok(ScoringModuleResource::collection(
-            ScoringModule::orderBy('sort_order')->get()
+            ScoringModule::effectiveFor($centerId)->values()
         ));
     }
 
@@ -27,7 +29,7 @@ class ScoringModuleController extends Controller
     {
         return DB::transaction(function () use ($request, $scoring) {
             $module = ScoringModule::create($request->validated());
-            $check = $scoring->scoringCheck();
+            $check = $scoring->scoringCheck($module->center_id);
             if (! $check['valid']) {
                 DB::rollBack();
 
@@ -42,7 +44,7 @@ class ScoringModuleController extends Controller
     {
         return DB::transaction(function () use ($request, $scoringModule, $scoring) {
             $scoringModule->update($request->validated());
-            $check = $scoring->scoringCheck();
+            $check = $scoring->scoringCheck($scoringModule->center_id);
             if (! $check['valid']) {
                 DB::rollBack();
 
@@ -53,15 +55,17 @@ class ScoringModuleController extends Controller
         });
     }
 
-    /** Atomic multi-module rebalance (the real manager UX). */
+    /** Atomic multi-module rebalance within one set (null = shared defaults). */
     public function bulk(BulkModulesRequest $request, ScoringService $scoring): JsonResponse
     {
         return DB::transaction(function () use ($request, $scoring) {
+            $centerId = $request->filled('center_id') ? (int) $request->input('center_id') : null;
+            if ($centerId !== null) ScoringModule::ensureOverrideSet($centerId);
             foreach ($request->input('modules') as $row) {
-                ScoringModule::where('code', $row['code'])->firstOrFail()
+                ScoringModule::where('code', $row['code'])->where('center_id', $centerId)->firstOrFail()
                     ->update(array_intersect_key($row, array_flip(['max_points', 'is_active', 'is_in_weekly_total', 'sort_order'])));
             }
-            $check = $scoring->scoringCheck();
+            $check = $scoring->scoringCheck($centerId);
             if (! $check['valid']) {
                 DB::rollBack();
 
@@ -69,17 +73,38 @@ class ScoringModuleController extends Controller
             }
 
             return $this->ok([
-                'modules' => ScoringModuleResource::collection(ScoringModule::orderBy('sort_order')->get()),
+                'modules' => ScoringModuleResource::collection(
+                    ScoringModule::effectiveFor($centerId)->values()
+                ),
                 'check' => $check,
             ], 'Scoring updated.');
         });
     }
 
-    public function scoringCheck(ScoringService $scoring): JsonResponse
+    public function scoringCheck(Request $request, ScoringService $scoring): JsonResponse
     {
         $this->authorize('viewAny', ScoringModule::class);
+        $centerId = $request->filled('center_id') ? (int) $request->input('center_id') : null;
 
-        return $this->ok($scoring->scoringCheck());
+        return $this->ok($scoring->scoringCheck($centerId));
+    }
+
+    /** Delete one center's override set, revealing the shared defaults. */
+    public function reset(Request $request): JsonResponse
+    {
+        $this->authorize('manage', ScoringModule::class);
+        $centerId = (int) $request->validate([
+            'center_id' => ['required', 'integer', 'exists:centers,id'],
+        ])['center_id'];
+
+        $ids = ScoringModule::where('center_id', $centerId)->pluck('id');
+        if ($ids->isEmpty()) return $this->ok(['deleted' => 0]);
+        if (SessionScore::whereIn('module_id', $ids)->exists()) {
+            return $this->fail('Module has recorded scores and cannot be deleted.', 422);
+        }
+        $deleted = ScoringModule::where('center_id', $centerId)->delete();
+
+        return $this->ok(['deleted' => $deleted]);
     }
 
     public function destroy(ScoringModule $scoringModule): JsonResponse

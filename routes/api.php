@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CenterController;
 use App\Http\Controllers\Api\V1\GroupController;
+use App\Http\Controllers\Api\V1\LevelController;
 use App\Http\Controllers\Api\V1\CalendarController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DelegationController;
@@ -52,6 +53,8 @@ Route::prefix('v1')->group(function () {
         Route::post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
         Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
+        Route::delete('levels/reset', [LevelController::class, 'reset']);
+        Route::apiResource('levels', LevelController::class)->only(['index', 'update', 'destroy']);
         Route::get('groups/stats', [GroupController::class, 'stats']);
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
@@ -80,6 +83,7 @@ Route::prefix('v1')->group(function () {
         Route::put('term-plans', [TermPlanController::class, 'upsert']);
         Route::apiResource('term-plans', TermPlanController::class)->only(['index', 'show', 'destroy']);
         Route::put('scoring-modules', [ScoringModuleController::class, 'bulk']);
+        Route::delete('scoring-modules/reset', [ScoringModuleController::class, 'reset']);
         Route::get('scoring-check', [ScoringModuleController::class, 'scoringCheck']);
         Route::apiResource('scoring-modules', ScoringModuleController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('reference/levels', [ReferenceController::class, 'levels']);
@@ -111,6 +115,7 @@ Route::prefix('v1')->group(function () {
         Route::apiResource('announcements', AnnouncementController::class);
         Route::apiResource('notifications', NotificationController::class)->only(['index', 'store', 'show', 'destroy']);
         Route::patch('notifications/{notification}/status', [NotificationController::class, 'mark']);
+        Route::get('dashboard/me', [DashboardController::class, 'me']);
         Route::get('dashboard/season', [DashboardController::class, 'season']);
         Route::get('dashboard/weekly', [DashboardController::class, 'weekly']);
         Route::get('dashboard/center', [DashboardController::class, 'center']);

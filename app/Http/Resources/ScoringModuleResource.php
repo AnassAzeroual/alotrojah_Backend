@@ -11,6 +11,7 @@ class ScoringModuleResource extends JsonResource
     {
         return [
             'id' => $this->id, 'code' => $this->code, 'name_ar' => $this->name_ar,
+            'center_id' => $this->center_id,
             'max_points' => (float) $this->max_points, 'scope' => $this->scope,
             'is_active' => (bool) $this->is_active,
             'is_in_weekly_total' => (bool) $this->is_in_weekly_total,

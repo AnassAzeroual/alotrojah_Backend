@@ -69,8 +69,17 @@ class UserController extends Controller
         $data = $request->validated();
         $me = $request->user();
         $self = (int) $user->id === (int) $me->id;
+        $deactivating = array_key_exists('is_active', $data) && ! $data['is_active'];
 
-        if ($self) unset($data['role'], $data['center_id'], $data['is_active'], $data['teacher_type']);
+        if ($self) {
+            unset($data['role'], $data['center_id'], $data['teacher_type']);
+            if ($deactivating && $me->role === 'admin') {
+                return $this->fail('Admins cannot deactivate their own account.', 422);
+            }
+            // Self-service is one-way: anyone may switch themselves OFF
+            // (reactivation needs another admin); anything else is stripped.
+            if (! $deactivating) unset($data['is_active']);
+        }
         if ($me->role !== 'admin') {
             if (($data['role'] ?? null) === 'admin') return $this->fail('Only admin can assign admin role.', 403);
             unset($data['center_id']);
@@ -78,6 +87,10 @@ class UserController extends Controller
         if (array_key_exists('password', $data)) {
             if ($data['password'] === null) unset($data['password']);
             else { $data['password_hash'] = Hash::make($data['password']); unset($data['password']); }
+        }
+        if ($deactivating && $user->role === 'admin'
+            && ! User::where('role', 'admin')->where('is_active', true)->where('id', '!=', $user->id)->exists()) {
+            return $this->fail('The last active admin cannot be deactivated.', 422);
         }
 
         $user->update($data);
@@ -88,6 +101,9 @@ class UserController extends Controller
     public function destroy(User $user): JsonResponse
     {
         $this->authorize('delete', $user);
+        if ($user->role === 'admin') {
+            return $this->fail('Admin accounts cannot be deleted.', 422);
+        }
 
         $groups = Group::where('teacher_id', $user->id)->where('is_active', true)
             ->get(['id', 'name']);
@@ -127,6 +143,9 @@ class UserController extends Controller
     public function replace(Request $request, User $user): JsonResponse
     {
         $this->authorize('delete', $user);
+        if ($user->role === 'admin') {
+            return $this->fail('Admin accounts cannot be deleted.', 422);
+        }
 
         $data = $request->validate(['replacer_id' => ['required', 'integer', 'exists:users,id']]);
         $replacer = User::findOrFail($data['replacer_id']);

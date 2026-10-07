@@ -17,12 +17,14 @@ abstract class Controller extends BaseController
      */
     protected const array ERROR_CODES = [
         'Student is in another center.' => 'CROSS_CENTER',
-        'Group belongs to another center.' => 'CROSS_CENTER',
+        'Season belongs to another center.' => 'CROSS_CENTER',        'Group belongs to another center.' => 'CROSS_CENTER',
         'Group is in another center.' => 'CROSS_CENTER',
         'Teacher must belong to the same center.' => 'CROSS_CENTER',
         'Only admin can create admins.' => 'ADMIN_ONLY',
         'Only admin can assign admin role.' => 'ADMIN_ONLY',
         'Centers cannot be deleted.' => 'ADMIN_ONLY',
+        'Groups cannot be deleted.' => 'ADMIN_ONLY',
+        'Level is used by groups or pupils and cannot be deleted.' => 'LEVEL_IN_USE',
         'You may only address your own students.' => 'OWN_STUDENTS',
         'The replacer cannot be the deleted teacher.' => 'REPLACER_SELF',
         'The replacer must be an active teacher.' => 'REPLACER_INACTIVE',
@@ -41,6 +43,9 @@ abstract class Controller extends BaseController
         'Surah range needs surah + ayah on both ends.' => 'RANGE_INVALID',
         'Range end must be after range start.' => 'RANGE_INVALID',
         'Group assignment only applies to teachers and students.' => 'GROUP_ROLE',
+        'Admin accounts cannot be deleted.' => 'ADMIN_DELETE',
+        'Admins cannot deactivate their own account.' => 'ADMIN_SELF_DISABLE',
+        'The last active admin cannot be deactivated.' => 'ADMIN_LAST_ACTIVE',
         'Weekly total would be' => 'SCORING_TOTAL',
         'Invalid credentials.' => 'INVALID_CREDENTIALS',
     ];

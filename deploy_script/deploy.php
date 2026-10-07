@@ -15,10 +15,11 @@ declare(strict_types=1);
 //      overwrite; files only on disk survive. storage/app therefore merges:
 //      old uploads stay, new skeleton files (.gitignore) are added.
 //   4. Optional `&action=migrate`: boot the fresh app and run
-//      `artisan migrate --force` (prod .env ships inside the zip, so the DB
-//      is localhost — no remote MySQL needed). Output is persisted to
-//      storage/logs/migrate-<stamp>.log (that dir survives purges) AND
-//      returned in the JSON response for the workflow log.
+//      `artisan migrate --force` plus `artisan db:seed --force` (prod .env ships
+//      inside the zip, so the DB is localhost — no remote MySQL needed). The
+//      seeder only creates the first admin when missing, so re-runs are safe.
+//      Output is persisted to storage/logs/migrate-<stamp>.log (that dir
+//      survives purges) AND returned in the JSON response for the workflow log.
 //   5. Recreate runtime dirs (framework cache/sessions/views, logs,
 //      bootstrap/cache), reset opcache, remove backend.zip, self-delete.
 
@@ -134,6 +135,12 @@ if (($_GET['action'] ?? '') === 'migrate') {
         $code = Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
         $migrateLog = Illuminate\Support\Facades\Artisan::output();
         $migrateOk = $code === 0;
+        if ($migrateOk) {
+            // First-admin bootstrap (no-op when admin@example.org exists).
+            $seedCode = Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+            $migrateLog .= "\n" . Illuminate\Support\Facades\Artisan::output();
+            $migrateOk = $seedCode === 0;
+        }
     } catch (Throwable $e) {
         $migrateOk = false;
         $migrateLog = get_class($e) . ': ' . $e->getMessage();

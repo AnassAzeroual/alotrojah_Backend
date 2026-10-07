@@ -61,7 +61,8 @@ class AuthController extends Controller
 
         return $this->ok([
             'id' => $u->id, 'full_name' => $u->full_name, 'email' => $u->email,
-            'role' => $u->role, 'center_id' => $u->center_id, 'teacher_type' => $u->teacher_type,
+            'role' => $u->role, 'center_id' => $u->center_id, 'center_name' => $u->center?->name,
+            'teacher_type' => $u->teacher_type,
         ]);
     }
 
@@ -87,7 +88,8 @@ class AuthController extends Controller
             'expires_in' => JWTAuth::factory()->getTTL() * 60,
             'user' => [
                 'id' => $u->id, 'full_name' => $u->full_name,
-                'role' => $u->role, 'center_id' => $u->center_id, 'teacher_type' => $u->teacher_type,
+                'role' => $u->role, 'center_id' => $u->center_id, 'center_name' => $u->center?->name,
+                'teacher_type' => $u->teacher_type,
             ],
         ], $message);
     }

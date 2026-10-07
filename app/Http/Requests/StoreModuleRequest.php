@@ -16,7 +16,8 @@ class StoreModuleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'code' => ['required', 'string', 'max:40', 'unique:scoring_modules,code', 'regex:/^[a-z0-9_]+$/'],
+            'code' => ['required', 'string', 'max:40', Rule::unique('scoring_modules', 'code')->where('center_id', $this->input('center_id')), 'regex:/^[a-z0-9_]+$/'],
+            'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'name_ar' => ['required', 'string', 'max:120'],
             'max_points' => ['required', 'numeric', 'min:0', 'max:20'],
             'scope' => ['required', Rule::enum(ModuleScope::class)],

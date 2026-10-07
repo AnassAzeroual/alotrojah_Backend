@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
 use App\Http\Resources\StudentResource;
+use App\Models\Center;
 use App\Models\Group;
 use App\Models\Student;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +34,10 @@ class StudentController extends Controller
         // Pupils with no group assigned.
         if ($request->boolean('unassigned')) $q->whereNull('group_id');
 
-        return $this->ok(StudentResource::collection($q->paginate(20))->response()->getData(true));
+        // §2.2: honor per_page (clamped) instead of silently truncating at 20.
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+
+        return $this->ok(StudentResource::collection($q->paginate($perPage))->response()->getData(true));
     }
 
     public function store(StoreStudentRequest $request): JsonResponse
@@ -41,6 +45,11 @@ class StudentController extends Controller
         $data = $request->validated();
         $me = $request->user();
         if ($me->role !== 'admin') $data['center_id'] = $me->center_id;
+        // §2.1: an admin who omits the center on a single-center deployment
+        // gets the sole center instead of a NULL-center (orphan) pupil.
+        if ($me->role === 'admin' && empty($data['center_id']) && Center::count() === 1) {
+            $data['center_id'] = Center::value('id');
+        }
 
         if (! empty($data['group_id'])) {
             $group = Group::findOrFail($data['group_id']);
@@ -63,11 +72,14 @@ class StudentController extends Controller
     public function update(UpdateStudentRequest $request, Student $student): JsonResponse
     {
         $data = $request->validated();
-        unset($data['center_id']); // center never moves via update
+        // §2.1: only non-admins are barred from moving the center; admins may
+        // repair NULL-center pupils through the UI.
+        if ($request->user()->role !== 'admin') unset($data['center_id']);
 
         if (! empty($data['group_id'])) {
             $group = Group::findOrFail($data['group_id']);
-            if ((int) $group->center_id !== (int) $student->center_id) {
+            $targetCenter = $data['center_id'] ?? $student->center_id;
+            if ((int) $group->center_id !== (int) $targetCenter) {
                 return $this->fail('Group belongs to another center.', 422);
             }
         }

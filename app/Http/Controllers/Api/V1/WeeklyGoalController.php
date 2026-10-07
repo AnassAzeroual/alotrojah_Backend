@@ -24,7 +24,10 @@ class WeeklyGoalController extends Controller
         if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
         if ($request->filled('week_id')) $q->where('week_id', (int) $request->input('week_id'));
 
-        return $this->ok(WeeklyGoalResource::collection($q->paginate(50))->response()->getData(true));
+        // §2.20: honor per_page (clamped) like the students index.
+        $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
+
+        return $this->ok(WeeklyGoalResource::collection($q->paginate($perPage))->response()->getData(true));
     }
 
     public function upsert(UpsertWeeklyGoalRequest $request): JsonResponse

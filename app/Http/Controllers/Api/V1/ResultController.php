@@ -20,7 +20,10 @@ class ResultController extends Controller
         $me = $request->user();
 
         $q = TermResult::orderBy('id');
-        if ($me->role !== 'admin') {
+        if ($me->role === 'student') {
+            // §2.3: a student sees only their own results (linked via students.user_id).
+            $q->whereHas('student', fn ($s) => $s->where('students.user_id', $me->id));
+        } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
         if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
@@ -54,7 +57,10 @@ class ResultController extends Controller
         $me = $request->user();
 
         $q = SeasonResult::orderBy('id');
-        if ($me->role !== 'admin') {
+        if ($me->role === 'student') {
+            // §2.3: a student sees only their own results (linked via students.user_id).
+            $q->whereHas('student', fn ($s) => $s->where('students.user_id', $me->id));
+        } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
         if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));

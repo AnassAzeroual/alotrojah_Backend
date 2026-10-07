@@ -25,10 +25,11 @@ class ScoringService
             ->sum('score');
     }
 
-    /** Manager guard: active weekly-total modules must sum to exactly 20. */
-    public function scoringCheck(): array
+    /** Manager guard: active weekly-total modules must sum to exactly 20 (per set). */
+    public function scoringCheck(?int $centerId = null): array
     {
-        $total = (float) ScoringModule::where('is_active', true)
+        $total = (float) ScoringModule::effectiveFor($centerId)
+            ->where('is_active', true)
             ->where('is_in_weekly_total', true)->where('scope', 'weekly')->sum('max_points');
 
         return ['valid' => abs($total - 20.0) < 0.001, 'total' => $total];
@@ -38,13 +39,15 @@ class ScoringService
     public function seasonAvgs(int $studentId, int $seasonId): array
     {
         $avgMurajaa = MurajaaReview::where('student_id', $studentId)->where('season_id', $seasonId)->avg('score');
-        // average of per-session totals (not of raw rows)
-        $avgWeekly = DB::table('session_scores as sc')
-            ->join('scoring_modules as mo', 'mo.id', '=', 'sc.module_id')
-            ->where('sc.student_id', $studentId)->where('sc.season_id', $seasonId)
-            ->where('mo.is_active', true)->where('mo.is_in_weekly_total', true)
-            ->groupBy('sc.session_id')->selectRaw('SUM(sc.score) as total')
-            ->get()->avg('total');
+        // average of per-session totals (not of raw rows) — averaged in SQL, not PHP
+        $avgWeekly = DB::query()->fromSub(
+            DB::table('session_scores as sc')
+                ->join('scoring_modules as mo', 'mo.id', '=', 'sc.module_id')
+                ->where('sc.student_id', $studentId)->where('sc.season_id', $seasonId)
+                ->where('mo.is_active', true)->where('mo.is_in_weekly_total', true)
+                ->groupBy('sc.session_id')->selectRaw('SUM(sc.score) as total'),
+            't'
+        )->avg('total');
         $avgSarraj = SessionScore::query()
             ->where('student_id', $studentId)->where('season_id', $seasonId)
             ->whereHas('module', fn ($q) => $q->where('code', 'sarraj')->where('is_active', true))
@@ -66,12 +69,10 @@ class ScoringService
         $avgs = $this->seasonAvgs($studentId, $seasonId);
         if ($avgs['avg_murajaa'] === null || $avgs['avg_weekly'] === null) return null;
 
+        // precomputed SUM of scored questions (kept current by ExamQuestionController::recompute)
         $quizzes = Exam::where('student_id', $studentId)->where('season_id', $seasonId)
-            ->whereIn('exam_type', ['term_batch', 'final_season'])->get()
-            ->map(fn ($e) => $e->questions()->whereNotNull('score')->exists()
-                ? round((float) $e->questions()->whereNotNull('score')->sum('score'), 2)
-                : null)
-            ->filter(fn ($v) => $v !== null)->values();
+            ->whereIn('exam_type', ['term_batch', 'final_season'])
+            ->get()->pluck('overall_avg')->filter(fn ($v) => $v !== null)->values();
         if ($quizzes->isEmpty()) return null;
 
         $n = $quizzes->count();

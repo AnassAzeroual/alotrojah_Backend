@@ -17,7 +17,11 @@ class SeasonPolicy
 
     public function view(User $user, AcademicSeason $season): bool
     {
-        return $this->isStaff($user);
+        if (! $this->isStaff($user)) return false;
+        if ($this->isAdmin($user)) return true;
+
+        // Legacy shared seasons (center_id NULL) stay visible to all staff.
+        return $season->center_id === null || (int) $season->center_id === (int) $user->center_id;
     }
 
     public function manage(User $user): bool

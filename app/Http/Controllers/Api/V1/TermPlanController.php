@@ -44,7 +44,9 @@ class TermPlanController extends Controller
         $data['season_id'] = $term->season_id;
 
         if ($data['plan_mode'] === 'thumn') {
-            if ($data['start_hizb'] !== null && $data['end_hizb'] !== null && $data['end_hizb'] < $data['start_hizb']) {
+            $startHizb = $data['start_hizb'] ?? null;
+            $endHizb = $data['end_hizb'] ?? null;
+            if ($startHizb !== null && $endHizb !== null && $endHizb < $startHizb) {
                 return $this->fail('End hizb must be >= start hizb.', 422);
             }
             $data['plan_surah_from'] = $data['plan_ayah_from'] = $data['plan_surah_to'] = $data['plan_ayah_to'] = null;
@@ -80,7 +82,7 @@ class TermPlanController extends Controller
     private function checkSurahRange(array $d): ?string
     {
         foreach ([['plan_surah_from', 'plan_ayah_from'], ['plan_surah_to', 'plan_ayah_to']] as [$ss, $aa]) {
-            if ($d[$ss] === null || $d[$aa] === null) return 'Surah range needs surah + ayah on both ends.';
+            if (($d[$ss] ?? null) === null || ($d[$aa] ?? null) === null) return 'Surah range needs surah + ayah on both ends.';
             $max = (int) QuranVerse::where('sura_no', $d[$ss])->max('ayah_no');
             if ($d[$aa] < 1 || $d[$aa] > $max) return "Ayah out of range for surah {$d[$ss]} (1-$max).";
         }

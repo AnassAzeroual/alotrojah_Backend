@@ -14,6 +14,16 @@ class StoreUserRequest extends FormRequest
         return $this->user()->can('create', \App\Models\User::class);
     }
 
+    protected function prepareForValidation(): void
+    {
+        // Non-admin creators never see the center field — default to their own
+        // center BEFORE validation, or the required rule below 422s a payload
+        // the UI could never complete (§2.8 follow-up).
+        if ($this->user()?->role !== 'admin' && empty($this->input('center_id'))) {
+            $this->merge(['center_id' => $this->user()->center_id]);
+        }
+    }
+
     public function rules(): array
     {
         return [
@@ -22,7 +32,14 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8', 'max:72'],
             'role' => ['required', Rule::enum(Role::class)],
             'phone' => ['nullable', 'string', 'max:30'],
-            'center_id' => ['nullable', 'integer', 'exists:centers,id'],
+            // §2.8: every role except admin belongs to exactly one center — a
+            // center-less supervisor/teacher/board/student account is inert.
+            'center_id' => [
+                Rule::requiredIf(
+                    fn () => in_array($this->input('role'), ['supervisor', 'teacher', 'board', 'student'], true)
+                ),
+                'nullable', 'integer', 'exists:centers,id',
+            ],
             'teacher_type' => ['sometimes', Rule::enum(TeacherType::class)],
             'is_active' => ['sometimes', 'boolean'],
         ];

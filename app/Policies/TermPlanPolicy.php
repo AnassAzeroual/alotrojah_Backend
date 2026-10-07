@@ -29,6 +29,7 @@ class TermPlanPolicy
 
     public function delete(User $user, TermPlan $plan): bool
     {
-        return in_array($user->role, ['admin', 'supervisor'], true);
+        return in_array($user->role, ['admin', 'supervisor'], true)
+            && $this->sameCenter($user, $plan->student?->center_id);
     }
 }

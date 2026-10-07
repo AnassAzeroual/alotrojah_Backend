@@ -100,8 +100,7 @@ class GroupController extends Controller
     public function destroy(Group $group): JsonResponse
     {
         $this->authorize('delete', $group);
-        $group->delete();
 
-        return $this->ok(null, 'Deleted.');
+        return $this->fail('Groups cannot be deleted.', 403);
     }
 }
