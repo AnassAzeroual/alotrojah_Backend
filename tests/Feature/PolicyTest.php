@@ -63,9 +63,11 @@ class PolicyTest extends TestCase
 
     public function test_murajaa_teacher_cannot_enter_weekly_scores(): void
     {
+        $sid = DB::table('sessions')->where('group_id', 1)->orderBy('id')->value('id');
+        $this->assertNotNull($sid);
         $this->actingAs(User::find(19), 'api')
             ->postJson('/api/v1/scores/bulk', [
-                'session_id' => 9,
+                'session_id' => $sid,
                 'records' => [['student_id' => 1, 'module_code' => 'hifz', 'score' => 10]],
             ])->assertForbidden();
     }
@@ -100,16 +102,36 @@ class PolicyTest extends TestCase
 
     public function test_by_session_scores_are_center_scoped(): void
     {
+        // Per-group sessions: each center reads its own pupils' rows on any
+        // session id — scope follows the pupil, never the session's group.
+        $s1 = DB::table('sessions')->where('group_id', 1)->orderBy('id')->value('id');
+        $s3 = DB::table('sessions')->where('group_id', 3)->orderBy('id')->value('id');
+        $this->assertNotNull($s1);
+        $this->assertNotNull($s3);
+        $this->actingAs(User::find(1), 'api');
+        $this->postJson('/api/v1/scores/bulk', ['session_id' => $s1, 'records' => [
+            ['student_id' => 1, 'module_code' => 'hifz', 'score' => 12],
+            ['student_id' => 2, 'module_code' => 'hifz', 'score' => 13],
+        ]])->assertCreated();
+        $this->postJson('/api/v1/scores/bulk', ['session_id' => $s3, 'records' => [
+            ['student_id' => 4, 'module_code' => 'hifz', 'score' => 11],
+            ['student_id' => 5, 'module_code' => 'hifz', 'score' => 10],
+        ]])->assertCreated();
+
         $this->actingAs(User::find(3), 'api'); // teacher, center 1
-        $r = $this->getJson('/api/v1/sessions/1/scores')->assertOk();
-        $this->assertEquals(
-            [1, 2, 3],
-            collect($r->json('data'))->pluck('student_id')->sort()->values()->all()
-        );
+        $ids = collect($this->getJson("/api/v1/sessions/{$s1}/scores")->assertOk()->json('data'))
+            ->pluck('student_id')->all();
+        $this->assertContains(1, $ids);
+        $this->assertContains(2, $ids);
+        $this->assertNotContains(4, $ids);
+        $this->assertNotContains(5, $ids);
 
         $this->actingAs(User::find(7), 'api'); // teacher, center 2
-        $r = $this->getJson('/api/v1/sessions/1/scores')->assertOk();
-        $this->assertEquals([4, 5], collect($r->json('data'))->pluck('student_id')->sort()->values()->all());
+        $ids = collect($this->getJson("/api/v1/sessions/{$s3}/scores")->assertOk()->json('data'))
+            ->pluck('student_id')->all();
+        $this->assertContains(4, $ids);
+        $this->assertContains(5, $ids);
+        $this->assertNotContains(1, $ids);
     }
 
     public function test_student_role_sees_only_own_session_scores(): void

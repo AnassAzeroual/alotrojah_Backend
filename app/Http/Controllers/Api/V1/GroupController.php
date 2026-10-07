@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Http\Resources\GroupResource;
+use App\Models\AcademicSeason;
 use App\Models\Group;
 use App\Models\User;
 use App\Services\GroupStatsService;
+use App\Services\SeasonTemplateService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +65,7 @@ class GroupController extends Controller
         return $this->ok($stats->detail($group, $season?->id) + ['season_name' => $season?->name]);
     }
 
-    public function store(StoreGroupRequest $request): JsonResponse
+    public function store(StoreGroupRequest $request, SeasonTemplateService $tpl): JsonResponse
     {
         $data = $request->validated();
         $me = $request->user();
@@ -87,6 +89,9 @@ class GroupController extends Controller
 
             return $g;
         });
+        // A group born after its seasons would otherwise own zero sessions:
+        // backfill its sets for every open season of its center.
+        $this->backfillGroupSessions($group->fresh(), $tpl);
 
         return $this->created(new GroupResource($group->load('teacher')));
     }
@@ -98,7 +103,7 @@ class GroupController extends Controller
         return $this->ok(new GroupResource($group->load('teacher')->loadCount('students')));
     }
 
-    public function update(UpdateGroupRequest $request, Group $group): JsonResponse
+    public function update(UpdateGroupRequest $request, Group $group, SeasonTemplateService $tpl): JsonResponse
     {
         $data = $request->validated();
 
@@ -112,6 +117,7 @@ class GroupController extends Controller
         $days = array_key_exists('schedule_days', $data) ? array_values(array_unique($data['schedule_days'] ?? [])) : null;
         unset($data['schedule_days']);
 
+        $wasInactive = ! $group->is_active;
         DB::transaction(function () use ($group, $data, $days) {
             $group->update($data);
             if ($days !== null) {
@@ -120,7 +126,34 @@ class GroupController extends Controller
             }
         });
 
+        // Reactivation restores the group's future: same backfill as creation.
+        // (Day-list edits apply to future generations only — existing session
+        // rows keep their dates so recorded history never moves.)
+        if ($wasInactive && $group->fresh()->is_active) {
+            $this->backfillGroupSessions($group->fresh(), $tpl);
+        }
+
         return $this->ok(new GroupResource($group->fresh('teacher')));
+    }
+
+    /**
+     * Give a new/reactivated group its session sets for every open season of
+     * its center (current or starting today or later — closed history stays
+     * closed). Inactive groups own no sessions by design.
+     */
+    private function backfillGroupSessions(Group $group, SeasonTemplateService $tpl): void
+    {
+        if (! $group->is_active) {
+            return;
+        }
+        $seasons = AcademicSeason::where('center_id', $group->center_id)
+            ->where(function ($q) {
+                $q->where('is_current', true)
+                    ->orWhereDate('start_date', '>=', today()->toDateString());
+            })->get();
+        foreach ($seasons as $season) {
+            $tpl->generateForGroup($season, $group);
+        }
     }
 
     public function destroy(Group $group): JsonResponse

@@ -65,6 +65,7 @@ jobs:
           --path=database/migrations/2026_10_07_000017_teacher_type_only_for_teachers.php
           --path=database/migrations/2026_10_07_000018_group_weekdays_table.php
           --path=database/migrations/2026_10_07_000019_not_null_foreign_keys.php
+          --path=database/migrations/2026_10_07_000020_session_times_and_group.php
 
       - name: Run test suite
         env:
