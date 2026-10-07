@@ -36,6 +36,20 @@ class User extends Authenticatable implements JWTSubject
         'created_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        // teacher_type is meaningful only for teachers — normalize on every
+        // write (API, seeds, factories, role changes) so no path can persist
+        // a type on a non-teacher. Locked by chk_users_teacher_type.
+        static::saving(function (User $user): void {
+            if ($user->role !== 'teacher') {
+                $user->teacher_type = null;
+            } elseif ($user->teacher_type === null) {
+                $user->teacher_type = 'both';
+            }
+        });
+    }
+
     public function getAuthPassword(): string
     {
         return (string) $this->password_hash;

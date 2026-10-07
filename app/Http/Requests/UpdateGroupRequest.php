@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\Weekday;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateGroupRequest extends FormRequest
 {
@@ -19,7 +21,8 @@ class UpdateGroupRequest extends FormRequest
             'teacher_id' => ['sometimes', 'nullable', 'integer', 'exists:users,id'],
             'academic_year' => ['sometimes', 'nullable', 'string', 'max:20'],
             'capacity' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:500'],
-            'schedule_days' => ['sometimes', 'string', 'max:60'],
+            'schedule_days' => ['sometimes', 'array', 'max:7'],
+            'schedule_days.*' => [Rule::enum(Weekday::class)],
             'is_active' => ['sometimes', 'boolean'],
         ];
     }

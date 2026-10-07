@@ -15,7 +15,10 @@ class Group extends Model
 {
     protected $table = 'groups';
     public $timestamps = false;
-    protected $fillable = ['center_id','level_id','teacher_id','name','academic_year','capacity','schedule_days','is_active'];
+    protected $fillable = ['center_id','level_id','teacher_id','name','academic_year','capacity','is_active'];
+
+    /** Always present (one tiny query per collection): feeds schedule_days below. */
+    protected $with = ['weekdays'];
     protected $casts = [
         'is_active' => 'boolean',
     ];
@@ -35,4 +38,18 @@ class Group extends Model
     public function delegationTokens(): HasMany { return $this->hasMany(DelegationToken::class, 'group_id'); }
 
     public function students(): HasMany { return $this->hasMany(Student::class, 'group_id'); }
+
+    public function weekdays(): HasMany
+    {
+        return $this->hasMany(GroupWeekday::class, 'group_id')->orderByRaw("FIELD(weekday,'Mon','Tue','Wed','Thu','Fri','Sat','Sun')");
+    }
+
+    /**
+     * API-stable joined shape ('Mon,Wed,Fri'): the column moved to
+     * group_weekdays (1NF) but every reader keeps working unchanged.
+     */
+    public function getScheduleDaysAttribute(): string
+    {
+        return $this->weekdays->pluck('weekday')->implode(',');
+    }
 }

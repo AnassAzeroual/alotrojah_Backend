@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\GroupStatsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GroupController extends Controller
 {
@@ -71,7 +72,17 @@ class GroupController extends Controller
             }
         }
 
-        return $this->created(new GroupResource(Group::create($data)->load('teacher')));
+        $days = array_values(array_unique($data['schedule_days'] ?? []));
+        unset($data['schedule_days']);
+
+        $group = DB::transaction(function () use ($data, $days) {
+            $g = Group::create($data);
+            $g->weekdays()->createMany(array_map(fn ($d) => ['weekday' => $d], $days));
+
+            return $g;
+        });
+
+        return $this->created(new GroupResource($group->load('teacher')));
     }
 
     public function show(Group $group): JsonResponse
@@ -92,7 +103,16 @@ class GroupController extends Controller
             }
         }
 
-        $group->update($data);
+        $days = array_key_exists('schedule_days', $data) ? array_values(array_unique($data['schedule_days'] ?? [])) : null;
+        unset($data['schedule_days']);
+
+        DB::transaction(function () use ($group, $data, $days) {
+            $group->update($data);
+            if ($days !== null) {
+                $group->weekdays()->delete();
+                $group->weekdays()->createMany(array_map(fn ($d) => ['weekday' => $d], $days));
+            }
+        });
 
         return $this->ok(new GroupResource($group->fresh('teacher')));
     }
