@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateGroupRequest;
 use App\Http\Resources\GroupResource;
 use App\Models\AcademicSeason;
 use App\Models\Group;
+use App\Models\Student;
 use App\Models\User;
 use App\Services\GroupStatsService;
 use App\Services\SeasonTemplateService;
@@ -22,7 +23,10 @@ class GroupController extends Controller
         $me = $request->user();
 
         $q = Group::with('teacher')->withCount('students')->orderBy('id');
-        if ($me->role !== 'admin') {
+        if ($me->role === 'student') {
+            // Own group only (pupil link; groupless pupils see nothing).
+            $q->whereIn('groups.id', $this->studentGroupIds($me));
+        } elseif ($me->role !== 'admin') {
             $q->forCenter((int) $me->center_id);
         } elseif ($request->filled('center_id')) {
             $q->where('center_id', (int) $request->input('center_id'));
@@ -44,7 +48,9 @@ class GroupController extends Controller
         $me = $request->user();
 
         $q = Group::with(['teacher', 'level'])->withCount('students')->orderBy('id');
-        if ($me->role !== 'admin') {
+        if ($me->role === 'student') {
+            $q->whereIn('groups.id', $this->studentGroupIds($me));
+        } elseif ($me->role !== 'admin') {
             $q->forCenter((int) $me->center_id);
         } elseif ($request->filled('center_id')) {
             $q->where('center_id', (int) $request->input('center_id'));
@@ -134,6 +140,18 @@ class GroupController extends Controller
         }
 
         return $this->ok(new GroupResource($group->fresh('teacher')));
+    }
+
+    /**
+     * Own-group ids for a student user (empty when the pupil link has no
+     * group — whereIn([]) then matches nothing, by design).
+     *
+     * @return int[]
+     */
+    private function studentGroupIds(User $user): array
+    {
+        return Student::where('user_id', $user->id)->whereNotNull('group_id')
+            ->pluck('group_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /**

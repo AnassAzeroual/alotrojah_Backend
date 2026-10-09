@@ -10,6 +10,7 @@ use App\Http\Resources\TermResource;
 use App\Http\Resources\WeekResource;
 use App\Models\AcademicSeason;
 use App\Models\Session;
+use App\Models\Student;
 use App\Models\Term;
 use App\Models\Week;
 use Illuminate\Http\JsonResponse;
@@ -26,11 +27,15 @@ class CalendarController extends Controller
         ));
     }
 
-    public function showTerm(Term $term): JsonResponse
+    public function showTerm(Request $request, Term $term): JsonResponse
     {
         $this->authorize('view', $term->season);
+        $ids = $this->studentGroupIds($request->user());
 
-        return $this->ok(new TermResource($term->load(['weeks.sessions'])));
+        return $this->ok(new TermResource($term->load(['weeks.sessions' => function ($q) use ($ids) {
+            // Students read only their own group's sessions.
+            if ($ids !== null) $q->whereIn('group_id', $ids);
+        }])));
     }
 
     public function updateTerm(UpdateTermRequest $request, Term $term): JsonResponse
@@ -52,6 +57,9 @@ class CalendarController extends Controller
         }
         if ($request->filled('season_id')) {
             $q->where('season_id', (int) $request->input('season_id'));
+        }
+        if (($ids = $this->studentGroupIds($request->user())) !== null) {
+            $q->whereHas('sessions', fn ($s) => $s->whereIn('group_id', $ids));
         }
 
         return $this->ok(WeekResource::collection($q->paginate(50))->response()->getData(true));
@@ -88,6 +96,9 @@ class CalendarController extends Controller
         if ($request->filled('to')) {
             $q->where('planned_date', '<=', $request->input('to'));
         }
+        if (($ids = $this->studentGroupIds($request->user())) !== null) {
+            $q->whereIn('group_id', $ids);
+        }
 
         return $this->ok(SessionResource::collection($q->paginate(50))->response()->getData(true));
     }
@@ -107,6 +118,20 @@ class CalendarController extends Controller
         $session->update($data);
 
         return $this->ok(new SessionResource($session->fresh()));
+    }
+
+    /**
+     * Own-group ids for a student user (null = no narrowing for staff).
+     * Empty array = pupil link without a group, matching nothing by design.
+     *
+     * @return int[]|null
+     */
+    private function studentGroupIds($user): ?array
+    {
+        if ($user->role !== 'student') return null;
+
+        return Student::where('user_id', $user->id)->whereNotNull('group_id')
+            ->pluck('group_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /** Center-owned calendar rows: non-admins touch only their own center (never shared NULL rows). */

@@ -179,4 +179,75 @@ class PolicyTest extends TestCase
                 'name' => 'Bad Teacher Group', 'center_id' => 1, 'level_id' => 1, 'teacher_id' => 7, // teacher of center 2
             ])->assertStatus(422);
     }
+
+    public function test_student_calendar_reads_own_group_only(): void
+    {
+        $u = User::create([
+            'full_name' => 'Student Cal', 'email' => 'cal@example.org',
+            'password_hash' => Hash::make('password123'), 'role' => 'student', 'center_id' => 1,
+        ]);
+        DB::table('students')->where('id', 1)->update(['user_id' => $u->id]);
+        $ownGroup = (int) DB::table('students')->where('id', 1)->value('group_id');
+        $this->assertSame(1, $ownGroup);
+        $this->actingAs($u, 'api');
+
+        // seasons read OK, center-scoped (shared legacy + own center only)
+        $seasons = $this->getJson('/api/v1/seasons')->assertOk()->json('data.data');
+        $this->assertNotEmpty($seasons);
+        foreach ($seasons as $s) {
+            $this->assertTrue($s['center_id'] === null || (int) $s['center_id'] === 1);
+        }
+
+        // groups index narrows to the pupil's own group
+        $groups = $this->getJson('/api/v1/groups')->assertOk()->json('data.data');
+        $this->assertEquals([$ownGroup], collect($groups)->pluck('id')->map(fn ($v) => (int) $v)->all());
+
+        // other groups refused, own group opens
+        $this->getJson('/api/v1/groups/3')->assertForbidden();
+        $this->getJson("/api/v1/groups/{$ownGroup}")->assertOk();
+
+        // every term detail exposes only own-group sessions (or none)
+        $found = 0;
+        foreach ($seasons as $s) {
+            $terms = $this->getJson("/api/v1/seasons/{$s['id']}/terms")->assertOk()->json('data');
+            foreach ($terms as $t) {
+                $detail = $this->getJson("/api/v1/terms/{$t['id']}")->assertOk()->json('data');
+                foreach ($detail['weeks'] ?? [] as $w) {
+                    foreach ($w['sessions'] ?? [] as $sess) {
+                        $this->assertSame($ownGroup, (int) $sess['group_id']);
+                        $found++;
+                    }
+                }
+            }
+        }
+        $this->assertGreaterThan(0, $found);
+
+        // calendar writes stay manager-only
+        $sid = DB::table('sessions')->where('group_id', $ownGroup)->orderBy('id')->value('id');
+        $this->assertNotNull($sid);
+        $this->patchJson("/api/v1/sessions-cal/{$sid}", ['planned_date' => '2026-11-01'])
+            ->assertForbidden();
+    }
+
+    public function test_teacher_calendar_reads_without_writes(): void
+    {
+        $this->actingAs(User::find(3), 'api'); // teacher, center 1
+        $this->getJson('/api/v1/seasons')->assertOk();
+        $this->getJson('/api/v1/groups')->assertOk();
+        $sid = DB::table('sessions')->where('group_id', 1)->orderBy('id')->value('id');
+        $this->assertNotNull($sid);
+        $this->patchJson("/api/v1/sessions-cal/{$sid}", ['planned_date' => '2026-11-01'])
+            ->assertForbidden();
+    }
+
+    public function test_session_times_cap_at_22_00(): void
+    {
+        $sid = DB::table('sessions')->where('group_id', 1)->orderBy('id')->value('id');
+        $this->assertNotNull($sid);
+        $this->actingAs(User::find(1), 'api'); // admin clears every other gate
+        $this->patchJson("/api/v1/sessions-cal/{$sid}", ['start_time' => '21:00', 'end_time' => '23:00'])
+            ->assertStatus(422);
+        $this->patchJson("/api/v1/sessions-cal/{$sid}", ['start_time' => '21:00', 'end_time' => '22:00'])
+            ->assertOk();
+    }
 }

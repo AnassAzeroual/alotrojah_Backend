@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Group;
+use App\Models\Student;
 use App\Models\User;
 use App\Policies\Concerns\CenterScoped;
 
@@ -12,11 +13,18 @@ class GroupPolicy
 
     public function viewAny(User $user): bool
     {
-        return $this->isStaff($user);
+        // Students see their own group only (narrowed in the controller).
+        return $this->isStaff($user) || $user->role === 'student';
     }
 
     public function view(User $user, Group $group): bool
     {
+        // Students open only the group their pupil record belongs to.
+        if ($user->role === 'student') {
+            return $this->sameCenter($user, $group->center_id)
+                && Student::where('user_id', $user->id)->where('group_id', $group->id)->exists();
+        }
+
         return $this->sameCenter($user, $group->center_id);
     }
 

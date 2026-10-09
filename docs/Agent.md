@@ -123,5 +123,15 @@ Laravel 12 API-only, PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_h
 
 - Lockstep mirror (2026-10-09) — admin-only settings re-verified end to end, no backend change: route roles gate + gear admin `@if` confirmed by read; e2e `settings-flow` **3/3** now also proves a teacher's direct `/settings` URL bounces home. Backend suite untouched.
 
+- Student calendar reads, own-group-only (2026-10-09, user-ordered, PHPUnit **156/156** green, no commits): `SeasonPolicy::viewAny/view/viewCalendar` and `GroupPolicy::viewAny` admit the student role; `GroupPolicy::view` additionally requires pupil membership for students; `GroupController@index/stats` narrow students via `studentGroupIds()` (pupil link, `whereIn([])` matches nothing); `CalendarController::showTerm/weeks/sessions` apply the same narrowing (new `studentGroupIds()` helper). Writes untouched — `Update*Request::authorize` already requires `manageCalendar` (admin/supervisor), pinned by new `PolicyTest` cases (student + teacher PATCH → 403). `GroupStatsTest::test_student_role_cannot_use_group_feeds` rewritten to the new contract (own-group feeds 200, foreign group 403). Full suite green; `.env` at-rest verified `alotrojah_dev`.
+
+- Lockstep mirror (2026-10-09) — frontend replaced the calendar detail date-picker with a start→end datetime range picker, no backend change: new `SessionRangePickerComponent` (flatpickr range + 24h time) + `rangeOf`/`setRange` riding the existing `sessions-cal` PATCH; managers only. Frontend gated scoped prettier/typecheck/build/Vitest **144/144** + wrapper e2e `calendar-access` **3/3** (new typed-range leg with exact PATCH-body assert + restore) + `calendar-drag` **2/2** (updated to the range text); backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend range-input design pass, no backend change: wide themed field, bidi-safe `→` separator, dark-mode popup fix (`body`-prefixed rules beating the later flatpickr.css). Frontend gated scoped prettier/typecheck/build/Vitest **144/144** + wrapper e2e `calendar-access` **3/3**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — 22:00 session clock ceiling, `UpdateSessionRequest` gains `before_or_equal:22:00` on start/end (generator + seeds verified compliant first); new `test_session_times_cap_at_22_00`. Full PHPUnit **157/157** green, `.env` at-rest verified `alotrojah_dev`.
+
+- Lockstep mirror (2026-10-09) — frontend range-picker mobile pass, no backend change: tap-only field on touch (no keyboard), taller time row; verified on a mobile viewport. Vitest **148/148**; backend suite untouched. Two mobile shell bugs reported unfixed (menu covered by date-chip, sticky topbar overlapping taps).
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.
