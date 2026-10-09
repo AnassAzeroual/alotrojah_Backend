@@ -113,5 +113,15 @@ Laravel 12 API-only, PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_h
 
 - Lockstep mirror (2026-10-09) — frontend deleted dead AuthArtComponent, no backend change: the `app-auth-art` slide carousel was imported but never rendered (login/register templates use a static verse block); removed the component, its imports, hiding CSS, `auth.art_caption`/`art_hint` ×3 locales, and `public/assets/auth/slide-*.jpg`. Frontend gated scoped prettier/typecheck/build/Vitest **138/138**; backend suite untouched.
 
+- Lockstep mirror (2026-10-09) — frontend locked login/register to RTL, no backend change: `<main class="auth-stage">` in both auth templates carries `dir="rtl"`, so language switches no longer mirror the split layout; strings still translate and the rest of the app still follows the document dir. Frontend gated typecheck/build/Vitest **138/138**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend gated the calendar JSON view behind a Settings checkbox, no backend change: new persisted per-user `showCalDebug` admin pref (default on) with a checkbox in Settings Display section (`settings.show_cal_debug` ×3 locales); the admin-only debug panel now also requires the pref. Frontend gated scoped prettier/typecheck/build/Vitest **138/138** + wrapper e2e `settings-flow` **3/3** (new toggle test included); backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend opened Settings + calendar JSON view to every role, no backend change: the calendar debug panel no longer requires admin (anyone with calendar access sees it once their own pref is on, prod included — no env gate on that path); `/settings` lost its admin-only route role and the shell gear lost its admin `@if`, so every logged-in account opens Settings and toggles its own per-user prefs (the center-ID chip display stays dev-only in code). Frontend gated scoped prettier/typecheck/build/Vitest **138/138** + wrapper e2e `settings-flow` **3/3**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend made the center-ID pref authoritative in dev and prod, no backend change: dropped the `!environment.production` gate on the header chip (`name · #id` whenever the pref is on, default on) and rewrote its hint ×3 locales; `/settings` is admin-only again (user-reverted route; gear gate + teacher e2e restored to match). Frontend gated scoped prettier/typecheck/build/Vitest **138/138** + wrapper e2e `settings-flow` **3/3**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — admin-only settings re-verified end to end, no backend change: route roles gate + gear admin `@if` confirmed by read; e2e `settings-flow` **3/3** now also proves a teacher's direct `/settings` URL bounces home. Backend suite untouched.
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.
