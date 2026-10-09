@@ -80,6 +80,8 @@ Route::prefix('v1')->group(function () {
         Route::patch('weeks/{week}', [CalendarController::class, 'updateWeek']);
         Route::get('sessions-cal', [CalendarController::class, 'sessions']);
         Route::patch('sessions-cal/{session}', [CalendarController::class, 'updateSession']);
+        // Display-ready calendar window (sessions + card names, one request).
+        Route::get('calendar', [CalendarController::class, 'feed']);
         Route::put('term-plans', [TermPlanController::class, 'upsert']);
         Route::apiResource('term-plans', TermPlanController::class)->only(['index', 'show', 'destroy']);
         Route::put('scoring-modules', [ScoringModuleController::class, 'bulk']);

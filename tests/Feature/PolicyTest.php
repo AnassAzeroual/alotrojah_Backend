@@ -250,4 +250,42 @@ class PolicyTest extends TestCase
         $this->patchJson("/api/v1/sessions-cal/{$sid}", ['start_time' => '21:00', 'end_time' => '22:00'])
             ->assertOk();
     }
+
+    public function test_calendar_feed_serves_display_rows_in_one_window(): void
+    {
+        $this->actingAs(User::find(3), 'api'); // teacher, center 1
+        $r = $this->getJson('/api/v1/calendar?season_id=1&from=2025-09-01&to=2025-09-07')
+            ->assertOk();
+        $rows = $r->json('data.data');
+        $this->assertNotEmpty($rows);
+        foreach ($rows as $row) {
+            // window bounds respected, display names embedded, no extra fetch needed
+            $this->assertGreaterThanOrEqual('2025-09-01', $row['planned_date']);
+            $this->assertLessThanOrEqual('2025-09-07', $row['planned_date']);
+            $this->assertNotEmpty($row['group_name']);
+            $this->assertNotEmpty($row['term_name']);
+            $this->assertGreaterThan(0, (int) $row['week_number_global']);
+            $gid = (int) $row['group_id'];
+            $this->assertSame(1, (int) DB::table('groups')->where('id', $gid)->value('center_id'));
+        }
+        // missing bounds rejected
+        $this->getJson('/api/v1/calendar?season_id=1')->assertStatus(422);
+    }
+
+    public function test_calendar_feed_narrows_students_to_own_group(): void
+    {
+        $u = User::create([
+            'full_name' => 'Student Feed', 'email' => 'feed@example.org',
+            'password_hash' => Hash::make('password123'), 'role' => 'student', 'center_id' => 1,
+        ]);
+        DB::table('students')->where('id', 1)->update(['user_id' => $u->id]);
+        $r = $this->actingAs($u, 'api')
+            ->getJson('/api/v1/calendar?season_id=1&from=2025-09-01&to=2025-09-07')
+            ->assertOk();
+        $rows = $r->json('data.data');
+        $this->assertNotEmpty($rows);
+        foreach ($rows as $row) {
+            $this->assertSame(1, (int) $row['group_id']);
+        }
+    }
 }

@@ -139,5 +139,11 @@ Laravel 12 API-only, PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_h
 
 - Lockstep mirror (2026-10-09) — frontend fetch windows now exact (inclusive `to`), no backend change: day from==to, week Mon–Sun. E2E `calendar-access` **6/6**, `calendar-drag` **2/2**; backend suite untouched.
 
+- Single calendar feed endpoint (2026-10-09, user time-challenge, PHPUnit **159/159** green, no commits): `GET /api/v1/calendar` (Eloquent `SessionCalendarResource`, no DB view) serves windowed sessions with card names in one request; `StudentGroupScope` trait consolidates the student narrowing across `CalendarController`/`GroupController`. New `PolicyTest` feed cases (teacher center-scoped incl. shared-season isolation, student own-group, 422 on missing bounds). Full suite green; `.env` at-rest verified `alotrojah_dev`.
+
+- Lockstep mirror (2026-10-09) — frontend calendar landing now span-gated (stay on in-span empty days, jump only outside the season), no backend change. E2E `calendar-access` **6/6**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend deleted calendar auto-jump, added `?date=` deep link; fixed `?term=` transform (missing query params arrive as `undefined`, producing `NaN` that defeated null-guards). E2E `calendar-access` **6/6**, `calendar-drag` **2/2** via API-discovered dates; backend suite untouched.
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.

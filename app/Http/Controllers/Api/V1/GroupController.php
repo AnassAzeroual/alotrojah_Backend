@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Http\Resources\GroupResource;
+use App\Http\Controllers\Concerns\StudentGroupScope;
 use App\Models\AcademicSeason;
 use App\Models\Group;
-use App\Models\Student;
 use App\Models\User;
 use App\Services\GroupStatsService;
 use App\Services\SeasonTemplateService;
@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\DB;
 
 class GroupController extends Controller
 {
+    use StudentGroupScope;
+
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Group::class);
@@ -140,18 +142,6 @@ class GroupController extends Controller
         }
 
         return $this->ok(new GroupResource($group->fresh('teacher')));
-    }
-
-    /**
-     * Own-group ids for a student user (empty when the pupil link has no
-     * group — whereIn([]) then matches nothing, by design).
-     *
-     * @return int[]
-     */
-    private function studentGroupIds(User $user): array
-    {
-        return Student::where('user_id', $user->id)->whereNotNull('group_id')
-            ->pluck('group_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /**
