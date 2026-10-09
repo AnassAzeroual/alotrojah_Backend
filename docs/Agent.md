@@ -133,5 +133,11 @@ Laravel 12 API-only, PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_h
 
 - Lockstep mirror (2026-10-09) — frontend range-picker mobile pass, no backend change: tap-only field on touch (no keyboard), taller time row; verified on a mobile viewport. Vitest **148/148**; backend suite untouched. Two mobile shell bugs reported unfixed (menu covered by date-chip, sticky topbar overlapping taps).
 
+- Lockstep mirror (2026-10-09) — frontend persisted calendar tab + smart per-view loading, no backend change: view tab in localStorage; sessions fetch only the visible window (`from`/`to`, already supported); one-row probe lands empty windows. Frontend gated scoped prettier/typecheck/build/Vitest **152/152** + wrapper e2e `calendar-access` **6/6**, `calendar-drag` **2/2**, `settings-flow` **3/3**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend dropped the landing probe (day tab = 4 calls), no backend change: empty windows land on the season `start_date` from the already-fetched list. E2E `calendar-access` **6/6**, `calendar-drag` **2/2**, `settings-flow` **3/3**; backend suite untouched.
+
+- Lockstep mirror (2026-10-09) — frontend fetch windows now exact (inclusive `to`), no backend change: day from==to, week Mon–Sun. E2E `calendar-access` **6/6**, `calendar-drag` **2/2**; backend suite untouched.
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.
