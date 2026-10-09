@@ -46,7 +46,7 @@ class AuthController extends Controller
             'email' => $data['email'],
             'password_hash' => Hash::make($data['password']),
             'role' => $data['role'],
-            'teacher_type' => $data['role'] === 'teacher' ? $data['teacher_type'] : 'both',
+            'teacher_type' => $data['role'] === 'teacher' ? $data['teacher_type'] : null,
             'phone' => $data['phone'],
             'birth_date' => $isStudent ? $data['birth_date'] : null,
             'gender' => $isStudent ? $data['gender'] : null,

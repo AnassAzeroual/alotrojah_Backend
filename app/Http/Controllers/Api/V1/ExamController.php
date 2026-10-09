@@ -18,7 +18,7 @@ class ExamController extends Controller
         $this->authorize('viewAny', Exam::class);
         $me = $request->user();
 
-        $q = Exam::orderByDesc('exam_date')->orderByDesc('id');
+        $q = Exam::orderByDesc('exam_date')->orderByDesc('id')->with('student');
         if ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
@@ -54,7 +54,7 @@ class ExamController extends Controller
     {
         $this->authorize('view', $exam);
 
-        return $this->ok(new ExamResource($exam->load(['questions' => fn ($q) => $q->orderBy('sort_order')->orderBy('question_no')])));
+        return $this->ok(new ExamResource($exam->load(['student', 'questions' => fn ($q) => $q->orderBy('sort_order')->orderBy('question_no')])));
     }
 
     public function update(UpdateExamRequest $request, Exam $exam): JsonResponse

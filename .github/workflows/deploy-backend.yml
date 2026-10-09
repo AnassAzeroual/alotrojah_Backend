@@ -62,6 +62,10 @@ jobs:
           --path=database/migrations/2026_10_05_000014_season_dashboard_null_avgs.php
           --path=database/migrations/2026_10_05_000015_center_seasons_drop_hizb.php
           --path=database/migrations/2026_10_05_000016_center_module_level_overrides.php
+          --path=database/migrations/2026_10_07_000017_teacher_type_only_for_teachers.php
+          --path=database/migrations/2026_10_07_000018_group_weekdays_table.php
+          --path=database/migrations/2026_10_07_000019_not_null_foreign_keys.php
+          --path=database/migrations/2026_10_07_000020_session_times_and_group.php
 
       - name: Run test suite
         env:

@@ -25,10 +25,17 @@ class UserController extends Controller
         $me = $request->user();
 
         $q = User::orderBy('id');
-        if ($me->role !== 'admin') $q->forCenter((int) $me->center_id);
-        elseif ($request->filled('center_id')) $q->where('center_id', (int) $request->input('center_id'));
-        if ($request->filled('role')) $q->where('role', $request->input('role'));
-        if ($request->filled('q')) $q->where('full_name', 'like', '%'.$request->input('q').'%');
+        if ($me->role !== 'admin') {
+            $q->forCenter((int) $me->center_id);
+        } elseif ($request->filled('center_id')) {
+            $q->where('center_id', (int) $request->input('center_id'));
+        }
+        if ($request->filled('role')) {
+            $q->where('role', $request->input('role'));
+        }
+        if ($request->filled('q')) {
+            $q->where('full_name', 'like', '%'.$request->input('q').'%');
+        }
         // Free teachers: no ACTIVE group assigned (inactive groups don't count).
         if ($request->boolean('unassigned')) {
             $q->whereNotExists(function ($sq) {
@@ -47,7 +54,9 @@ class UserController extends Controller
         $me = $request->user();
 
         if ($me->role !== 'admin') {
-            if (($data['role'] ?? null) === 'admin') return $this->fail('Only admin can create admins.', 403);
+            if (($data['role'] ?? null) === 'admin') {
+                return $this->fail('Only admin can create admins.', 403);
+            }
             $data['center_id'] = $me->center_id;
         }
 
@@ -78,15 +87,23 @@ class UserController extends Controller
             }
             // Self-service is one-way: anyone may switch themselves OFF
             // (reactivation needs another admin); anything else is stripped.
-            if (! $deactivating) unset($data['is_active']);
+            if (! $deactivating) {
+                unset($data['is_active']);
+            }
         }
         if ($me->role !== 'admin') {
-            if (($data['role'] ?? null) === 'admin') return $this->fail('Only admin can assign admin role.', 403);
+            if (($data['role'] ?? null) === 'admin') {
+                return $this->fail('Only admin can assign admin role.', 403);
+            }
             unset($data['center_id']);
         }
         if (array_key_exists('password', $data)) {
-            if ($data['password'] === null) unset($data['password']);
-            else { $data['password_hash'] = Hash::make($data['password']); unset($data['password']); }
+            if ($data['password'] === null) {
+                unset($data['password']);
+            } else {
+                $data['password_hash'] = Hash::make($data['password']);
+                unset($data['password']);
+            }
         }
         if ($deactivating && $user->role === 'admin'
             && ! User::where('role', 'admin')->where('is_active', true)->where('id', '!=', $user->id)->exists()) {
@@ -105,10 +122,13 @@ class UserController extends Controller
             return $this->fail('Admin accounts cannot be deleted.', 422);
         }
 
-        $groups = Group::where('teacher_id', $user->id)->where('is_active', true)
-            ->get(['id', 'name']);
-        if ($groups->isNotEmpty()) {
-            return $this->fail('This teacher owns active groups — choose a replacer.', 422, [
+        $groups = Group::where('teacher_id', $user->id)->get(['id', 'name']);
+        $counts = $this->referenceCounts($user->id);
+        // NOT NULL world: groups and transferable history cannot be nulled —
+        // anything owned means the deleter must go through the replacer flow.
+        // Only tokens + authored announcements are still deletable inline.
+        if ($groups->isNotEmpty() || $counts['exams'] > 0 || $counts['entered_scores'] > 0) {
+            return $this->fail('This teacher owns groups or history — choose a replacer.', 422, [
                 'code' => 'NEED_REPLACER',
                 'teacher' => [
                     'id' => $user->id,
@@ -117,14 +137,11 @@ class UserController extends Controller
                     'center_id' => $user->center_id,
                 ],
                 'groups' => $groups,
-                'counts' => $this->referenceCounts($user->id),
+                'counts' => $counts,
             ]);
         }
 
         DB::transaction(function () use ($user) {
-            // Only inactive groups can remain here (active ones returned 422 above).
-            Group::where('teacher_id', $user->id)->update(['teacher_id' => null]);
-            $this->clearTransferableReferences($user->id, null);
             Announcement::where('author_id', $user->id)->delete();
             $this->deleteTokens($user->id);
             $user->delete();
@@ -168,9 +185,7 @@ class UserController extends Controller
 
         $moved = [];
         DB::transaction(function () use ($user, $replacer, &$moved) {
-            $moved['groups'] = Group::where('teacher_id', $user->id)
-                ->where('is_active', true)->update(['teacher_id' => $replacer->id]);
-            Group::where('teacher_id', $user->id)->update(['teacher_id' => null]);
+            $moved['groups'] = Group::where('teacher_id', $user->id)->update(['teacher_id' => $replacer->id]);
             $moved['exams'] = $this->clearTransferableReferences($user->id, $replacer->id);
             $moved['announcements'] = Announcement::where('author_id', $user->id)->delete();
             $moved['tokens'] = $this->deleteTokens($user->id);
@@ -194,10 +209,10 @@ class UserController extends Controller
     }
 
     /**
-     * Point nullable history references at $targetId (replacer) or NULL when
-     * there is no replacer. Returns the exams count for the moved summary.
+     * Point transferable history references at the replacer $targetId.
+     * Returns the exams count for the moved summary.
      */
-    private function clearTransferableReferences(int $userId, ?int $targetId): int
+    private function clearTransferableReferences(int $userId, int $targetId): int
     {
         $exams = Exam::where('examiner_id', $userId)->update(['examiner_id' => $targetId]);
         RevisionLog::where('entered_by', $userId)->update(['entered_by' => $targetId]);

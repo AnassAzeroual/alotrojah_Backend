@@ -43,12 +43,15 @@ abstract class Controller extends BaseController
         'Surah range needs surah + ayah on both ends.' => 'RANGE_INVALID',
         'Range end must be after range start.' => 'RANGE_INVALID',
         'Group assignment only applies to teachers and students.' => 'GROUP_ROLE',
+        'End time must be after start time.' => 'SESSION_TIME_ORDER',
+        'Student approval requires a group and a level.' => 'PLACEMENT_REQUIRED',
         'Admin accounts cannot be deleted.' => 'ADMIN_DELETE',
         'Admins cannot deactivate their own account.' => 'ADMIN_SELF_DISABLE',
         'The last active admin cannot be deactivated.' => 'ADMIN_LAST_ACTIVE',
         'Weekly total would be' => 'SCORING_TOTAL',
         'Invalid credentials.' => 'INVALID_CREDENTIALS',
     ];
+
     protected function ok(mixed $data = null, ?string $message = null): JsonResponse
     {
         return response()->json(['success' => true, 'message' => $message, 'data' => $data]);
@@ -61,7 +64,9 @@ abstract class Controller extends BaseController
 
     protected function fail(string $message, int $code = 400, mixed $errors = null): JsonResponse
     {
-        if (! is_array($errors)) $errors = [];
+        if (! is_array($errors)) {
+            $errors = [];
+        }
         if (! isset($errors['code'])) {
             foreach (static::ERROR_CODES as $text => $mapped) {
                 if ($message === $text || str_starts_with($message, $text)) {

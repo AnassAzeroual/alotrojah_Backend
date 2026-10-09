@@ -13,6 +13,7 @@ class RegistrationRequest extends Model
     protected $table = 'registration_requests';
 
     const CREATED_AT = 'requested_at';
+
     const UPDATED_AT = null;
 
     protected $fillable = [
@@ -26,4 +27,15 @@ class RegistrationRequest extends Model
         'birth_date' => 'date',
         'requested_at' => 'datetime',
     ];
+
+    protected static function booted(): void
+    {
+        // Same invariant as users (chk_regrequests_teacher_type): a waiting
+        // student/supervisor/board row carries no teacher type.
+        static::saving(function (RegistrationRequest $request): void {
+            if ($request->role !== 'teacher') {
+                $request->teacher_type = null;
+            }
+        });
+    }
 }

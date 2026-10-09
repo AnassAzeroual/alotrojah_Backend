@@ -62,7 +62,7 @@ class CenterScopeResetTest extends TestCase
         ])->assertOk();
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'Reset Guard Pupil', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 1,
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1, 'level_id' => 1,
         ])->assertCreated()->json('data.id');
         $this->postJson('/api/v1/scores/bulk', [
             'session_id' => 1,
@@ -111,6 +111,7 @@ class CenterScopeResetTest extends TestCase
         $this->postJson('/api/v1/students', [
             'full_name' => 'Reset Guard Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 1, 'level_id' => $override->id,
+            'group_id' => 1,
         ])->assertCreated();
 
         $this->deleteJson('/api/v1/levels/reset?center_id=1')

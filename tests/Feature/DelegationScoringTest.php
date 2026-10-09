@@ -38,7 +38,8 @@ class DelegationScoringTest extends TestCase
     {
         $token = str_repeat('a', 64);
         DB::table('delegation_tokens')->insert([
-            'group_id' => 1, 'granter_teacher_id' => 3, 'token' => $token,
+            'group_id' => 1, 'granter_teacher_id' => 3, 'used_by_teacher_id' => 3,
+            'token' => $token,
             'duration_minutes' => 15, 'expires_at' => now()->subHour(), 'created_at' => now(),
         ]);
         $this->postJson('/api/v1/delegations/redeem', ['token' => $token], $this->tok(7))
@@ -111,6 +112,7 @@ class DelegationScoringTest extends TestCase
     {
         $s = $this->postJson('/api/v1/students', [
             'full_name' => 'Fresh', 'memorization_mode' => 'thumn', 'center_id' => 1,
+            'group_id' => 1, 'level_id' => 1,
         ], $this->tok(1))->assertCreated();
 
         $r = $this->getJson("/api/v1/dashboard/final?student_id={$s->json('data.id')}&season_id=1", $this->tok(1));
@@ -119,8 +121,11 @@ class DelegationScoringTest extends TestCase
 
     public function test_supervisor_can_enter_review_cycle(): void
     {
+        $sessionId = DB::table('sessions')->where('term_id', 1)->value('id');
+        $this->assertNotNull($sessionId);
         $r = $this->postJson('/api/v1/murajaa-reviews', [
-            'student_id' => 1, 'term_id' => 1, 'week_from' => 5, 'week_to' => 6, 'score' => 15,
+            'student_id' => 1, 'term_id' => 1, 'week_from' => 5, 'week_to' => 6,
+            'session_id' => $sessionId, 'score' => 15,
         ], $this->tok(2));
         $r->assertCreated()->assertJsonPath('data.weeks_covered', 2);
     }

@@ -16,7 +16,10 @@ class SessionResource extends JsonResource
             'session_number_in_week' => $this->session_number_in_week,
             'session_type' => $this->session_type,
             'planned_date' => $this->planned_date?->toDateString(),
+            'start_time' => $this->start_time ? substr((string) $this->start_time, 0, 5) : null,
+            'end_time' => $this->end_time ? substr((string) $this->end_time, 0, 5) : null,
             'status' => $this->status,
+            'group_id' => $this->group_id,
         ];
     }
 }

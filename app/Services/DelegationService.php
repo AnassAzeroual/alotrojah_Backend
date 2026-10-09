@@ -23,6 +23,9 @@ class DelegationService
         return DelegationToken::create([
             'group_id' => $group->id,
             'granter_teacher_id' => $granter->id,
+            // Holder, not redeemer: used_by is NOT NULL, so the granter holds
+            // the token until first redemption (used_at stays NULL = unredeemed).
+            'used_by_teacher_id' => $granter->id,
             'token' => Str::random(64),
             'duration_minutes' => $minutes,
             'expires_at' => Carbon::now()->addMinutes($minutes),
@@ -39,7 +42,7 @@ class DelegationService
         abort_if($d->is_revoked, 410, 'Link revoked.');
         abort_if(Carbon::now()->greaterThan($d->expires_at), 410, 'Link expired.');
 
-        if ($d->used_by_teacher_id === null) {
+        if ($d->used_at === null) {
             $d->update(['used_by_teacher_id' => $teacher->id, 'used_at' => Carbon::now()]);
         }
         abort_unless($d->used_by_teacher_id === $teacher->id, 403, 'Link bound to another teacher.');
@@ -57,9 +60,10 @@ class DelegationService
     /** Cross-center entry allowed when the teacher redeemed a live token for the student's group. */
     public function canActAs(User $teacher, Student $student): bool
     {
-        if ($student->group_id === null) return false;
         $key = $teacher->id.':'.$student->group_id;
-        if (array_key_exists($key, $this->actCache)) return $this->actCache[$key];
+        if (array_key_exists($key, $this->actCache)) {
+            return $this->actCache[$key];
+        }
 
         return $this->actCache[$key] = DelegationToken::where('group_id', $student->group_id)
             ->where('used_by_teacher_id', $teacher->id)

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Level;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -35,7 +36,8 @@ class CrossCenterWritesTest extends TestCase
         $this->actingAs(User::find(1), 'api');
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'C2 Plan Pupil', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 2,
+            'status' => 'active', 'center_id' => 2, 'group_id' => 3,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $plan = $this->putJson('/api/v1/term-plans', [
             'student_id' => $pupil, 'term_id' => 1, 'plan_mode' => 'thumn',
@@ -50,7 +52,8 @@ class CrossCenterWritesTest extends TestCase
         $this->actingAs(User::find(1), 'api');
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'C2 Pupil', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 2,
+            'status' => 'active', 'center_id' => 2, 'group_id' => 3,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $exam = $this->postJson('/api/v1/exams', [
             'student_id' => $pupil, 'exam_type' => 'term_batch', 'term_id' => 1,
@@ -70,7 +73,8 @@ class CrossCenterWritesTest extends TestCase
         $this->actingAs(User::find(1), 'api');
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'C2 Pupil 2', 'memorization_mode' => 'thumn',
-            'status' => 'active', 'center_id' => 2,
+            'status' => 'active', 'center_id' => 2, 'group_id' => 3,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $exam = $this->postJson('/api/v1/exams', [
             'student_id' => $pupil, 'exam_type' => 'term_batch', 'term_id' => 1,

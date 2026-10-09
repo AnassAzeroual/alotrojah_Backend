@@ -36,9 +36,17 @@ class RegistrationRequestController extends Controller
         $data = $request->validate([
             'center_id' => ['required', 'integer', 'exists:centers,id'],
             'group_id' => ['nullable', 'integer', 'exists:groups,id'],
+            'level_id' => ['nullable', 'integer', 'exists:levels,id'],
         ]);
         $centerId = (int) $data['center_id'];
         $groupId = isset($data['group_id']) ? (int) $data['group_id'] : null;
+        $levelId = isset($data['level_id']) ? (int) $data['level_id'] : null;
+
+        // NOT NULL world: a pupil row cannot exist without group + level —
+        // student accepts must place the pupil up front (no waiting-room pupils).
+        if ($registrationRequest->role === 'student' && ($groupId === null || $levelId === null)) {
+            return $this->fail('Student approval requires a group and a level.', 422);
+        }
 
         if ($groupId !== null) {
             if (! in_array($registrationRequest->role, ['teacher', 'student'], true)) {
@@ -52,7 +60,7 @@ class RegistrationRequestController extends Controller
             }
         }
 
-        $user = DB::transaction(function () use ($registrationRequest, $centerId, $groupId) {
+        $user = DB::transaction(function () use ($registrationRequest, $centerId, $groupId, $levelId) {
             $user = new User([
                 'full_name' => $registrationRequest->full_name,
                 'email' => $registrationRequest->email,
@@ -70,6 +78,7 @@ class RegistrationRequestController extends Controller
                     'user_id' => $user->id,
                     'center_id' => $centerId,
                     'group_id' => $groupId,
+                    'level_id' => $levelId,
                     'full_name' => $registrationRequest->full_name,
                     'birth_date' => $registrationRequest->birth_date,
                     'gender' => $registrationRequest->gender,

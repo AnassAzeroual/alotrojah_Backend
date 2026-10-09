@@ -56,12 +56,24 @@ class GroupStatsTest extends TestCase
         $this->actingAs(User::find(3), 'api')->getJson("/api/v1/groups/$gid/detail")->assertForbidden();
     }
 
-    public function test_student_role_cannot_use_group_feeds(): void
+    public function test_student_role_sees_only_own_group_feeds(): void
     {
         $u = User::create([
             'full_name' => 'S', 'email' => 'gs@example.org', 'password_hash' => 'x',
             'role' => 'student', 'center_id' => 1,
         ]);
-        $this->actingAs($u, 'api')->getJson('/api/v1/groups/stats')->assertForbidden();
+        DB::table('students')->where('id', 1)->update(['user_id' => $u->id]);
+        $ownGroup = (int) DB::table('students')->where('id', 1)->value('group_id');
+
+        $this->actingAs($u, 'api');
+        // stats overview narrows to the pupil's own group
+        $r = $this->getJson('/api/v1/groups/stats')->assertOk();
+        $this->assertEquals(
+            [$ownGroup],
+            collect($r->json('data.groups'))->pluck('id')->map(fn ($v) => (int) $v)->all()
+        );
+        // detail opens for the own group, refuses foreign ones
+        $this->getJson("/api/v1/groups/{$ownGroup}/detail")->assertOk();
+        $this->getJson('/api/v1/groups/3')->assertForbidden();
     }
 }

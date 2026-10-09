@@ -53,7 +53,10 @@ class StudentController extends Controller
 
         if (! empty($data['group_id'])) {
             $group = Group::findOrFail($data['group_id']);
-            if ((int) $group->center_id !== (int) $data['center_id']) {
+            // NULL-center pupils may sit in a group until the admin repairs
+            // the center (§2.1); the cross-center check only fires when both
+            // sides are set.
+            if (! empty($data['center_id']) && (int) $group->center_id !== (int) $data['center_id']) {
                 return $this->fail('Group belongs to another center.', 422);
             }
             $data['level_id'] ??= $group->level_id;
