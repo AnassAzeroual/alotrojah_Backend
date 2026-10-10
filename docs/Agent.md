@@ -145,5 +145,7 @@ Laravel 12 API-only, PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_h
 
 - Lockstep mirror (2026-10-09) — frontend deleted calendar auto-jump, added `?date=` deep link; fixed `?term=` transform (missing query params arrive as `undefined`, producing `NaN` that defeated null-guards). E2E `calendar-access` **6/6**, `calendar-drag` **2/2** via API-discovered dates; backend suite untouched.
 
+- Lockstep mirror (2026-10-10) — full 24h session clocks, Phase 1: `UpdateSessionRequest` `before_or_equal:22:00`→`23:59` on both `start_time`/`end_time` (the sole server-side blocker; the grid now renders 0→23 and the client cap moved to 23:59). `test_session_times_cap_at_22_00`→`..._at_23_59` (`21:00→23:00` 200, `24:30` 422). Full PHPUnit **159/159** green; `.env` at-rest verified `alotrojah_dev`. Generator default still 08:00–09:00 (next phase).
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.

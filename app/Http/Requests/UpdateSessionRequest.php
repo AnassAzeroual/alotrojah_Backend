@@ -19,9 +19,9 @@ class UpdateSessionRequest extends FormRequest
     {
         return [
             'planned_date' => ['sometimes', 'date'],
-            // Day ceiling 22:00 everywhere (views render 6→22).
-            'start_time' => ['sometimes', 'date_format:H:i', 'before_or_equal:22:00'],
-            'end_time' => ['sometimes', 'date_format:H:i', 'before_or_equal:22:00'],
+            // Full 24h day (views render 0→23): clocks cap at 23:59 — no rollover.
+            'start_time' => ['sometimes', 'date_format:H:i', 'before_or_equal:23:59'],
+            'end_time' => ['sometimes', 'date_format:H:i', 'before_or_equal:23:59'],
             'status' => ['sometimes', Rule::enum(SessionStatus::class)],
             'session_type' => ['sometimes', Rule::enum(SessionType::class)],
         ];

@@ -240,15 +240,17 @@ class PolicyTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_session_times_cap_at_22_00(): void
+    public function test_session_times_cap_at_23_59(): void
     {
         $sid = DB::table('sessions')->where('group_id', 1)->orderBy('id')->value('id');
         $this->assertNotNull($sid);
         $this->actingAs(User::find(1), 'api'); // admin clears every other gate
+        // Evening/night clocks run to the 23:59 cap (no rollover).
         $this->patchJson("/api/v1/sessions-cal/{$sid}", ['start_time' => '21:00', 'end_time' => '23:00'])
-            ->assertStatus(422);
-        $this->patchJson("/api/v1/sessions-cal/{$sid}", ['start_time' => '21:00', 'end_time' => '22:00'])
             ->assertOk();
+        // Beyond the cap (not a valid H:i clock) is refused.
+        $this->patchJson("/api/v1/sessions-cal/{$sid}", ['start_time' => '21:00', 'end_time' => '24:30'])
+            ->assertStatus(422);
     }
 
     public function test_calendar_feed_serves_display_rows_in_one_window(): void
