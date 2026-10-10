@@ -147,5 +147,7 @@ Laravel 12 API-only, PHP 8.4, JWT (`php-open-source-saver/jwt-auth`, `password_h
 
 - Lockstep mirror (2026-10-10) — full 24h session clocks, Phase 1: `UpdateSessionRequest` `before_or_equal:22:00`→`23:59` on both `start_time`/`end_time` (the sole server-side blocker; the grid now renders 0→23 and the client cap moved to 23:59). `test_session_times_cap_at_22_00`→`..._at_23_59` (`21:00→23:00` 200, `24:30` 422). Full PHPUnit **159/159** green; `.env` at-rest verified `alotrojah_dev`. Generator default still 08:00–09:00 (next phase).
 
+- Generated template defaults to 21:00–23:00, Phase 2 (2026-10-10, user-ordered, PHPUnit **159/159** green, no commits): `SeasonTemplateService::createSeason` + `generateForGroup` `$defaultStart/$defaultEnd` `'08:00:00'/'09:00:00'`→`'21:00:00'/'23:00:00'` (class docblock updated). Covers fresh seasons and late/reactivated-group backfills (`GroupController::backfillGroupSessions` calls `generateForGroup` with no time args). No schema/data change. `SessionGroupGenerationTest` pins the new slot on both paths. `.env` at-rest verified `alotrojah_dev`.
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.

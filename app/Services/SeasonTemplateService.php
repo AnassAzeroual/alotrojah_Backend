@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\DB;
  * Everything is rows (no constants in DB); the 42-week default lives here.
  *
  * Per-group sessions (000020): every active group gets its own session set
- * on THAT group's weekdays (08:00-09:00 default) — no session ever serves
+ * on THAT group's weekdays (21:00-23:00 default) — no session ever serves
  * nobody. Weeks stay shared; only sessions fan out. Session numbers restart
  * per (season, group) — display only, enforced by uq_sessions_group_global.
  */
@@ -33,8 +33,8 @@ class SeasonTemplateService
         int $reviewWeeksPerTerm = 1,
         ?string $hijriYear = null,
         ?int $centerId = null,
-        string $defaultStart = '08:00:00',
-        string $defaultEnd = '09:00:00',
+        string $defaultStart = '21:00:00',
+        string $defaultEnd = '23:00:00',
     ): AcademicSeason {
         if ($terms === []) {
             $names = ['الفصل الأول', 'الفصل الثاني', 'الفصل الثالث', 'الفصل الرابع', 'الفصل الخامس', 'الفصل السادس'];
@@ -93,8 +93,8 @@ class SeasonTemplateService
         AcademicSeason $season,
         Group $group,
         int $sessionsPerWeek = 3,
-        string $defaultStart = '08:00:00',
-        string $defaultEnd = '09:00:00',
+        string $defaultStart = '21:00:00',
+        string $defaultEnd = '23:00:00',
     ): int {
         $days = $this->groupDays($group);
         $days = array_slice($days, 0, max(1, min($sessionsPerWeek, count($days))));
