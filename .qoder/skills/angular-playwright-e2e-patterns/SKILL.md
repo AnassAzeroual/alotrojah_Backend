@@ -9,7 +9,7 @@ description: Debugging and writing Playwright e2e specs for the AlOtrojah Angula
 
 Playwright specs for the AlOtrojah Angular frontend live in `alotrojah_Frontend/e2e/*.e2e.ts` and run against a real backend plus `ng serve`, both started automatically by `playwright.config.ts`. The specs run against a **shared, seeded database** (`alotrojah_verify`, selected by `scripts/run-e2e.ps1` swapping the backend `.env` — never dev) — interrupted runs and parallel flows leave residue rows in that same DB between runs. That one fact causes most flakiness: an assertion that was exact yesterday drifts today.
 
-The suite covers the 34-step workflow in `roadmap-qa.html` (S1–S34): **34 tests across 18 spec files**, all `test.describe.serial`. Several specs are deliberate **cut-detectors** — they assert the app's actual (broken) behavior at known workflow cuts so a fix flips them red (see Gotcha G). The specs are the source of truth for current selectors and credentials — re-read the spec closest to your page before relying on any locator below. Key references:
+The suite covers the workflow in `roadmap-qa.html` (**35 steps, S1–S35**): **51 tests across 24 spec files** covering **S1–S35** (S35 — the app-wide dirty-guard / Enter-to-submit flow — is covered by `unsaved-flow.e2e.ts`), all `test.describe.serial`. Several specs are deliberate **cut-detectors** — they assert the app's actual (broken) behavior at known workflow cuts so a fix flips them red (see Gotcha G). The specs are the source of truth for current selectors and credentials — re-read the spec closest to your page before relying on any locator below. Key references:
 
 - `alotrojah_Frontend/e2e/api.ts` — shared helpers: `loginAs(page, email, pwd)`, `adminLogin(page)`, `apiToken(request)`, `apiNames`.
 - `alotrojah_Frontend/e2e/auth-flow.e2e.ts`, `groups-flow.e2e.ts` — base CRUD + theme/locale patterns.
@@ -21,7 +21,8 @@ The suite covers the 34-step workflow in `roadmap-qa.html` (S1–S34): **34 test
 - `webServer` auto-starts PHP `artisan serve` (:8000) and `ng serve` (:4201) with `reuseExistingServer: true` — do not start them by hand. **Check :8000 ownership before every run**: a reused API server keeps whatever DB it booted with (the wrapper swaps `.env`, but a stale artisan still holds its boot-time DB — a contamination hazard both ways).
 - Admin login used by the specs: `admin@example.org` / `password123` (all seeded accounts share it).
 - Run e2e **only** via the wrapper `scripts/run-e2e.ps1` (swaps backend `.env` to `alotrojah_verify`, verifies, restores). Full suite: `npm run e2e`. Single/multiple files: `MSYS_NO_PATHCONV=1 powershell -ExecutionPolicy Bypass -File scripts/run-e2e.ps1 e2e/<file>.e2e.ts` — **npm drops the file-filter arg**, so `npm run e2e -- e2e/x.e2e.ts` runs EVERYTHING. Raw `npx playwright test` is `npm run e2e:direct` for emergencies only.
-- Current suite = 34 tests across 18 spec files; a healthy full run is 34/34 green (~4.5 min, workers 1).
+- Current suite = 51 tests across 24 spec files (covering steps S1–S35 of the 35-step roadmap; S35 covered by `unsaved-flow.e2e.ts`); a healthy full run is 51/51 green (~4.5 min, workers 1).
+- **Stored values are AES-encrypted** (the app's `SecureStorageService` vault). Assert on them with `e2e/storage.ts` `readStoredValue(page, key)` — it decrypts using the shared `STORAGE_SECRET` and mirrors the library's JSON round-trip; a raw `localStorage.getItem` returns ciphertext. The `alotrojah_e2e_no_http_cache` bypass key is the one deliberate plaintext exception (seeded via `storageState`).
 
 ## Gotcha A — fill() does NOT fire Angular (change)
 
@@ -97,7 +98,7 @@ await expect(page).toHaveURL(/^http:\/\/127\.0\.0\.1:4201\/$/); // login POST ra
 
 ## Gotcha G — known workflow cuts asserted as actual behavior (F1–F7)
 
-The suite's job is detecting cuts in the 34-step workflow (`roadmap-qa.html`). Seven cuts are confirmed and their specs **assert the actual broken behavior on purpose** — when the app gets fixed, that spec flips red and must be updated. Do not "fix" these specs while the app is unfixed:
+The suite's job is detecting cuts in the workflow (`roadmap-qa.html`, **35 steps**; the suite covers S1–S35 — S35's dirty-guard flow is covered by `unsaved-flow.e2e.ts`). Seven cuts are confirmed and their specs **assert the actual broken behavior on purpose** — when the app gets fixed, that spec flips red and must be updated. Do not "fix" these specs while the app is unfixed:
 
 - **F1 (S18)** score-sheet over-cap save: the 422 error handler only resets the saving flag — zero user feedback. Assert the row stays and no error banner appears.
 - **F2 (S21)** reviews cycle delete is NOT `canManage()`-gated — murajaa/hifz teachers see the delete button (roadmap says admin/supervisor only). Assert the button IS visible to the teacher (scope the assertion to the seed row).
@@ -111,7 +112,7 @@ Freeze-assertion pattern (F5/F6): await the error response, settle ~1.5s (`waitF
 
 ## Done-gate (run before considering e2e work complete)
 
-1. Full suite green via the wrapper — `npm run e2e`, expect 34/34. Read the head of the failure output first; Playwright prints received vs expected and the trace path (`trace: 'retain-on-failure'`).
+1. Full suite green via the wrapper — `npm run e2e`, expect 51/51. Read the head of the failure output first; Playwright prints received vs expected and the trace path (`trace: 'retain-on-failure'`).
 2. `npm run format:check` — prettier covers `e2e/**/*.ts`, and freshly edited specs frequently fail formatting. To target only e2e: `npx prettier --check "e2e/**/*.ts"`.
 
 ### Windows / Git Bash cautions
