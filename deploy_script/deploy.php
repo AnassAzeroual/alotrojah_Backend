@@ -162,6 +162,19 @@ if (($_GET['action'] ?? '') === 'migrate') {
 @mkdir($dest . '/bootstrap/cache', 0755, true);
 if (function_exists('opcache_reset')) { @opcache_reset(); }
 
+// PERF-B02: freeze config + routes for production (deploy is the only path
+// that changes code/env, so the cache is always rebuilt from fresh files).
+try {
+    Illuminate\Support\Facades\Artisan::call('config:cache');
+    Illuminate\Support\Facades\Artisan::call('route:cache');
+    Illuminate\Support\Facades\Artisan::call('view:cache');
+    $cacheLog = trim(Illuminate\Support\Facades\Artisan::output());
+    $cacheOk = true;
+} catch (Throwable $e) {
+    $cacheLog = 'cache-failed: ' . $e->getMessage();
+    $cacheOk = false;
+}
+
 @unlink($newZip);
 // Self-delete so the token-bearing extractor does not linger publicly.
 @unlink(__FILE__);
@@ -175,6 +188,8 @@ echo json_encode([
     'ok' => $ok,
     'files' => $count,
     'migrate' => $migrateLog,
+    'cache' => $cacheLog ?? '(not run)',
+    'cache_ok' => $cacheOk ?? false,
     'extractor_deleted' => $extractorGone,
     'storage_app' => 'preserved',
 ]);

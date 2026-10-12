@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\AcceptRegistrationRequest;
 use App\Http\Resources\RegistrationRequestResource;
 use App\Http\Resources\UserResource;
 use App\Models\Group;
@@ -9,7 +10,6 @@ use App\Models\RegistrationRequest;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class RegistrationRequestController extends Controller
@@ -29,15 +29,9 @@ class RegistrationRequestController extends Controller
      * groups.teacher_id, student → students.group_id), then drop it from the
      * waiting room.
      */
-    public function accept(Request $request, RegistrationRequest $registrationRequest): JsonResponse
+    public function accept(AcceptRegistrationRequest $request, RegistrationRequest $registrationRequest): JsonResponse
     {
-        $this->authorize('accept', $registrationRequest);
-
-        $data = $request->validate([
-            'center_id' => ['required', 'integer', 'exists:centers,id'],
-            'group_id' => ['nullable', 'integer', 'exists:groups,id'],
-            'level_id' => ['nullable', 'integer', 'exists:levels,id'],
-        ]);
+        $data = $request->validated();
         $centerId = (int) $data['center_id'];
         $groupId = isset($data['group_id']) ? (int) $data['group_id'] : null;
         $levelId = isset($data['level_id']) ? (int) $data['level_id'] : null;

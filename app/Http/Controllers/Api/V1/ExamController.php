@@ -50,7 +50,10 @@ class ExamController extends Controller
         if ($me->role === 'teacher') $data['examiner_id'] = $me->id;
         else $data['examiner_id'] ??= $me->id;
 
-        return $this->created(new ExamResource(Exam::create($data)));
+        $exam = Exam::create($data);
+        $exam->setRelation('student', $student);
+
+        return $this->created(new ExamResource($exam));
     }
 
     public function show(Exam $exam): JsonResponse
@@ -78,7 +81,7 @@ class ExamController extends Controller
         }
         $exam->update($data);
 
-        return $this->ok(new ExamResource($exam->fresh('questions')));
+        return $this->ok(new ExamResource($exam->fresh(['questions', 'student'])));
     }
 
     public function destroy(Exam $exam): JsonResponse

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\ReplaceUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
@@ -163,14 +164,13 @@ class UserController extends Controller
      * free (no active group assigned). Announcements authored + delegation
      * tokens involving the deleted teacher are removed.
      */
-    public function replace(Request $request, User $user): JsonResponse
+    public function replace(ReplaceUserRequest $request, User $user): JsonResponse
     {
-        $this->authorize('delete', $user);
         if ($user->role === 'admin') {
             return $this->fail('Admin accounts cannot be deleted.', 422);
         }
 
-        $data = $request->validate(['replacer_id' => ['required', 'integer', 'exists:users,id']]);
+        $data = $request->validated();
         $replacer = User::findOrFail($data['replacer_id']);
 
         if ((int) $replacer->id === (int) $user->id) {

@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Requests\StoreLevelRequest;
+use App\Http\Requests\ResetLevelRequest;
 use App\Http\Requests\UpdateLevelRequest;
 use App\Models\Group;
 use App\Models\Level;
@@ -42,12 +42,9 @@ class LevelController extends Controller
     }
 
     /** Delete one center's override set, revealing the shared defaults. */
-    public function reset(Request $request): JsonResponse
+    public function reset(ResetLevelRequest $request): JsonResponse
     {
-        $this->authorize('manage', Level::class);
-        $centerId = (int) $request->validate([
-            'center_id' => ['required', 'integer', 'exists:centers,id'],
-        ])['center_id'];
+        $centerId = (int) $request->validated()['center_id'];
 
         $ids = Level::where('center_id', $centerId)->pluck('id');
         if ($ids->isEmpty()) return $this->ok(['deleted' => 0]);

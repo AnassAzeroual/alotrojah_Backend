@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Concerns\StudentGroupScope;
+use App\Http\Requests\CalendarFeedRequest;
 use App\Http\Requests\UpdateSessionRequest;
 use App\Http\Requests\UpdateTermRequest;
 use App\Http\Requests\UpdateWeekRequest;
@@ -27,14 +28,9 @@ class CalendarController extends Controller
      * Season visibility reuses SeasonPolicy (shared/own-center); students
      * additionally narrow to their own group.
      */
-    public function feed(Request $request): JsonResponse
+    public function feed(CalendarFeedRequest $request): JsonResponse
     {
-        $this->authorize('viewCalendar', AcademicSeason::class);
-        $data = $request->validate([
-            'season_id' => ['required', 'integer', 'exists:academic_seasons,id'],
-            'from' => ['required', 'date'],
-            'to' => ['required', 'date'],
-        ]);
+        $data = $request->validated();
         $season = AcademicSeason::findOrFail((int) $data['season_id']);
         $this->authorize('view', $season);
 
