@@ -39,11 +39,21 @@ jobs:
           mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_memorization_db.sql
           mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_seed_data.sql
 
+      # The seed predates migration 000019 (NOT NULL on 9 FK columns); on the real
+      # DBs its NULL rows were deleted explicitly before applying (see 000019's
+      # comment). Mirror that purge so the strict ALTERs pass on a fresh dump+seed.
+      - name: Drop pre-000019 NULL rows from seed
+        run: |
+          mysql -h 127.0.0.1 -u root -proot quran_memorization -e "
+            DELETE FROM announcements WHERE group_id IS NULL;
+            DELETE FROM murajaa_reviews WHERE session_id IS NULL;
+            DELETE FROM delegation_tokens WHERE used_by_teacher_id IS NULL;"
+
       # The dumps predate the newest migrations — bring the schema up to date
       # (exam weights, reference data, quran_verses) the same way prod does.
       # --path is required: with no ledger table a bare migrate would replay
       # all 13 over existing tables. When adding migration 000014+, append its
-      # --path here (proven locally: full suite 90/90 on dump+seed+this step).
+      # --path here (proven locally: full suite 167/167 on dump+seed+purge+this step).
       - name: Run pending migrations
         env:
           APP_ENV: testing
