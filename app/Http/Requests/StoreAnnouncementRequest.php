@@ -18,7 +18,12 @@ class StoreAnnouncementRequest extends FormRequest
     {
         return [
             'audience' => ['required', Rule::enum(Audience::class)],
-            'group_id' => ['required', 'integer', 'exists:groups,id'],
+            // §D: only my_students announcements need a section — center/global
+            // posts (all/teachers/manager) are group-less.
+            'group_id' => [
+                'nullable', 'integer', 'exists:groups,id',
+                Rule::requiredIf(fn () => $this->input('audience') === 'my_students'),
+            ],
             'title' => ['required', 'string', 'max:200'],
             'body' => ['required', 'string'],
         ];

@@ -19,7 +19,10 @@ class ExamController extends Controller
         $me = $request->user();
 
         $q = Exam::orderByDesc('exam_date')->orderByDesc('id')->with('student');
-        if ($me->role !== 'admin') {
+        if ($me->role === 'student') {
+            // C3: a pupil only ever sees their own exams.
+            $q->whereHas('student', fn ($s) => $s->where('students.user_id', $me->id));
+        } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
         foreach (['student_id', 'term_id', 'season_id', 'exam_type'] as $f) {

@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\StudentGroupScope;
 use App\Http\Requests\UpdateSessionRequest;
 use App\Http\Requests\UpdateTermRequest;
 use App\Http\Requests\UpdateWeekRequest;
+use App\Http\Resources\SessionCalendarResource;
 use App\Http\Resources\SessionResource;
 use App\Http\Resources\TermResource;
 use App\Http\Resources\WeekResource;
 use App\Models\AcademicSeason;
 use App\Models\Session;
-use App\Models\Student;
 use App\Models\Term;
 use App\Models\Week;
 use Illuminate\Http\JsonResponse;
@@ -18,6 +19,41 @@ use Illuminate\Http\Request;
 
 class CalendarController extends Controller
 {
+    use StudentGroupScope;
+
+    /**
+     * Display-ready calendar window: sessions in [from, to] for one season
+     * with the names their cards need — one request instead of four lookups.
+     * Season visibility reuses SeasonPolicy (shared/own-center); students
+     * additionally narrow to their own group.
+     */
+    public function feed(Request $request): JsonResponse
+    {
+        $this->authorize('viewCalendar', AcademicSeason::class);
+        $data = $request->validate([
+            'season_id' => ['required', 'integer', 'exists:academic_seasons,id'],
+            'from' => ['required', 'date'],
+            'to' => ['required', 'date'],
+        ]);
+        $season = AcademicSeason::findOrFail((int) $data['season_id']);
+        $this->authorize('view', $season);
+
+        $q = Session::with(['group:id,name', 'term:id,name_ar', 'week:id,week_number_global,week_type'])
+            ->where('season_id', $season->id)
+            ->whereDate('planned_date', '>=', $data['from'])
+            ->whereDate('planned_date', '<=', $data['to'])
+            ->orderBy('session_number_global');
+        $me = $request->user();
+        if ($me->role === 'student') {
+            $q->whereIn('group_id', $this->studentGroupIds($me) ?? []);
+        } elseif ($me->role !== 'admin') {
+            // Staff read their own center's groups (shared seasons span centers).
+            $center = (int) $me->center_id;
+            $q->whereHas('group', fn ($g) => $g->where('groups.center_id', $center));
+        }
+
+        return $this->ok(SessionCalendarResource::collection($q->paginate(50))->response()->getData(true));
+    }
     public function terms(Request $request, AcademicSeason $season): JsonResponse
     {
         $this->authorize('view', $season);
@@ -118,20 +154,6 @@ class CalendarController extends Controller
         $session->update($data);
 
         return $this->ok(new SessionResource($session->fresh()));
-    }
-
-    /**
-     * Own-group ids for a student user (null = no narrowing for staff).
-     * Empty array = pupil link without a group, matching nothing by design.
-     *
-     * @return int[]|null
-     */
-    private function studentGroupIds($user): ?array
-    {
-        if ($user->role !== 'student') return null;
-
-        return Student::where('user_id', $user->id)->whereNotNull('group_id')
-            ->pluck('group_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /** Center-owned calendar rows: non-admins touch only their own center (never shared NULL rows). */

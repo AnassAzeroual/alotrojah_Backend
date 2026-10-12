@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\AttendanceStatus;
 use App\Models\Attendance;
+use App\Models\MemorizationLog;
 use App\Models\ScoringModule;
 use App\Models\Session;
 use App\Models\SessionScore;
@@ -25,8 +26,10 @@ class ScoreEntryService
         private DelegationService $delegation,
     ) {}
 
-    /** @return array student_id => weekly total */
-    public function storeScores(User $teacher, int $sessionId, array $rows): array
+    /**
+     * @return array{weekly_totals: array<int, float>, memorizations_saved: int}
+     */
+    public function storeScores(User $teacher, int $sessionId, array $rows, array $memorizations = []): array
     {
         $session = Session::findOrFail($sessionId);
         if ($teacher->role !== 'admin' && $teacher->teacher_type === 'murajaa') {
@@ -64,10 +67,28 @@ class ScoreEntryService
             }
             $clean[] = [$student, $module, (float) $score];
         }
+
+        // §B memorization capture: optional, per student. A blank thumn_amount
+        // means "clear this session's log" (re-saves never accumulate).
+        $memClean = [];
+        foreach ($memorizations as $i => $m) {
+            $p = "memorizations.$i";
+            $student = $students[$m['student_id'] ?? 0] ?? null;
+            if (! $student) { $errors["$p.student_id"] = 'Unknown student.'; continue; }
+            if ($teacher->role !== 'admin' && (int) $student->center_id !== (int) $teacher->center_id
+                && ! $this->delegation->canActAs($teacher, $student)) {
+                $errors["$p.student_id"] = 'Student is in another center.'; continue;
+            }
+            $amount = $m['thumn_amount'] ?? null;
+            if ($amount !== null && (! is_numeric($amount) || (float) $amount <= 0 || (float) $amount > 99.99)) {
+                $errors["$p.thumn_amount"] = 'Must be between 0.01 and 99.99.'; continue;
+            }
+            $memClean[] = [$student, $amount !== null ? (float) $amount : null];
+        }
         if ($errors) throw ValidationException::withMessages($errors);
 
-        $totals = [];
-        DB::transaction(function () use ($clean, $session, $teacher, &$totals) {
+        $totals = []; $memSaved = 0;
+        DB::transaction(function () use ($clean, $memClean, $session, $teacher, &$totals, &$memSaved) {
             foreach ($clean as [$student, $module, $score]) {
                 SessionScore::updateOrCreate(
                     ['student_id' => $student->id, 'session_id' => $session->id, 'module_id' => $module->id],
@@ -78,9 +99,28 @@ class ScoreEntryService
                 $totals[$student->id] = $this->scoring->weeklyTotal($student->id, $session->id);
                 $this->dashboard->bust($student->id, $session->season_id);
             }
+            foreach ($memClean as [$student, $amount]) {
+                MemorizationLog::where('student_id', $student->id)
+                    ->where('session_id', $session->id)->delete();
+                if ($amount !== null) {
+                    MemorizationLog::create([
+                        'student_id' => $student->id,
+                        'season_id' => $session->season_id,
+                        'term_id' => $session->term_id,
+                        'week_id' => $session->week_id,
+                        'session_id' => $session->id,
+                        'log_date' => $session->planned_date ?? now()->toDateString(),
+                        'log_mode' => $student->memorization_mode ?? 'thumn',
+                        'thumn_amount' => $amount,
+                        'created_by' => $teacher->id,
+                    ]);
+                    $memSaved++;
+                    $this->dashboard->bust($student->id, $session->season_id);
+                }
+            }
         });
 
-        return $totals;
+        return ['weekly_totals' => $totals, 'memorizations_saved' => $memSaved];
     }
 
     public function storeAttendance(User $teacher, int $sessionId, array $rows): array

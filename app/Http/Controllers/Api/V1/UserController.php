@@ -24,7 +24,7 @@ class UserController extends Controller
         $this->authorize('viewAny', User::class);
         $me = $request->user();
 
-        $q = User::orderBy('id');
+        $q = User::query();
         if ($me->role !== 'admin') {
             $q->forCenter((int) $me->center_id);
         } elseif ($request->filled('center_id')) {
@@ -44,6 +44,12 @@ class UserController extends Controller
                     ->where('groups.is_active', true);
             });
         }
+        // Whitelisted server-side sort (drives the list-table sort headers).
+        $sortable = ['id', 'full_name', 'role', 'center_id', 'is_active', 'email'];
+        $sort = $request->input('sort');
+        $direction = $request->input('direction') === 'desc' ? 'desc' : 'asc';
+        $q->orderBy(in_array($sort, $sortable, true) ? $sort : 'id', $direction)
+            ->orderBy('id');
 
         return $this->ok(UserResource::collection($q->paginate(20))->response()->getData(true));
     }

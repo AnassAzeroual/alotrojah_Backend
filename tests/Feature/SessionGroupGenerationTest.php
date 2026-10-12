@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 /**
  * Per-group sessions (000020): every active group owns its session set on
- * its own weekdays, 08:00-09:00 default, UNIQUE(season, group, number).
+ * its own weekdays, 21:00-23:00 default, UNIQUE(season, group, number).
  * Transaction-wrapped (seed untouched).
  */
 class SessionGroupGenerationTest extends TestCase
@@ -61,13 +61,13 @@ class SessionGroupGenerationTest extends TestCase
             'terms' => [['name' => 'T1', 'weeks' => 2]],
         ])->assertCreated()->json('data.id');
 
-        // 2 weeks x 3 days for A, 2 x 1 for B (08:00 default slot).
+        // 2 weeks x 3 days for A, 2 x 1 for B (21:00-23:00 default slot).
         $this->assertSame(6, DB::table('sessions')->where('season_id', $id)->where('group_id', $a->id)->count());
         $this->assertSame(2, DB::table('sessions')->where('season_id', $id)->where('group_id', $b->id)->count());
         $this->assertSame(0, DB::table('sessions')->where('season_id', $id)->whereNull('group_id')->count());
         $row = DB::table('sessions')->where('season_id', $id)->where('group_id', $a->id)->orderBy('id')->first();
-        $this->assertSame('08:00:00', substr((string) $row->start_time, 0, 8));
-        $this->assertSame('09:00:00', substr((string) $row->end_time, 0, 8));
+        $this->assertSame('21:00:00', substr((string) $row->start_time, 0, 8));
+        $this->assertSame('23:00:00', substr((string) $row->end_time, 0, 8));
         // Dates land on the group's own weekdays (Mon 2026-09-07 start).
         $wds = DB::table('sessions')->where('season_id', $id)->where('group_id', $a->id)
             ->pluck('planned_date')->map(fn ($d) => date('D', strtotime($d)))->unique()->values()->all();
@@ -99,6 +99,10 @@ class SessionGroupGenerationTest extends TestCase
         ])->assertCreated()->json('data.id');
 
         $this->assertSame(1, DB::table('sessions')->where('season_id', $season)->where('group_id', $gid)->count());
+        // Late/reactivated groups inherit the same generated template slot.
+        $backfilled = DB::table('sessions')->where('season_id', $season)->where('group_id', $gid)->first();
+        $this->assertSame('21:00:00', substr((string) $backfilled->start_time, 0, 8));
+        $this->assertSame('23:00:00', substr((string) $backfilled->end_time, 0, 8));
     }
 
     public function test_session_time_order_is_refused_with_code(): void

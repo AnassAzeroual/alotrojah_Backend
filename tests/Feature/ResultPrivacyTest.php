@@ -60,4 +60,41 @@ class ResultPrivacyTest extends TestCase
         $this->getJson("/api/v1/season-results?student_id={$other}")->assertOk()
             ->assertJsonCount(0, 'data.data');
     }
+
+    public function test_student_sees_only_own_exams(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $mine = $this->postJson('/api/v1/students', [
+            'full_name' => 'Mine', 'memorization_mode' => 'thumn',
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+        ])->assertCreated()->json('data.id');
+        $other = $this->postJson('/api/v1/students', [
+            'full_name' => 'Other', 'memorization_mode' => 'thumn',
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+        ])->assertCreated()->json('data.id');
+        $this->postJson('/api/v1/exams', [
+            'student_id' => $mine, 'exam_type' => 'term_batch', 'term_id' => 1,
+            'exam_date' => '2026-10-07',
+        ])->assertCreated();
+        $this->postJson('/api/v1/exams', [
+            'student_id' => $other, 'exam_type' => 'term_batch', 'term_id' => 1,
+            'exam_date' => '2026-10-07',
+        ])->assertCreated();
+
+        $s = User::create([
+            'full_name' => 'Pupil Exam Account', 'email' => 'pupil.exams@example.org',
+            'password_hash' => Hash::make('password123'),
+            'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
+        DB::table('students')->where('id', $mine)->update(['user_id' => $s->id]);
+
+        $this->actingAs($s, 'api');
+        $this->getJson('/api/v1/exams')->assertOk()
+            ->assertJsonCount(1, 'data.data')
+            ->assertJsonPath('data.data.0.student_id', $mine);
+        $this->getJson("/api/v1/exams?student_id={$other}")->assertOk()
+            ->assertJsonCount(0, 'data.data');
+    }
 }

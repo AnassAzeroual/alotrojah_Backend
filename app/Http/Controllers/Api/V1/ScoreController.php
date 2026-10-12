@@ -23,9 +23,14 @@ class ScoreController extends Controller
     /** Bulk module-score entry (hifz/tajwid/mowathaba/sarraj). Max enforced from module rows. */
     public function bulk(StoreScoresBulkRequest $request, ScoreEntryService $entry): JsonResponse
     {
-        $totals = $entry->storeScores($request->user(), (int) $request->input('session_id'), $request->input('records'));
+        $out = $entry->storeScores(
+            $request->user(),
+            (int) $request->input('session_id'),
+            $request->input('records'),
+            $request->input('memorizations', []),
+        );
 
-        return $this->created(['weekly_totals' => $totals], 'Scores saved.');
+        return $this->created(['weekly_totals' => $out['weekly_totals'], 'memorizations_saved' => $out['memorizations_saved']], 'Scores saved.');
     }
 
     public function index(Request $request): JsonResponse

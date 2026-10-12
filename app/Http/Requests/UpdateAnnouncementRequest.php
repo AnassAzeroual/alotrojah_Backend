@@ -17,7 +17,10 @@ class UpdateAnnouncementRequest extends FormRequest
     {
         return [
             'audience' => ['sometimes', Rule::enum(Audience::class)],
-            'group_id' => ['sometimes', 'integer', 'exists:groups,id'],
+            'group_id' => [
+                'sometimes', 'nullable', 'integer', 'exists:groups,id',
+                Rule::requiredIf(fn () => $this->input('audience') === 'my_students'),
+            ],
             'title' => ['sometimes', 'string', 'max:200'],
             'body' => ['sometimes', 'string'],
         ];
