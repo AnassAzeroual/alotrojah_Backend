@@ -385,18 +385,6 @@ parameters:
 			path: app/Http/Resources/GroupResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$level\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/GroupResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$level_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/GroupResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1496,12 +1484,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Services/GroupStatsService.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name_ar\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/GroupStatsService.php

@@ -104,7 +104,7 @@ class SeedDemoViaApi extends Command
         $groups = [];
         foreach ([['G1', 'Hifz', $hifz, 0], ['G2', 'Murajaa', $murajaa, 1]] as [$gflag, $kind, $teacher, $di]) {
             $groups[$gflag] = $this->post('/v1/groups', [
-                'name' => "{$flag} · {$gflag} · {$kind}", 'center_id' => $center, 'level_id' => $level,
+                'name' => "{$flag} · {$gflag} · {$kind}", 'center_id' => $center,
                 'teacher_id' => $teacher, 'capacity' => 20, 'schedule_days' => $days[$di],
             ], 'admin', "create group {$flag} {$gflag}")['id'];
         }

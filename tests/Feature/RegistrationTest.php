@@ -152,7 +152,7 @@ class RegistrationTest extends TestCase
             'center_id' => 2, 'teacher_type' => 'hifz', 'is_active' => true,
         ]);
         $group = Group::create([
-            'name' => 'Accept Group', 'center_id' => 2, 'level_id' => 1,
+            'name' => 'Accept Group', 'center_id' => 2,
             'teacher_id' => $teacher->id, 'is_active' => true,
         ]);
 

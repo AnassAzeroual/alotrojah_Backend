@@ -54,7 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
         Route::delete('levels/reset', [LevelController::class, 'reset']);
-        Route::apiResource('levels', LevelController::class)->only(['index', 'update', 'destroy']);
+        Route::apiResource('levels', LevelController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('groups/stats', [GroupController::class, 'stats']);
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);

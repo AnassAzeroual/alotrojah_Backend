@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Group;
-use App\Models\Level;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -41,7 +40,6 @@ class SessionGroupGenerationTest extends TestCase
     {
         $g = Group::create([
             'name' => $name, 'center_id' => $center,
-            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
             'teacher_id' => $teacherId, 'is_active' => true,
         ]);
         $g->weekdays()->createMany(array_map(fn ($d) => ['weekday' => $d], $days));
@@ -94,7 +92,6 @@ class SessionGroupGenerationTest extends TestCase
         $t = $this->makeTeacher('late-t@example.org');
         $gid = $this->postJson('/api/v1/groups', [
             'name' => 'Late Group', 'center_id' => 1,
-            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
             'teacher_id' => $t->id, 'schedule_days' => ['Mon'],
         ])->assertCreated()->json('data.id');
 

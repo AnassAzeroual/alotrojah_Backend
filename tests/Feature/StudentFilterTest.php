@@ -33,12 +33,12 @@ class StudentFilterTest extends TestCase
         ]);
         $group = Group::create([
             'name' => 'Filter Group',
-            'center_id' => 1, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'center_id' => 1,
             'teacher_id' => $teacher->id, 'is_active' => true,
         ]);
         Student::create([
             'full_name' => 'Filter Placed Pupil', 'center_id' => 1,
-            'group_id' => $group->id, 'level_id' => $group->level_id,
+            'group_id' => $group->id, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
             'memorization_mode' => 'thumn',
         ]);
 

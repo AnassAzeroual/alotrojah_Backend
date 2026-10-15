@@ -37,7 +37,7 @@ class UserFilterTest extends TestCase
         $free = $this->makeTeacher('free9@example.org');
         $busy = $this->makeTeacher('busy9@example.org');
         Group::create([
-            'name' => 'Filter Group', 'center_id' => 1, 'level_id' => 1,
+            'name' => 'Filter Group', 'center_id' => 1,
             'teacher_id' => $busy->id, 'is_active' => true,
         ]);
 
@@ -54,7 +54,7 @@ class UserFilterTest extends TestCase
     {
         $t = $this->makeTeacher('oldfree9@example.org');
         Group::create([
-            'name' => 'Filter Old Group', 'center_id' => 1, 'level_id' => 1,
+            'name' => 'Filter Old Group', 'center_id' => 1,
             'teacher_id' => $t->id, 'is_active' => false,
         ]);
 
@@ -68,7 +68,7 @@ class UserFilterTest extends TestCase
     {
         $busy = $this->makeTeacher('busy10@example.org');
         Group::create([
-            'name' => 'Filter Group 2', 'center_id' => 1, 'level_id' => 1,
+            'name' => 'Filter Group 2', 'center_id' => 1,
             'teacher_id' => $busy->id, 'is_active' => true,
         ]);
 

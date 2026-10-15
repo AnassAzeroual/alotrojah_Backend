@@ -54,7 +54,5 @@ class Level extends Model
         'ahzab_per_dawra' => 'decimal:2',
     ];
 
-    public function groups(): HasMany { return $this->hasMany(Group::class, 'level_id'); }
-
     public function students(): HasMany { return $this->hasMany(Student::class, 'level_id'); }
 }

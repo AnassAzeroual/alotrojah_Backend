@@ -33,13 +33,13 @@ return new class extends Migration
         // index (leftmost column), so it comes off first and goes back after.
         // The old unique may already be gone (down() never restores it —
         // re-running up() after a rollback must not trip over that).
-        DB::statement('ALTER TABLE sessions DROP FOREIGN KEY fk_sessions_season');
+        DB::statement('ALTER TABLE `sessions` DROP FOREIGN KEY fk_sessions_season');
         $hasOldUq = DB::select(
             'SELECT 1 AS x FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?',
             [DB::getDatabaseName(), 'sessions', 'uq_sessions_season_global']
         );
         if (count($hasOldUq) > 0) {
-            DB::statement('ALTER TABLE sessions DROP KEY uq_sessions_season_global');
+            DB::statement('ALTER TABLE `sessions` DROP KEY uq_sessions_season_global');
         }
 
         DB::table('sessions')->update(['start_time' => '08:00:00', 'end_time' => '09:00:00']);
@@ -74,12 +74,12 @@ return new class extends Migration
             }
         }
 
-        DB::statement('ALTER TABLE sessions MODIFY start_time TIME NOT NULL');
-        DB::statement('ALTER TABLE sessions MODIFY end_time TIME NOT NULL');
-        DB::statement('ALTER TABLE sessions MODIFY group_id BIGINT UNSIGNED NOT NULL');
-        DB::statement('ALTER TABLE sessions ADD UNIQUE uq_sessions_group_global (season_id, group_id, session_number_global)');
-        DB::statement('ALTER TABLE sessions ADD CONSTRAINT fk_sessions_season FOREIGN KEY (season_id) REFERENCES academic_seasons (id) ON DELETE CASCADE ON UPDATE RESTRICT');
-        DB::statement('ALTER TABLE sessions ADD CONSTRAINT fk_sessions_group FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE ON UPDATE RESTRICT');
+        DB::statement('ALTER TABLE `sessions` MODIFY COLUMN start_time TIME NOT NULL');
+        DB::statement('ALTER TABLE `sessions` MODIFY COLUMN end_time TIME NOT NULL');
+        DB::statement('ALTER TABLE `sessions` MODIFY COLUMN group_id BIGINT UNSIGNED NOT NULL');
+        DB::statement('ALTER TABLE `sessions` ADD UNIQUE uq_sessions_group_global (season_id, group_id, session_number_global)');
+        DB::statement('ALTER TABLE `sessions` ADD CONSTRAINT fk_sessions_season FOREIGN KEY (season_id) REFERENCES `academic_seasons` (id) ON DELETE CASCADE ON UPDATE RESTRICT');
+        DB::statement('ALTER TABLE `sessions` ADD CONSTRAINT fk_sessions_group FOREIGN KEY (group_id) REFERENCES `groups` (id) ON DELETE CASCADE ON UPDATE RESTRICT');
     }
 
     public function down(): void
@@ -90,12 +90,12 @@ return new class extends Migration
         // only afterwards).
         // The season FK rides on the new unique's leftmost column: both FKs
         // come off before the unique can drop (mirrors up()).
-        DB::statement('ALTER TABLE sessions DROP FOREIGN KEY fk_sessions_group');
-        DB::statement('ALTER TABLE sessions DROP FOREIGN KEY fk_sessions_season');
-        DB::statement('ALTER TABLE sessions DROP KEY uq_sessions_group_global');
+        DB::statement('ALTER TABLE `sessions` DROP FOREIGN KEY fk_sessions_group');
+        DB::statement('ALTER TABLE `sessions` DROP FOREIGN KEY fk_sessions_season');
+        DB::statement('ALTER TABLE `sessions` DROP KEY uq_sessions_group_global');
         Schema::table('sessions', function (Blueprint $table) {
             $table->dropColumn(['start_time', 'end_time', 'group_id']);
         });
-        DB::statement('ALTER TABLE sessions ADD CONSTRAINT fk_sessions_season FOREIGN KEY (season_id) REFERENCES academic_seasons (id) ON DELETE CASCADE ON UPDATE RESTRICT');
+        DB::statement('ALTER TABLE `sessions` ADD CONSTRAINT fk_sessions_season FOREIGN KEY (season_id) REFERENCES `academic_seasons` (id) ON DELETE CASCADE ON UPDATE RESTRICT');
     }
 };

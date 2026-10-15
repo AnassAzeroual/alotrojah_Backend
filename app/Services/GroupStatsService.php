@@ -19,7 +19,7 @@ class GroupStatsService
     }
 
     /**
-     * @param  Collection<int, \App\Models\Group>  $groups  with teacher + level loaded
+     * @param  Collection<int, \App\Models\Group>  $groups  with teacher loaded
      */
     public function overview(Collection $groups, ?int $seasonId): array
     {
@@ -56,7 +56,6 @@ class GroupStatsService
                 'id' => $g->id,
                 'name' => $g->name,
                 'center_id' => $g->center_id,
-                'level' => $g->level ? ['id' => $g->level->id, 'name_ar' => $g->level->name_ar] : null,
                 'teacher' => $g->teacher ? [
                     'id' => $g->teacher->id,
                     'full_name' => $g->teacher->full_name,

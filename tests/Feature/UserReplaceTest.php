@@ -41,7 +41,7 @@ class UserReplaceTest extends TestCase
     {
         return Group::create([
             'name' => "Replace Group {$teacherId}".($active ? '' : ' old'),
-            'center_id' => $center, 'level_id' => 1, 'teacher_id' => $teacherId,
+            'center_id' => $center, 'teacher_id' => $teacherId,
             'is_active' => $active,
         ]);
     }

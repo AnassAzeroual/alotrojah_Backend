@@ -59,7 +59,6 @@ class StudentController extends Controller
             if (! empty($data['center_id']) && (int) $group->center_id !== (int) $data['center_id']) {
                 return $this->fail('Group belongs to another center.', 422);
             }
-            $data['level_id'] ??= $group->level_id;
         }
 
         return $this->created(new StudentResource(Student::create($data)));

@@ -33,9 +33,6 @@ class GroupController extends Controller
         } elseif ($request->filled('center_id')) {
             $q->where('center_id', (int) $request->input('center_id'));
         }
-        if ($request->filled('level_id')) {
-            $q->where('level_id', (int) $request->input('level_id'));
-        }
         if ($request->filled('is_active')) {
             $q->where('is_active', $request->boolean('is_active'));
         }
@@ -49,7 +46,7 @@ class GroupController extends Controller
         $this->authorize('viewAny', Group::class);
         $me = $request->user();
 
-        $q = Group::with(['teacher', 'level'])->withCount('students')->orderBy('id');
+        $q = Group::with(['teacher'])->withCount('students')->orderBy('id');
         if ($me->role === 'student') {
             $q->whereIn('groups.id', $this->studentGroupIds($me));
         } elseif ($me->role !== 'admin') {
@@ -67,7 +64,7 @@ class GroupController extends Controller
     public function detail(Group $group, GroupStatsService $stats): JsonResponse
     {
         $this->authorize('view', $group);
-        $group->load(['teacher', 'level'])->loadCount('students');
+        $group->load(['teacher'])->loadCount('students');
         $season = $stats->currentSeason();
 
         return $this->ok($stats->detail($group, $season?->id) + ['season_name' => $season?->name]);

@@ -51,7 +51,7 @@ class LevelManageTest extends TestCase
     public function test_delete_refused_when_used_and_allowed_when_free(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $used = Level::whereHas('groups')->firstOrFail();
+        $used = Level::whereHas('students')->firstOrFail();
         $this->deleteJson("/api/v1/levels/{$used->id}")
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'LEVEL_IN_USE');
@@ -68,8 +68,8 @@ class LevelManageTest extends TestCase
     public function test_non_admin_cannot_write_levels(): void
     {
         $this->actingAs(User::find(2), 'api');
-        // No store route at all (codes are a fixed ENUM); update is admin-only.
-        $this->postJson('/api/v1/levels', ['code' => 'L1'])->assertStatus(405);
+        // Store exists since dynamic codes (2026-10-14) but stays admin-only.
+        $this->postJson('/api/v1/levels', ['name_ar' => 'X'])->assertForbidden();
         $this->putJson('/api/v1/levels/1', ['sessions_per_week' => 5])->assertForbidden();
         $this->actingAs(User::find(3), 'api');
         $this->getJson('/api/v1/levels')->assertOk();
