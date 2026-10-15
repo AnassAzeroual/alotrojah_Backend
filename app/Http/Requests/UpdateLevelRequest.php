@@ -18,7 +18,7 @@ class UpdateLevelRequest extends FormRequest
             'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'sessions_per_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
             'thumn_per_session_label' => ['sometimes', 'string', 'max:50'],
-            'thumn_per_session_value' => ['sometimes', 'numeric', 'min:0'],
+            'thumn_per_session_value' => ['sometimes', 'numeric', 'min:1', 'max:480'],
             'thumn_per_week_value' => ['sometimes', 'numeric', 'min:0'],
             'ahzab_per_term' => ['sometimes', 'numeric', 'min:0'],
             'ahzab_per_dawra' => ['sometimes', 'numeric', 'min:0'],

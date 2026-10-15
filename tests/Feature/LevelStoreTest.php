@@ -70,6 +70,18 @@ class LevelStoreTest extends TestCase
         $this->postJson('/api/v1/levels', $this->payload(['name_ar' => '']))->assertUnprocessable();
     }
 
+    public function test_per_session_amount_is_bounded_1_to_480_thumn(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        // Full Quran (60 ahzab = 480 thumn) is the ceiling, 1 thumn the floor.
+        $this->postJson('/api/v1/levels', $this->payload(['thumn_per_session_value' => 0]))
+            ->assertUnprocessable();
+        $this->postJson('/api/v1/levels', $this->payload(['thumn_per_session_value' => 481]))
+            ->assertUnprocessable();
+        $this->postJson('/api/v1/levels', $this->payload(['thumn_per_session_value' => 480]))
+            ->assertCreated();
+    }
+
     public function test_client_code_is_ignored(): void
     {
         $this->actingAs(User::find(1), 'api');
