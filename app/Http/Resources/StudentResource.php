@@ -14,6 +14,10 @@ class StudentResource extends JsonResource
             'full_name' => $this->full_name,
             'center_id' => $this->center_id,
             'group' => $this->whenLoaded('group', fn () => ['id' => $this->group->id, 'name' => $this->group->name]),
+            'user' => $this->whenLoaded('user', fn () => [
+                'id' => $this->user->id, 'full_name' => $this->user->full_name,
+                'email' => $this->user->email,
+            ]),
             'level_id' => $this->level_id,
             'birth_date' => $this->birth_date?->toDateString(),
             'enrollment_date' => $this->enrollment_date?->toDateString(),

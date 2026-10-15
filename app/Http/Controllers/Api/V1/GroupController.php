@@ -123,6 +123,12 @@ class GroupController extends Controller
         unset($data['schedule_days']);
 
         $wasInactive = ! $group->is_active;
+        // Day-edit rebuild: compare before the sync (sorted — order is display only).
+        $oldDays = $group->weekdays()->pluck('weekday')->all();
+        sort($oldDays);
+        $newDays = $days === null ? null : $days;
+        if (is_array($newDays)) sort($newDays);
+        $daysChanged = $newDays !== null && $newDays !== $oldDays;
         DB::transaction(function () use ($group, $data, $days) {
             $group->update($data);
             if ($days !== null) {
@@ -132,10 +138,17 @@ class GroupController extends Controller
         });
 
         // Reactivation restores the group's future: same backfill as creation.
-        // (Day-list edits apply to future generations only — existing session
-        // rows keep their dates so recorded history never moves.)
+        // (Recorded history never moves — only future fact-less rows rebuild.)
         if ($wasInactive && $group->fresh()->is_active) {
             $this->backfillGroupSessions($group->fresh(), $tpl);
+        }
+
+        // Changed weekdays rebuild the group's FUTURE: fact-less planned
+        // sessions drop and regenerate on the new days (past + recorded stay).
+        if ($daysChanged && $group->fresh()->is_active) {
+            foreach ($this->openSeasonsFor($group->fresh()) as $season) {
+                $tpl->rebuildFutureSessions($season, $group->fresh(), '21:00:00', '23:00:00');
+            }
         }
 
         return $this->ok(new GroupResource($group->fresh('teacher')));
@@ -151,14 +164,19 @@ class GroupController extends Controller
         if (! $group->is_active) {
             return;
         }
-        $seasons = AcademicSeason::where('center_id', $group->center_id)
+        foreach ($this->openSeasonsFor($group) as $season) {
+            $tpl->generateForGroup($season, $group);
+        }
+    }
+
+    /** Open seasons of the group's center (current or starting today or later). */
+    private function openSeasonsFor(Group $group)
+    {
+        return AcademicSeason::where('center_id', $group->center_id)
             ->where(function ($q) {
                 $q->where('is_current', true)
                     ->orWhereDate('start_date', '>=', today()->toDateString());
             })->get();
-        foreach ($seasons as $season) {
-            $tpl->generateForGroup($season, $group);
-        }
     }
 
     public function destroy(Group $group): JsonResponse

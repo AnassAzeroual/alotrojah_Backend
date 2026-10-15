@@ -41,9 +41,14 @@ class PolicyTest extends TestCase
 
     public function test_teacher_cannot_create_student_in_other_center(): void
     {
+        $acct = User::create([
+            'full_name' => 'X Account', 'email' => 'x-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $this->actingAs(User::find(3), 'api')
             ->postJson('/api/v1/students', [
                 'full_name' => 'X', 'memorization_mode' => 'thumn', 'group_id' => 3, // center 2
+                'level_id' => 1, 'user_id' => $acct->id,
             ])->assertStatus(422);
     }
 

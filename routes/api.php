@@ -58,6 +58,7 @@ Route::prefix('v1')->group(function () {
         Route::get('groups/stats', [GroupController::class, 'stats']);
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
+        Route::get('students/unlinked-accounts', [StudentController::class, 'unlinkedAccounts']);
         Route::apiResource('students', StudentController::class);
 
         // S7 daily core

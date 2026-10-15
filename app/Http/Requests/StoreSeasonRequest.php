@@ -31,7 +31,6 @@ class StoreSeasonRequest extends FormRequest
             ],
             'start_date' => ['required', 'date'],
             'hijri_year' => ['nullable', 'string', 'max:20'],
-            'sessions_per_week' => ['sometimes', 'integer', 'min:1', 'max:7'],
             'review_weeks_per_term' => ['sometimes', 'integer', 'min:0', 'max:3'],
             'terms' => ['sometimes', 'array', 'min:1', 'max:12'],
             'terms.*.name' => ['required_with:terms', 'string', 'max:50'],

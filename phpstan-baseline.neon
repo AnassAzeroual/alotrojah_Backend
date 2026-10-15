@@ -1027,6 +1027,12 @@ parameters:
 			path: app/Http/Resources/StudentResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/StudentResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$user_id\.$#'
 			identifier: property.notFound
 			count: 1

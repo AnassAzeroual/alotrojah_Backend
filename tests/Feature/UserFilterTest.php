@@ -8,7 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
-/** `GET /users?unassigned=1` — teachers with no ACTIVE group. Transaction-wrapped. */
+/** `GET /users?unassigned=1` — no ACTIVE group to teach AND no pupil row
+ * linked (free for either assignment). Transaction-wrapped. */
 class UserFilterTest extends TestCase
 {
     protected function setUp(): void
@@ -76,5 +77,32 @@ class UserFilterTest extends TestCase
             ->getJson('/api/v1/users?role=teacher&q=busy10')
             ->assertOk()->json('data.data');
         $this->assertContains($busy->id, collect($ids)->pluck('id')->all());
+    }
+
+    public function test_unassigned_excludes_pupil_linked_accounts(): void
+    {
+        $u = User::create([
+            'full_name' => 'Linked Pupil Acct', 'email' => 'linked-acct9@example.org',
+            'password_hash' => Hash::make('password123'), 'role' => 'student',
+            'center_id' => 1, 'is_active' => true,
+        ]);
+        // Sanity: a link-free account shows up unfiltered and under the flag.
+        $this->actingAs(User::find(1), 'api')
+            ->getJson('/api/v1/users?q=Linked%20Pupil%20Acct')
+            ->assertOk()->assertJsonPath('data.meta.total', 1);
+        $this->getJson('/api/v1/users?unassigned=1&q=Linked%20Pupil%20Acct')
+            ->assertOk()->assertJsonPath('data.meta.total', 1);
+
+        $this->postJson('/api/v1/students', [
+            'full_name' => 'Linked Pupil', 'memorization_mode' => 'thumn',
+            'status' => 'active', 'center_id' => 1, 'group_id' => 1,
+            'level_id' => 1, 'user_id' => $u->id,
+        ])->assertCreated();
+
+        // Linked: gone from the flag, with or without a role filter.
+        $this->getJson('/api/v1/users?unassigned=1&q=Linked%20Pupil%20Acct')
+            ->assertOk()->assertJsonPath('data.meta.total', 0);
+        $this->getJson('/api/v1/users?role=student&unassigned=1&q=Linked%20Pupil%20Acct')
+            ->assertOk()->assertJsonPath('data.meta.total', 0);
     }
 }

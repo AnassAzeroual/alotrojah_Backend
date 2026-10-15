@@ -60,9 +60,14 @@ class CenterScopeResetTest extends TestCase
                 ['code' => 'tajwid', 'max_points' => 2],
             ],
         ])->assertOk();
+        $acct = User::create([
+            'full_name' => 'Reset Guard Account', 'email' => 'reset-guard-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'Reset Guard Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 1, 'group_id' => 1, 'level_id' => 1,
+            'user_id' => $acct->id,
         ])->assertCreated()->json('data.id');
         $this->postJson('/api/v1/scores/bulk', [
             'session_id' => 1,
@@ -108,10 +113,14 @@ class CenterScopeResetTest extends TestCase
             'sessions_per_week' => 5, 'center_id' => 1,
         ])->assertOk();
         $override = Level::where('code', 'L1')->where('center_id', 1)->firstOrFail();
+        $acct = User::create([
+            'full_name' => 'Reset Pupil Account', 'email' => 'reset-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $this->postJson('/api/v1/students', [
             'full_name' => 'Reset Guard Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 1, 'level_id' => $override->id,
-            'group_id' => 1,
+            'group_id' => 1, 'user_id' => $acct->id,
         ])->assertCreated();
 
         $this->deleteJson('/api/v1/levels/reset?center_id=1')

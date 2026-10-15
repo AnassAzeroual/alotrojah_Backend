@@ -41,13 +41,13 @@ class StudentDashboardTest extends TestCase
     public function test_student_with_linked_pupil_gets_own_data(): void
     {
         $this->actingAs(User::find(1), 'api');
+        $s = $this->makeStudentUser('linked@example.org');
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'Linked Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 1, 'group_id' => 1,
             'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'user_id' => $s->id,
         ])->assertCreated()->json('data.id');
-        $s = $this->makeStudentUser('linked@example.org');
-        DB::table('students')->where('id', $id)->update(['user_id' => $s->id]);
 
         $this->actingAs($s, 'api');
         $this->getJson('/api/v1/dashboard/me')->assertOk()

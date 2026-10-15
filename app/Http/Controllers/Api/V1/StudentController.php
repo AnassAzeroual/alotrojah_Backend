@@ -8,8 +8,10 @@ use App\Http\Resources\StudentResource;
 use App\Models\Center;
 use App\Models\Group;
 use App\Models\Student;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
@@ -61,14 +63,45 @@ class StudentController extends Controller
             }
         }
 
+        // The login account lives in exactly one center — it must match the
+        // pupil's, otherwise policies/lists read the two sides apart.
+        $account = User::findOrFail($data['user_id']);
+        if (! empty($data['center_id']) && (int) $account->center_id !== (int) $data['center_id']) {
+            return $this->fail('Pupil account belongs to another center.', 422);
+        }
+
         return $this->created(new StudentResource(Student::create($data)));
+    }
+
+    /**
+     * Accounts that can still be linked: active student-role users with no
+     * pupil row. Same writers as pupil creation (admin/supervisor/teacher),
+     * center-narrowed like everything operational.
+     */
+    public function unlinkedAccounts(Request $request): JsonResponse
+    {
+        $this->authorize('create', Student::class);
+        $me = $request->user();
+
+        $q = User::where('role', 'student')->where('is_active', true)
+            ->whereNotExists(function ($sq) {
+                $sq->select(DB::raw(1))->from('students')
+                    ->whereColumn('students.user_id', 'users.id');
+            })->orderBy('full_name');
+        if ($me->role !== 'admin') {
+            $q->where('center_id', (int) $me->center_id);
+        } elseif ($request->filled('center_id')) {
+            $q->where('center_id', (int) $request->input('center_id'));
+        }
+
+        return $this->ok($q->get(['id', 'full_name', 'email', 'center_id']));
     }
 
     public function show(Student $student): JsonResponse
     {
         $this->authorize('view', $student);
 
-        return $this->ok(new StudentResource($student->load(['group'])));
+        return $this->ok(new StudentResource($student->load(['group', 'user'])));
     }
 
     public function update(UpdateStudentRequest $request, Student $student): JsonResponse

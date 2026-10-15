@@ -22,6 +22,11 @@ class SeasonTemplateService
 {
     private const ORDER = ['Mon' => 1, 'Tue' => 2, 'Wed' => 3, 'Thu' => 4, 'Fri' => 5, 'Sat' => 6, 'Sun' => 7];
 
+    /** Session child tables: a session with any of these is recorded history. */
+    private const SESSION_CHILDREN = [
+        'session_scores', 'attendance', 'murajaa_reviews', 'revision_logs', 'memorization_logs',
+    ];
+
     /**
      * @param  array  $terms  e.g. [['name'=>'الفصل الأول','weeks'=>7], ...] (default 6x7)
      */
@@ -29,7 +34,6 @@ class SeasonTemplateService
         string $name,
         string $startDate,
         array $terms = [],
-        int $sessionsPerWeek = 3,
         int $reviewWeeksPerTerm = 1,
         ?string $hijriYear = null,
         ?int $centerId = null,
@@ -41,7 +45,7 @@ class SeasonTemplateService
             $terms = array_map(fn ($n) => ['name' => $n, 'weeks' => 7], $names);
         }
 
-        return DB::transaction(function () use ($name, $startDate, $terms, $sessionsPerWeek, $reviewWeeksPerTerm, $hijriYear, $centerId, $defaultStart, $defaultEnd) {
+        return DB::transaction(function () use ($name, $startDate, $terms, $reviewWeeksPerTerm, $hijriYear, $centerId, $defaultStart, $defaultEnd) {
             $totalWeeks = array_sum(array_column($terms, 'weeks'));
             $season = AcademicSeason::create([
                 'name' => $name, 'hijri_year' => $hijriYear,
@@ -76,7 +80,7 @@ class SeasonTemplateService
 
             $total = 0;
             foreach ($this->seasonGroups($season) as $group) {
-                $total += $this->generateForGroup($season->fresh(), $group, $sessionsPerWeek, $defaultStart, $defaultEnd);
+                $total += $this->generateForGroup($season->fresh(), $group, $defaultStart, $defaultEnd);
             }
             $season->update(['total_sessions' => $total]);
 
@@ -86,18 +90,20 @@ class SeasonTemplateService
 
     /**
      * Build one group's session set for a season (creation backfill for
-     * groups born after their seasons, and reactivation). Only the group's
-     * own weekdays, capped at $sessionsPerWeek per week. Returns row count.
+     * groups born after their seasons, and reactivation). The group owns its
+     * days: every picked weekday gets a session each week (owner-directed
+     * 2026-10-15 — the old season-cap slice is gone). $fromDate skips older
+     * dates (day-edit rebuilds); null keeps the legacy whole-season grain
+     * for creates and backfills. Returns row count.
      */
     public function generateForGroup(
         AcademicSeason $season,
         Group $group,
-        int $sessionsPerWeek = 3,
         string $defaultStart = '21:00:00',
         string $defaultEnd = '23:00:00',
+        ?string $fromDate = null,
     ): int {
         $days = $this->groupDays($group);
-        $days = array_slice($days, 0, max(1, min($sessionsPerWeek, count($days))));
         if ($days === []) {
             return 0;
         }
@@ -116,8 +122,12 @@ class SeasonTemplateService
                 foreach ($days as $d) {
                     $offset = (self::ORDER[$d] - $base + 7) % 7;
                     $date = $weekStart->copy()->addDays($offset)->toDateString();
+                    // Day-edit rebuilds start today: past dates are history.
+                    if ($fromDate !== null && $date < $fromDate) {
+                        continue;
+                    }
                     // Idempotent: never double-book a date the group owns
-                    // (reactivation, retried creates).
+                    // (reactivation, retried creates, post-rebuild leftovers).
                     if (in_array($date, $taken, true)) {
                         continue;
                     }
@@ -140,6 +150,40 @@ class SeasonTemplateService
         }
 
         return $made;
+    }
+
+    /**
+     * Day-edit rebuild (owner-directed 2026-10-15): after the group's
+     * weekdays change, its FUTURE planned sessions with zero recorded facts
+     * are dropped and regenerated on the new days starting today. Past rows
+     * stay (history never moves) and fact-carrying future rows stay (a score
+     * beats a schedule). The season counter is recounted to match.
+     *
+     * @return array{deleted:int, created:int}
+     */
+    public function rebuildFutureSessions(
+        AcademicSeason $season,
+        Group $group,
+        string $defaultStart = '21:00:00',
+        string $defaultEnd = '23:00:00',
+    ): array {
+        return DB::transaction(function () use ($season, $group, $defaultStart, $defaultEnd) {
+            $today = today()->toDateString();
+            $stale = DB::table('sessions')
+                ->where('season_id', $season->id)->where('group_id', $group->id)
+                ->where('status', 'planned')->whereDate('planned_date', '>=', $today);
+            foreach (self::SESSION_CHILDREN as $t) {
+                $stale->whereNotExists(fn ($sq) => $sq->select(DB::raw(1))->from($t)
+                    ->whereColumn("{$t}.session_id", 'sessions.id'));
+            }
+            $deleted = (clone $stale)->count();
+            $stale->delete();
+
+            $created = $this->generateForGroup($season->fresh(), $group, $defaultStart, $defaultEnd, $today);
+            $season->update(['total_sessions' => DB::table('sessions')->where('season_id', $season->id)->count()]);
+
+            return ['deleted' => $deleted, 'created' => $created];
+        });
     }
 
     /** Active groups of the season's center (legacy NULL-center seasons: all actives). */
