@@ -42,9 +42,15 @@ class ScoreEntryService
         $overrides = ScoringModule::whereNotNull('center_id')
             ->where('is_active', true)->where('scope', 'weekly')->get()->groupBy('center_id');
 
-        // preload: bulk must not do one student lookup per row (N+1)
+        // preload: bulk must not do one student lookup per row (N+1). Both id
+        // sets matter — a pupil may carry a memorization amount with no score
+        // rows in the same save (live 422 2026-10-17: memorizations-only pupil
+        // misreported as "Unknown student.", killing the whole batch).
+        $ids = collect($rows)->pluck('student_id')
+            ->merge(collect($memorizations)->pluck('student_id'))
+            ->unique()->all();
         $students = Student::withoutGlobalScope(CenterScope::class)
-            ->whereIn('id', collect($rows)->pluck('student_id')->unique()->all())
+            ->whereIn('id', $ids)
             ->get()->keyBy('id');
 
         $errors = []; $clean = [];

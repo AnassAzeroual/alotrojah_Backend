@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\MemorizationLog;
 use App\Models\Session;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -112,5 +113,24 @@ class MemorizationCaptureTest extends TestCase
             ['student_id' => 1, 'thumn_amount' => 1.25],
             ['student_id' => 4, 'thumn_amount' => 1.0], // center 2
         ]))->assertUnprocessable();
+    }
+
+    public function test_memorization_only_pupil_with_no_score_rows_is_accepted(): void
+    {
+        // Live 422 2026-10-17: the preload covered only score-row ids, so a
+        // pupil carrying just a memorization amount was misreported as
+        // "Unknown student." and the whole batch died.
+        $session = $this->sessionForGroupOne();
+        $other = Student::where('center_id', 1)->where('id', '!=', 1)->firstOrFail();
+        $this->actingAs(User::find(3), 'api'); // teacher, center 1
+
+        $this->postJson('/api/v1/scores/bulk', $this->payload($session->id, [
+            ['student_id' => 1, 'thumn_amount' => 1.25],
+            ['student_id' => $other->id, 'thumn_amount' => 2.0],
+        ]))->assertCreated()->assertJsonPath('data.memorizations_saved', 2);
+
+        $this->assertDatabaseHas('memorization_logs', [
+            'student_id' => $other->id, 'session_id' => $session->id, 'thumn_amount' => 2.0,
+        ]);
     }
 }
