@@ -34,9 +34,14 @@ class CrossCenterWritesTest extends TestCase
         $this->putJson('/api/v1/groups/3', ['name' => 'Hijacked'])->assertForbidden();
 
         $this->actingAs(User::find(1), 'api');
+        $acct = User::create([
+            'full_name' => 'C2 Plan Account', 'email' => 'c2-plan-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 2, 'is_active' => true,
+        ]);
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'C2 Plan Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 2, 'group_id' => 3,
+            'user_id' => $acct->id,
             'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $plan = $this->putJson('/api/v1/term-plans', [
@@ -50,9 +55,14 @@ class CrossCenterWritesTest extends TestCase
     public function test_supervisor_cannot_touch_other_centers_exams_and_reviews(): void
     {
         $this->actingAs(User::find(1), 'api');
+        $acct = User::create([
+            'full_name' => 'C2 Account', 'email' => 'c2-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 2, 'is_active' => true,
+        ]);
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'C2 Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 2, 'group_id' => 3,
+            'user_id' => $acct->id,
             'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $exam = $this->postJson('/api/v1/exams', [
@@ -71,9 +81,14 @@ class CrossCenterWritesTest extends TestCase
     public function test_teacher_cannot_write_other_centers_exams(): void
     {
         $this->actingAs(User::find(1), 'api');
+        $acct = User::create([
+            'full_name' => 'C2 Account 2', 'email' => 'c2-pupil-2@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 2, 'is_active' => true,
+        ]);
         $pupil = $this->postJson('/api/v1/students', [
             'full_name' => 'C2 Pupil 2', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 2, 'group_id' => 3,
+            'user_id' => $acct->id,
             'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
         ])->assertCreated()->json('data.id');
         $exam = $this->postJson('/api/v1/exams', [

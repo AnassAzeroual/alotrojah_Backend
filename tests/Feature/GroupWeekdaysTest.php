@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Models\Group;
-use App\Models\Level;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
@@ -39,9 +38,8 @@ class GroupWeekdaysTest extends TestCase
     public function test_create_stores_days_as_rows_and_reads_joined_string(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
-            'name' => 'Weekday Group', 'center_id' => 1, 'level_id' => $level,
+            'name' => 'Weekday Group', 'center_id' => 1,
             'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Wed', 'Mon'],
         ])->assertCreated()->json('data.id');
@@ -55,9 +53,8 @@ class GroupWeekdaysTest extends TestCase
     public function test_update_replaces_days(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
-            'name' => 'Swap Group', 'center_id' => 1, 'level_id' => $level,
+            'name' => 'Swap Group', 'center_id' => 1,
             'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Mon'],
         ])->assertCreated()->json('data.id');
@@ -69,9 +66,8 @@ class GroupWeekdaysTest extends TestCase
     public function test_invalid_weekday_is_rejected(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $level = Level::where('code', 'L1')->firstOrFail()->id;
         $this->postJson('/api/v1/groups', [
-            'name' => 'Bad Days', 'center_id' => 1, 'level_id' => $level,
+            'name' => 'Bad Days', 'center_id' => 1,
             'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Funday'],
         ])->assertStatus(422);
@@ -80,9 +76,8 @@ class GroupWeekdaysTest extends TestCase
     public function test_create_without_days_stores_none(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
-            'name' => 'Dateless Group', 'center_id' => 1, 'level_id' => $level,
+            'name' => 'Dateless Group', 'center_id' => 1,
             'teacher_id' => $this->teacherId(),
         ])->assertCreated()->json('data.id');
 
@@ -92,9 +87,8 @@ class GroupWeekdaysTest extends TestCase
     public function test_duplicate_weekday_row_is_refused_by_unique(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $level = Level::where('code', 'L1')->firstOrFail()->id;
         $id = $this->postJson('/api/v1/groups', [
-            'name' => 'Dup Group', 'center_id' => 1, 'level_id' => $level,
+            'name' => 'Dup Group', 'center_id' => 1,
             'teacher_id' => $this->teacherId(),
             'schedule_days' => ['Mon'],
         ])->assertCreated()->json('data.id');

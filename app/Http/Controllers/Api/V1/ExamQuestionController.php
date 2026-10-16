@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\ReweightExamQuestionsRequest;
 use App\Http\Requests\StoreQuestionsBulkRequest;
 use App\Http\Requests\UpdateQuestionRequest;
 use App\Http\Resources\ExamQuestionResource;
@@ -10,7 +11,6 @@ use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\QuranVerse;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -74,14 +74,9 @@ class ExamQuestionController extends Controller
      * Atomic reweight (scores preserved): every row must belong to the exam
      * and the resulting weights must total exactly 20.
      */
-    public function reweight(Request $request, Exam $exam): JsonResponse
+    public function reweight(ReweightExamQuestionsRequest $request, Exam $exam): JsonResponse
     {
-        $this->authorize('manageExam', $exam);
-        $data = $request->validate([
-            'weights' => ['required', 'array', 'min:1'],
-            'weights.*.id' => ['required', 'integer'],
-            'weights.*.max_score' => ['required', 'numeric', 'min:0.01', 'max:20'],
-        ]);
+        $data = $request->validated();
         $ids = collect($data['weights'])->pluck('id')->all();
         $rows = $exam->questions()->whereIn('id', $ids)->get()->keyBy('id');
         if ($rows->count() !== count($ids)) {
@@ -103,7 +98,7 @@ class ExamQuestionController extends Controller
             }
         });
 
-        return $this->ok(new ExamResource($exam->fresh('questions')));
+        return $this->ok(new ExamResource($exam->fresh(['questions', 'student'])));
     }
 
     public function show(ExamQuestion $examQuestion): JsonResponse

@@ -36,7 +36,6 @@ class SeasonController extends Controller
         $season = $tpl->createSeason(
             $request->input('name'), $request->input('start_date'),
             $request->input('terms', []),
-            (int) $request->input('sessions_per_week', 3),
             (int) $request->input('review_weeks_per_term', 1),
             $request->input('hijri_year'),
             $request->input('center_id'),

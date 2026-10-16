@@ -41,7 +41,6 @@ class SessionGroupGenerationTest extends TestCase
     {
         $g = Group::create([
             'name' => $name, 'center_id' => $center,
-            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
             'teacher_id' => $teacherId, 'is_active' => true,
         ]);
         $g->weekdays()->createMany(array_map(fn ($d) => ['weekday' => $d], $days));
@@ -94,7 +93,6 @@ class SessionGroupGenerationTest extends TestCase
         $t = $this->makeTeacher('late-t@example.org');
         $gid = $this->postJson('/api/v1/groups', [
             'name' => 'Late Group', 'center_id' => 1,
-            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
             'teacher_id' => $t->id, 'schedule_days' => ['Mon'],
         ])->assertCreated()->json('data.id');
 
@@ -103,6 +101,87 @@ class SessionGroupGenerationTest extends TestCase
         $backfilled = DB::table('sessions')->where('season_id', $season)->where('group_id', $gid)->first();
         $this->assertSame('21:00:00', substr((string) $backfilled->start_time, 0, 8));
         $this->assertSame('23:00:00', substr((string) $backfilled->end_time, 0, 8));
+    }
+
+    public function test_group_days_rule_the_week_with_no_season_cap(): void
+    {
+        // Owner-directed 2026-10-15: the season no longer caps days — a group
+        // meeting 5 days gets 5 sessions in a single week.
+        $t = $this->makeTeacher('five-t@example.org');
+        $g = $this->makeGroup('Five Days', $t->id, 1, ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+
+        $this->actingAs(User::find(1), 'api');
+        $id = $this->postJson('/api/v1/seasons', [
+            'name' => 'Uncapped Season', 'start_date' => '2026-09-07', 'center_id' => 1,
+            'terms' => [['name' => 'T1', 'weeks' => 1]],
+        ])->assertCreated()->json('data.id');
+
+        $this->assertSame(5, DB::table('sessions')->where('season_id', $id)->where('group_id', $g->id)->count());
+    }
+
+    public function test_day_edit_rebuilds_future_factless_sessions_only(): void
+    {
+        // Owner-directed 2026-10-15: changing weekdays rebuilds the future —
+        // fact-less planned rows move to the new days, past + recorded stay.
+        $t = $this->makeTeacher('rebuild-t@example.org');
+        $g = $this->makeGroup('Rebuild Me', $t->id, 1, ['Mon', 'Wed']);
+
+        $this->actingAs(User::find(1), 'api');
+        $sid = $this->postJson('/api/v1/seasons', [
+            'name' => 'Rebuild Season', 'start_date' => '2026-09-07', 'center_id' => 1,
+            'terms' => [['name' => 'T1', 'weeks' => 8]],
+        ])->assertCreated()->json('data.id');
+
+        $today = date('Y-m-d');
+        $this->postJson("/api/v1/seasons/{$sid}/activate")->assertOk();
+        $this->assertGreaterThan(0, DB::table('sessions')->where('season_id', $sid)
+            ->where('group_id', $g->id)->where('planned_date', '<', $today)->count());
+
+        // One recorded fact on a FUTURE Monday: scores anchor the row.
+        $acct = User::create([
+            'full_name' => 'Rebuild Pupil Acct', 'email' => 'rebuild-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
+        $pupil = $this->postJson('/api/v1/students', [
+            'full_name' => 'Rebuild Pupil', 'memorization_mode' => 'thumn',
+            'status' => 'active', 'center_id' => 1, 'group_id' => $g->id,
+            'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'user_id' => $acct->id,
+        ])->assertCreated()->json('data.id');
+        $scoredId = DB::table('sessions')->where('season_id', $sid)->where('group_id', $g->id)
+            ->where('planned_date', '>=', $today)->orderBy('planned_date')->pluck('id', 'planned_date')
+            ->first(fn ($id, $date) => (int) date('N', strtotime($date)) === 1);
+        $this->assertNotNull($scoredId);
+        $this->actingAs(User::find(3), 'api');
+        $this->postJson('/api/v1/scores/bulk', [
+            'session_id' => $scoredId,
+            'records' => [['student_id' => $pupil, 'module_code' => 'hifz', 'score' => 10]],
+        ])->assertCreated();
+
+        // Change the days: Tue/Thu from here on.
+        $this->actingAs(User::find(1), 'api');
+        $this->putJson("/api/v1/groups/{$g->id}", ['schedule_days' => ['Tue', 'Thu']])->assertOk();
+
+        $rows = DB::table('sessions')->where('season_id', $sid)->where('group_id', $g->id)->get();
+        foreach ($rows as $r) {
+            $dow = (int) date('N', strtotime($r->planned_date));
+            if ($r->planned_date < $today) {
+                // Past untouched: still Mon/Wed.
+                $this->assertContains($dow, [1, 3]);
+            } elseif ((int) $r->id === (int) $scoredId) {
+                // Recorded future Monday survives on its old date.
+                $this->assertSame(1, $dow);
+            } else {
+                // Rebuilt future: only the new days.
+                $this->assertContains($dow, [2, 4]);
+            }
+        }
+        $this->assertNotNull(DB::table('sessions')->where('id', $scoredId)->first());
+        // Counter recounted to match.
+        $this->assertSame(
+            DB::table('sessions')->where('season_id', $sid)->count(),
+            DB::table('academic_seasons')->where('id', $sid)->value('total_sessions')
+        );
     }
 
     public function test_session_time_order_is_refused_with_code(): void

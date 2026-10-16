@@ -6,6 +6,8 @@ use App\Enums\Gender;
 use App\Enums\MemorizationMode;
 use App\Enums\StudentStatus;
 use App\Enums\StudentType;
+use App\Models\Student;
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,6 +21,18 @@ class UpdateStudentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            // Linking an account later (grandfathered NULL rows); explicit
+            // null is refused by the non-nullable rules — unlinking is not a thing.
+            'user_id' => ['sometimes', 'integer', 'exists:users,id',
+                function ($attribute, $value, $fail) {
+                    $u = User::find($value);
+                    if (! $u || $u->role !== 'student') {
+                        $fail('The pupil account must belong to a student user.');
+                    } elseif (Student::where('user_id', $value)
+                        ->where('id', '!=', $this->route('student')->id)->exists()) {
+                        $fail('The pupil account is already linked.');
+                    }
+                }],
             'full_name' => ['sometimes', 'string', 'max:150'],
             'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
             'group_id' => ['sometimes', 'integer', 'exists:groups,id'],

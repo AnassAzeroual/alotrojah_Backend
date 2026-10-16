@@ -16,7 +16,7 @@ class Group extends Model
 
     public $timestamps = false;
 
-    protected $fillable = ['center_id', 'level_id', 'teacher_id', 'name', 'academic_year', 'capacity', 'is_active'];
+    protected $fillable = ['center_id', 'teacher_id', 'name', 'academic_year', 'capacity', 'is_active'];
 
     /** Always present (one tiny query per collection): feeds schedule_days below. */
     protected $with = ['weekdays'];
@@ -38,11 +38,6 @@ class Group extends Model
     public function center(): BelongsTo
     {
         return $this->belongsTo(Center::class, 'center_id');
-    }
-
-    public function level(): BelongsTo
-    {
-        return $this->belongsTo(Level::class, 'level_id');
     }
 
     public function teacher(): BelongsTo

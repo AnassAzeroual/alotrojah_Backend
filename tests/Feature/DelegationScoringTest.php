@@ -110,9 +110,13 @@ class DelegationScoringTest extends TestCase
 
     public function test_final_is_null_without_inputs(): void
     {
+        $acct = User::create([
+            'full_name' => 'Fresh Account', 'email' => 'fresh-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $s = $this->postJson('/api/v1/students', [
             'full_name' => 'Fresh', 'memorization_mode' => 'thumn', 'center_id' => 1,
-            'group_id' => 1, 'level_id' => 1,
+            'group_id' => 1, 'level_id' => 1, 'user_id' => $acct->id,
         ], $this->tok(1))->assertCreated();
 
         $r = $this->getJson("/api/v1/dashboard/final?student_id={$s->json('data.id')}&season_id=1", $this->tok(1));

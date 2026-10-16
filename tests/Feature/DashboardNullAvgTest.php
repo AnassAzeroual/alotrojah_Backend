@@ -25,10 +25,15 @@ class DashboardNullAvgTest extends TestCase
     public function test_scoreless_pupil_has_null_season_avg(): void
     {
         $this->actingAs(User::find(1), 'api');
+        $acct = User::create([
+            'full_name' => 'Scoreless Account', 'email' => 'scoreless-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'No Scores Yet', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 1, 'group_id' => 1,
             'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'user_id' => $acct->id,
         ])->assertCreated()->json('data.id');
         // A term plan puts the pupil in the dashboard view without any scores.
         $this->putJson('/api/v1/term-plans', [

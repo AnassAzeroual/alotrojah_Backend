@@ -31,9 +31,14 @@ class StudentCenterRepairTest extends TestCase
     {
         $this->actingAs(User::find(1), 'api');
         // Multi-center install: omitting the center still stores NULL.
+        $acct = User::create([
+            'full_name' => 'Repair Account', 'email' => 'repair-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'Repair Me', 'memorization_mode' => 'thumn', 'status' => 'active',
             'group_id' => 1, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'user_id' => $acct->id,
         ])->assertCreated()->json('data.id');
         $this->assertNull(Student::find($id)->center_id);
 
@@ -56,9 +61,14 @@ class StudentCenterRepairTest extends TestCase
     {
         $sup = User::find(2);
         $this->actingAs($sup, 'api');
+        $acct = User::create([
+            'full_name' => 'Sup Pupil Account', 'email' => 'sup-pupil@example.org',
+            'password_hash' => 'x', 'role' => 'student', 'center_id' => 1, 'is_active' => true,
+        ]);
         $id = $this->postJson('/api/v1/students', [
             'full_name' => 'Sup Pupil', 'memorization_mode' => 'thumn', 'status' => 'active',
             'group_id' => 1, 'level_id' => Level::where('code', 'L1')->firstOrFail()->id,
+            'user_id' => $acct->id,
         ])->assertCreated()->json('data.id');
         $this->assertSame((int) $sup->center_id, (int) Student::find($id)->center_id);
 

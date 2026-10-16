@@ -54,10 +54,11 @@ Route::prefix('v1')->group(function () {
         Route::delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
         Route::apiResource('centers', CenterController::class);
         Route::delete('levels/reset', [LevelController::class, 'reset']);
-        Route::apiResource('levels', LevelController::class)->only(['index', 'update', 'destroy']);
+        Route::apiResource('levels', LevelController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('groups/stats', [GroupController::class, 'stats']);
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
+        Route::get('students/unlinked-accounts', [StudentController::class, 'unlinkedAccounts']);
         Route::apiResource('students', StudentController::class);
 
         // S7 daily core
@@ -100,6 +101,8 @@ Route::prefix('v1')->group(function () {
         Route::post('revision-logs', [MurajaaController::class, 'storeLog']);
         Route::get('revision-logs/{revisionLog}', [MurajaaController::class, 'showLog']);
         Route::delete('revision-logs/{revisionLog}', [MurajaaController::class, 'destroyLog']);
+        Route::get('exams/weekly-template', [ExamController::class, 'weeklyTemplate']);
+        Route::post('exams/weekly-batch', [ExamController::class, 'weeklyBatch']);
         Route::apiResource('exams', ExamController::class);
         Route::post('exams/{exam}/questions', [ExamQuestionController::class, 'bulk']);
         Route::put('exams/{exam}/question-weights', [ExamQuestionController::class, 'reweight']);

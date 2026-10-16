@@ -1,0 +1,1543 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Offset 0 does not exist on array\<string, mixed\>\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/SeedDemoViaApi.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/V1/AuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Auth\\StatefulGuard\:\:refresh\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/AuthController.php
+
+		-
+			message: '#^Parameter \#1 \$token of method App\\Http\\Controllers\\Api\\V1\\AuthController\:\:tokenResponse\(\) expects string, true given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/AuthController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/V1/CalendarController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/DelegationController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/ExamQuestionController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:questions\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/ExamQuestionController.php
+
+		-
+			message: '#^Parameter \#1 \$exam of method App\\Http\\Controllers\\Api\\V1\\ExamQuestionController\:\:recompute\(\) expects App\\Models\\Exam, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/V1/ExamQuestionController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Api/V1/ExamQuestionController.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$audience\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$author\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$body\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$group_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AnnouncementResource\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AnnouncementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$notes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$session_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$student\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\AttendanceResource\:\:\$week_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/AttendanceResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CenterResource\:\:\$address\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CenterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CenterResource\:\:\$city\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CenterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CenterResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CenterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CenterResource\:\:\$manager_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CenterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CenterResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CenterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CenterResource\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CenterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DelegationTokenResource\:\:\$duration_minutes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DelegationTokenResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DelegationTokenResource\:\:\$expires_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DelegationTokenResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DelegationTokenResource\:\:\$group_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DelegationTokenResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DelegationTokenResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DelegationTokenResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DelegationTokenResource\:\:\$is_revoked\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DelegationTokenResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DelegationTokenResource\:\:\$used_by_teacher_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DelegationTokenResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$ayah_from\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$ayah_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$exam_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$hizb_ref\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$max_score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$model_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$notes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$prompt_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$question_no\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$sort_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamQuestionResource\:\:\$surah_ref\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamQuestionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$exam_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$exam_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$examiner_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$examiner_report\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$overall_avg\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ExamResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ExamResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$academic_year\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$capacity\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$schedule_days\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GroupResource\:\:\$teacher\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Resources/GroupResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$hizb_from\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$hizb_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$reviewed_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$week_from\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$week_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MurajaaReviewResource\:\:\$weeks_covered\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MurajaaReviewResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$channel\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$recipient_phone\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$sent_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/NotificationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$birth_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$gender\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$requested_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$teacher_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RegistrationRequestResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RevisionLogResource\:\:\$hizb_from\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RevisionLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RevisionLogResource\:\:\$hizb_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RevisionLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RevisionLogResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RevisionLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RevisionLogResource\:\:\$murajaa_score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RevisionLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RevisionLogResource\:\:\$session_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RevisionLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\RevisionLogResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/RevisionLogResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$code\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$is_in_weekly_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$max_points\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$name_ar\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$scope\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ScoringModuleResource\:\:\$sort_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ScoringModuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$end_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$hijri_year\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$is_current\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$start_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$total_sessions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$total_weeks\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$board_report\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$hifz_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$honor_flag\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$murajaa_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$overall_avg\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$total_memorized_label\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$total_memorized_thumn\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SeasonResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$end_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$group\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$group_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$planned_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$session_number_global\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$session_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$start_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$term\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$week\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$week_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionCalendarResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$end_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$group_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$planned_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$session_number_global\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$session_number_in_week\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$session_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$start_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$week_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionScoreResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionScoreResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionScoreResource\:\:\$module\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/SessionScoreResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionScoreResource\:\:\$score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionScoreResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionScoreResource\:\:\$session_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionScoreResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SessionScoreResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SessionScoreResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$birth_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$enrollment_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$gender\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$group\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$level_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$memorization_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$notes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$start_hizb\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$student_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$user\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\StudentResource\:\:\$user_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/StudentResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$end_hizb\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$expected_hifz_season_ahzab\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$expected_hifz_term_ahzab\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$expected_hifz_week_thumn\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$goal_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$khatm_expected_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$plan_ayah_from\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$plan_ayah_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$plan_mode\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$plan_surah_from\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$plan_surah_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$start_hizb\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermPlanResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermPlanResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$end_session_no\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$end_week\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$name_ar\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$start_session_no\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$start_week\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResource\:\:\$term_number\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$exam_score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$general_avg\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$hifz_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$honor_flag\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$murajaa_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$supervisor_note\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$teacher_notes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\TermResultResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/TermResultResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$is_active\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$role\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\UserResource\:\:\$teacher_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$end_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$season_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$start_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$term_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$week_number_global\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$week_number_in_term\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeekResource\:\:\$week_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeekResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeeklyGoalResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeeklyGoalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeeklyGoalResource\:\:\$is_completed\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeeklyGoalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeeklyGoalResource\:\:\$student_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeeklyGoalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeeklyGoalResource\:\:\$target_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeeklyGoalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\WeeklyGoalResource\:\:\$week_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/WeeklyGoalResource.php
+
+		-
+			message: '#^Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Level\> does not accept static\(App\\Models\\Level\)\|null\.$#'
+			identifier: offsetAssign.valueType
+			count: 1
+			path: app/Models/Level.php
+
+		-
+			message: '#^Method App\\Models\\Level\:\:effectiveFor\(\) should return Illuminate\\Support\\Collection\<string, static\(App\\Models\\Level\)\> but returns Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Level\>\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Models/Level.php
+
+		-
+			message: '#^Property App\\Models\\RegistrationRequest\:\:\$teacher_type \(''both''\|''hifz''\|''murajaa''\) does not accept null\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Models/RegistrationRequest.php
+
+		-
+			message: '#^Call to method where\(\) on an unknown class App\\Models\\Builder\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/ScoringModule.php
+
+		-
+			message: '#^Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\ScoringModule\> does not accept static\(App\\Models\\ScoringModule\)\|null\.$#'
+			identifier: offsetAssign.valueType
+			count: 1
+			path: app/Models/ScoringModule.php
+
+		-
+			message: '#^Method App\\Models\\ScoringModule\:\:effectiveFor\(\) should return Illuminate\\Support\\Collection\<string, static\(App\\Models\\ScoringModule\)\> but returns Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\ScoringModule\>\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Models/ScoringModule.php
+
+		-
+			message: '#^Parameter \$q of method App\\Models\\ScoringModule\:\:scopeActive\(\) has invalid type App\\Models\\Builder\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/ScoringModule.php
+
+		-
+			message: '#^Property App\\Models\\User\:\:\$teacher_type \(''both''\|''hifz''\|''murajaa''\) does not accept null\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''both''\|''hifz''\|''murajaa'' and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/AnnouncementPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/AttendancePolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Policies/ExamPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Policies/MurajaaPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Policies/NotificationPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Policies/ResultPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/SessionScorePolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Policies/TermPlanPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Policies/WeeklyGoalPolicy.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$full_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/GroupStatsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/GroupStatsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/GroupStatsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$teacher_type\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/GroupStatsService.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<int,App\\Models\\Group\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Services/GroupStatsService.php
+
+		-
+			message: '#^Called ''pluck'' on Laravel collection, but could have been retrieved as a query\.$#'
+			identifier: larastan.noUnnecessaryCollectionCall
+			count: 1
+			path: app/Services/ScoringService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeasonTemplateService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$weeks\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/SeasonTemplateService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:weeks\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/SeasonTemplateService.php
+
+		-
+			message: '#^Parameter \#1 \$term of method App\\Services\\SeasonTemplateService\:\:refreshTermRanges\(\) expects App\\Models\\Term, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/SeasonTemplateService.php

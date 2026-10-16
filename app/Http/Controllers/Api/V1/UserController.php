@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Requests\ReplaceUserRequest;
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Http\Resources\UserResource;
@@ -36,12 +37,17 @@ class UserController extends Controller
         if ($request->filled('q')) {
             $q->where('full_name', 'like', '%'.$request->input('q').'%');
         }
-        // Free teachers: no ACTIVE group assigned (inactive groups don't count).
+        // Unassigned: no ACTIVE group to teach AND no pupil row linked —
+        // free for a group assignment or a pupil link.
         if ($request->boolean('unassigned')) {
             $q->whereNotExists(function ($sq) {
                 $sq->select(DB::raw(1))->from('groups')
                     ->whereColumn('groups.teacher_id', 'users.id')
                     ->where('groups.is_active', true);
+            });
+            $q->whereNotExists(function ($sq) {
+                $sq->select(DB::raw(1))->from('students')
+                    ->whereColumn('students.user_id', 'users.id');
             });
         }
         // Whitelisted server-side sort (drives the list-table sort headers).
@@ -163,14 +169,13 @@ class UserController extends Controller
      * free (no active group assigned). Announcements authored + delegation
      * tokens involving the deleted teacher are removed.
      */
-    public function replace(Request $request, User $user): JsonResponse
+    public function replace(ReplaceUserRequest $request, User $user): JsonResponse
     {
-        $this->authorize('delete', $user);
         if ($user->role === 'admin') {
             return $this->fail('Admin accounts cannot be deleted.', 422);
         }
 
-        $data = $request->validate(['replacer_id' => ['required', 'integer', 'exists:users,id']]);
+        $data = $request->validated();
         $replacer = User::findOrFail($data['replacer_id']);
 
         if ((int) $replacer->id === (int) $user->id) {

@@ -9,6 +9,7 @@ use App\Models\Center;
 use App\Models\DelegationToken;
 use App\Models\Exam;
 use App\Models\Group;
+use App\Models\Level;
 use App\Models\MurajaaReview;
 use App\Models\NotificationLog;
 use App\Models\RegistrationRequest;
@@ -30,6 +31,7 @@ use App\Policies\CenterPolicy;
 use App\Policies\DelegationPolicy;
 use App\Policies\ExamPolicy;
 use App\Policies\GroupPolicy;
+use App\Policies\LevelPolicy;
 use App\Policies\MurajaaPolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\RegistrationRequestPolicy;
@@ -41,8 +43,8 @@ use App\Policies\StudentPolicy;
 use App\Policies\TermPlanPolicy;
 use App\Policies\UserPolicy;
 use App\Policies\WeeklyGoalPolicy;
-use Illuminate\Http\Request;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -62,13 +64,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // default v1 group limiter; stricter per-route throttles (login 6,1 etc.) stack on top
+        // default v1 group limiter; stricter per-route throttles (login 60,1 etc.) stack on top
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(600)->by($request->user()?->id ?: $request->ip());
         });
 
         Gate::policy(Student::class, StudentPolicy::class);
         Gate::policy(Group::class, GroupPolicy::class);
+        Gate::policy(Level::class, LevelPolicy::class);
         Gate::policy(Center::class, CenterPolicy::class);
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(RegistrationRequest::class, RegistrationRequestPolicy::class);

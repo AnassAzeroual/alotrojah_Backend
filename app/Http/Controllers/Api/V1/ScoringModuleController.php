@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\BulkModulesRequest;
+use App\Http\Requests\ResetScoringModuleRequest;
 use App\Http\Requests\StoreModuleRequest;
 use App\Http\Requests\UpdateModuleRequest;
 use App\Http\Resources\ScoringModuleResource;
@@ -90,12 +91,9 @@ class ScoringModuleController extends Controller
     }
 
     /** Delete one center's override set, revealing the shared defaults. */
-    public function reset(Request $request): JsonResponse
+    public function reset(ResetScoringModuleRequest $request): JsonResponse
     {
-        $this->authorize('manage', ScoringModule::class);
-        $centerId = (int) $request->validate([
-            'center_id' => ['required', 'integer', 'exists:centers,id'],
-        ])['center_id'];
+        $centerId = (int) $request->validated()['center_id'];
 
         $ids = ScoringModule::where('center_id', $centerId)->pluck('id');
         if ($ids->isEmpty()) return $this->ok(['deleted' => 0]);

@@ -19,7 +19,6 @@ class StoreGroupRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'center_id' => ['required', 'integer', 'exists:centers,id'],
-            'level_id' => ['required', 'integer', 'exists:levels,id'],
             'teacher_id' => ['required', 'integer', 'exists:users,id'],
             'academic_year' => ['nullable', 'string', 'max:20'],
             'capacity' => ['nullable', 'integer', 'min:1', 'max:500'],
