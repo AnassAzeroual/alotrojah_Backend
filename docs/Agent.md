@@ -246,6 +246,22 @@ Laravel 12 API-only, PHP 8.4 (WinGet CLI; Laragon staged 8.4.26), MySQL 8.4.3 vi
 
 - Lockstep mirror (2026-10-17) — score-sheet 422s now surface, no backend change: failed saves show an `entry.save_failed` banner + per-cell `entry.over_max` flags (mapped from row-indexed errors), edits kept, progressive clearing; S18 detector + e2e-skill F1 bullet flipped. Vitest **250/250**. e2e re-run skipped per user (`:8000` untouched). See frontend §LOG.
 
+- Lockstep mirror (2026-10-17) — entry page rebuilt as a per-pupil table, no backend change: attendance + scores + memorized + total + goal in one row with per-row save (parts commit independently); retired trio deleted (9 files); e2e rewritten (unrun — `:8000` untouched per user). Frontend Vitest **249/249**. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — entry attendance now a dropdown, no backend change: shared `app-dropdown` per row; S17 e2e follows the dropdown pattern. Vitest **249/249**. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — entry dropdown paint order fixed, no backend change: `.erow.line:has(.dd.open)` raises the open row above later ones. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — entry dropdown clipping fixed for real, no backend change: open-row scroll container flips to visible while picking. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — entry save-all + yellow dirty rows, no backend change: single footer save batched per endpoint, per-pupil flags kept, warn-tinted dirty rows. Vitest **249/249**. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — yellow means user-touched only, no backend change. Vitest **250/250**. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — entry table on nested reactive forms, no backend change: per-pupil FormGroups with server-mirroring validators, form-owned dirty, signal bridge for view refresh. Vitest **252/252**. See frontend §LOG.
+
+- Lockstep mirror (2026-10-17) — attendance delete button removed, no backend change. Vitest **251/251**. See frontend §LOG.
+
 ## §OPEN
 - User mid-manual-QA on dev; triage via QA-page JSON. ftp-only-prod-db-patching skill + deploy notes in §LOG. Rotate dev passwords + `APP_DEBUG=false` pre-prod.
 - **M7 `student_notes` — APPROVED design, never built** (the 2026-10-07 audit's only unbuilt schema item; `students.notes` is still single-text overwrite with no history and no author): `student_notes (id, student_id FK→students cascade, author_id FK→users nullOnDelete — deleted staff keep their notes, note TEXT, created_at + updated_at)`, index `(student_id, created_at)`; data-migrate existing non-null `students.notes` into rows with `author_id = NULL` (= legacy, predates authorship) then DROP the column. API: list nested on student detail (teachers see own center), add (any staff), edit/delete own-or-admin — mirror the news-authorship policy shape. Frontend follow-up: notes section on student detail (separate task, pending).
