@@ -79,6 +79,8 @@ jobs:
           --path=database/migrations/2026_10_14_000021_level_code_dynamic.php
           --path=database/migrations/2026_10_14_000022_level_code_placeholder_default.php
           --path=database/migrations/2026_10_15_000023_drop_group_level.php
+          --path=database/migrations/2026_10_16_000024_exam_type_weekly.php
+          --path=database/migrations/2026_10_16_000025_exam_question_thumn_ref.php
 
       - name: Run test suite
         env:

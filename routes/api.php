@@ -101,6 +101,8 @@ Route::prefix('v1')->group(function () {
         Route::post('revision-logs', [MurajaaController::class, 'storeLog']);
         Route::get('revision-logs/{revisionLog}', [MurajaaController::class, 'showLog']);
         Route::delete('revision-logs/{revisionLog}', [MurajaaController::class, 'destroyLog']);
+        Route::get('exams/weekly-template', [ExamController::class, 'weeklyTemplate']);
+        Route::post('exams/weekly-batch', [ExamController::class, 'weeklyBatch']);
         Route::apiResource('exams', ExamController::class);
         Route::post('exams/{exam}/questions', [ExamQuestionController::class, 'bulk']);
         Route::put('exams/{exam}/question-weights', [ExamQuestionController::class, 'reweight']);

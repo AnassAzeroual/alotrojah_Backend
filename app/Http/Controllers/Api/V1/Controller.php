@@ -40,6 +40,8 @@ abstract class Controller extends BaseController
         'Season has recorded facts and cannot be deleted.' => 'SEASON_HAS_FACTS',
         'Module has recorded scores and cannot be deleted.' => 'MODULE_HAS_SCORES',
         'A term is required for this exam type.' => 'TERM_REQUIRED',
+        'A current season is required for weekly exams.' => 'SEASON_REQUIRED',
+        'A weekly exam already exists for this pupil on this date.' => 'WEEKLY_EXISTS',
         'Review must cover 1 to 3 weeks.' => 'SPAN_INVALID',
         'End hizb must be >= start hizb.' => 'RANGE_INVALID',
         'Surah range needs surah + ayah on both ends.' => 'RANGE_INVALID',

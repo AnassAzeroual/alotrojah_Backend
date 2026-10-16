@@ -46,6 +46,35 @@ class ExamManageTest extends TestCase
             ->assertJsonPath('data.season_id', 1);
     }
 
+    public function test_admin_creates_weekly_exam_without_term(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $this->postJson('/api/v1/exams', [
+            'student_id' => 1, 'exam_type' => 'weekly', 'season_id' => 1,
+            'exam_date' => '2026-10-15',
+        ])->assertCreated()
+            ->assertJsonPath('data.exam_type', 'weekly')
+            ->assertJsonPath('data.term_id', null)
+            ->assertJsonPath('data.season_id', 1);
+    }
+
+    public function test_weekly_exam_requires_season(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $this->postJson('/api/v1/exams', [
+            'student_id' => 1, 'exam_type' => 'weekly', 'exam_date' => '2026-10-15',
+        ])->assertUnprocessable();
+    }
+
+    public function test_type_change_to_weekly_clears_term(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $this->patchJson('/api/v1/exams/1', ['exam_type' => 'weekly', 'season_id' => 1])
+            ->assertOk()
+            ->assertJsonPath('data.exam_type', 'weekly')
+            ->assertJsonPath('data.term_id', null);
+    }
+
     public function test_teacher_can_update_but_not_delete(): void
     {
         $this->actingAs(User::find(3), 'api');
