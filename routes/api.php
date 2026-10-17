@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:api')->group(function () {
         // App-wide appearance: every role reads, admins write.
         Route::get('appearance', [AppearanceController::class, 'show']);
+        Route::patch('appearance', [AppearanceController::class, 'update']);
         Route::post('appearance/{kind}', [AppearanceController::class, 'upload'])
             ->whereIn('kind', ['background', 'pattern']);
         Route::delete('appearance/{kind}', [AppearanceController::class, 'destroy'])
