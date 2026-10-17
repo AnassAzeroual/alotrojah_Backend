@@ -1,16 +1,17 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AnnouncementController;
+use App\Http\Controllers\Api\V1\AppearanceController;
 use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
-use App\Http\Controllers\Api\V1\CenterController;
-use App\Http\Controllers\Api\V1\GroupController;
-use App\Http\Controllers\Api\V1\LevelController;
 use App\Http\Controllers\Api\V1\CalendarController;
+use App\Http\Controllers\Api\V1\CenterController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\DelegationController;
 use App\Http\Controllers\Api\V1\ExamController;
 use App\Http\Controllers\Api\V1\ExamQuestionController;
+use App\Http\Controllers\Api\V1\GroupController;
+use App\Http\Controllers\Api\V1\LevelController;
 use App\Http\Controllers\Api\V1\MurajaaController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\ReferenceController;
@@ -35,6 +36,11 @@ use Illuminate\Support\Facades\Route;
 Route::prefix('v1')->group(function () {
     Route::get('health', fn () => response()->json(['success' => true, 'data' => ['status' => 'ok']]));
 
+    // Public appearance files: CSS backgrounds cannot carry the JWT.
+    Route::get('appearance/files/{kind}/{filename}', [AppearanceController::class, 'file'])
+        ->whereIn('kind', ['background', 'pattern'])
+        ->where('filename', '[A-Za-z0-9][A-Za-z0-9._-]*');
+
     Route::prefix('auth')->group(function () {
         Route::post('login', [AuthController::class, 'login'])->middleware('throttle:60,1');
         Route::post('register', [AuthController::class, 'register'])->middleware('throttle:60,1');
@@ -46,6 +52,13 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:api')->group(function () {
+        // App-wide appearance: every role reads, admins write.
+        Route::get('appearance', [AppearanceController::class, 'show']);
+        Route::post('appearance/{kind}', [AppearanceController::class, 'upload'])
+            ->whereIn('kind', ['background', 'pattern']);
+        Route::delete('appearance/{kind}', [AppearanceController::class, 'destroy'])
+            ->whereIn('kind', ['background', 'pattern']);
+
         // S6 identity
         Route::post('users/{user}/replace', [UserController::class, 'replace']);
         Route::apiResource('users', UserController::class);

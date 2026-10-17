@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\AcademicSeason;
 use App\Models\Announcement;
+use App\Models\AppearanceSetting;
 use App\Models\Attendance;
 use App\Models\Center;
 use App\Models\DelegationToken;
@@ -26,6 +27,7 @@ use App\Observers\AttendanceObserver;
 use App\Observers\MurajaaReviewObserver;
 use App\Observers\SessionScoreObserver;
 use App\Policies\AnnouncementPolicy;
+use App\Policies\AppearancePolicy;
 use App\Policies\AttendancePolicy;
 use App\Policies\CenterPolicy;
 use App\Policies\DelegationPolicy;
@@ -89,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(DelegationToken::class, DelegationPolicy::class);
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
         Gate::policy(NotificationLog::class, NotificationPolicy::class);
+        Gate::policy(AppearanceSetting::class, AppearancePolicy::class);
         SessionScore::observe(SessionScoreObserver::class);
         Attendance::observe(AttendanceObserver::class);
         MurajaaReview::observe(MurajaaReviewObserver::class);
