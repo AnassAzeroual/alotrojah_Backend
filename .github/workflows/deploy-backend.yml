@@ -81,6 +81,12 @@ jobs:
           --path=database/migrations/2026_10_15_000023_drop_group_level.php
           --path=database/migrations/2026_10_16_000024_exam_type_weekly.php
           --path=database/migrations/2026_10_16_000025_exam_question_thumn_ref.php
+          --path=database/migrations/2026_10_17_000026_appearance_settings.php
+          --path=database/migrations/2026_10_17_000027_appearance_options.php
+          --path=database/migrations/2026_10_17_000028_appearance_per_center.php
+          --path=database/migrations/2026_10_17_000029_appearance_background_engine.php
+          --path=database/migrations/2026_10_17_000030_appearance_orb_controls.php
+          --path=database/migrations/2026_10_17_000031_appearance_scrim_controls.php
 
       - name: Run test suite
         env:
