@@ -95,5 +95,10 @@ class AppServiceProvider extends ServiceProvider
         SessionScore::observe(SessionScoreObserver::class);
         Attendance::observe(AttendanceObserver::class);
         MurajaaReview::observe(MurajaaReviewObserver::class);
+
+        // Scramble docs (RestrictedDocsAccess): active admins who signed in via
+        // DocsAuthController. The nullable User param is what lets guests reach
+        // the session check (a truly parameterless closure is skipped for guests).
+        Gate::define('viewApiDocs', fn (?User $user): bool => session()->has('docs_admin_id'));
     }
 }

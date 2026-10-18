@@ -30,6 +30,8 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- DocsLoginTest boots Scramble's route analyzer via /docs/api*; the spec pass peaks past 128M. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
 </phpunit>
