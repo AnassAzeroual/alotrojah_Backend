@@ -16,6 +16,8 @@ class RegistrationRequestController extends Controller
 {
     /**
      * List the waiting room, newest requests first (20/page).
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<RegistrationRequestResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(): JsonResponse
     {

@@ -25,7 +25,11 @@ class ScoringService
             ->sum('score');
     }
 
-    /** Manager guard: active weekly-total modules must sum to exactly 20 (per set). */
+    /**
+     * Manager guard: active weekly-total modules must sum to exactly 20 (per set).
+     *
+     * @return array{valid: bool, total: float}
+     */
     public function scoringCheck(?int $centerId = null): array
     {
         $total = (float) ScoringModule::effectiveFor($centerId)
@@ -35,7 +39,11 @@ class ScoringService
         return ['valid' => abs($total - 20.0) < 0.001, 'total' => $total];
     }
 
-    /** Season inputs for the final formula + sarraj track. */
+    /**
+     * Season inputs for the final formula + sarraj track.
+     *
+     * @return array{avg_murajaa: float|null, avg_weekly: float|null, avg_sarraj: float|null}
+     */
     public function seasonAvgs(int $studentId, int $seasonId): array
     {
         $avgMurajaa = MurajaaReview::where('student_id', $studentId)->where('season_id', $seasonId)->avg('score');
@@ -67,13 +75,17 @@ class ScoringService
     public function finalAverage(int $studentId, int $seasonId): ?float
     {
         $avgs = $this->seasonAvgs($studentId, $seasonId);
-        if ($avgs['avg_murajaa'] === null || $avgs['avg_weekly'] === null) return null;
+        if ($avgs['avg_murajaa'] === null || $avgs['avg_weekly'] === null) {
+            return null;
+        }
 
         // precomputed SUM of scored questions (kept current by ExamQuestionController::recompute)
         $quizzes = Exam::where('student_id', $studentId)->where('season_id', $seasonId)
             ->whereIn('exam_type', ['term_batch', 'final_season'])
             ->get()->pluck('overall_avg')->filter(fn ($v) => $v !== null)->values();
-        if ($quizzes->isEmpty()) return null;
+        if ($quizzes->isEmpty()) {
+            return null;
+        }
 
         $n = $quizzes->count();
 

@@ -28,6 +28,8 @@ class CalendarController extends Controller
      * with the names their cards need — one request instead of four lookups.
      * Season visibility reuses SeasonPolicy (shared/own-center); students
      * additionally narrow to their own group.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<SessionCalendarResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function feed(CalendarFeedRequest $request): JsonResponse
     {
@@ -66,7 +68,10 @@ class CalendarController extends Controller
     /**
      * Show one term with its weeks and their sessions.
      *
-     * Students receive only their own group's sessions.
+     * Students receive only their own group's sessions. The eager-load closure
+     * hides the payload from static inference, so the shape is declared.
+     *
+     * @response array{success: bool, message: null, data: TermResource}
      */
     public function showTerm(Request $request, Term $term): JsonResponse
     {
@@ -81,6 +86,8 @@ class CalendarController extends Controller
 
     /**
      * Update a term's fields. Non-admins: own center only (never shared rows).
+     *
+     * @response array{success: bool, message: string|null, data: TermResource}
      */
     public function updateTerm(UpdateTermRequest $request, Term $term): JsonResponse
     {
@@ -98,6 +105,8 @@ class CalendarController extends Controller
      * Filters: term_id, season_id, center_id. The center_id anchor resolves
      * the center's current season (else the newest season in its lane with
      * weeks, else empty). Students see only weeks holding their group's sessions.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<WeekResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function weeks(Request $request): JsonResponse
     {
@@ -141,6 +150,8 @@ class CalendarController extends Controller
 
     /**
      * Update a week's fields. Non-admins: own center only (never shared rows).
+     *
+     * @response array{success: bool, message: string|null, data: WeekResource}
      */
     public function updateWeek(UpdateWeekRequest $request, Week $week): JsonResponse
     {
@@ -158,6 +169,8 @@ class CalendarController extends Controller
      * Filters: season_id, term_id, week_id, session_type, status, group_id,
      * from/to date range. A non-admin filtering by another center's group is
      * refused (403 CROSS_CENTER). Students see only their own group's sessions.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<SessionResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function sessions(Request $request): JsonResponse
     {
@@ -203,6 +216,8 @@ class CalendarController extends Controller
      *
      * End time must stay after start time (422 SESSION_TIME_ORDER). Non-admins:
      * own center only (never shared rows).
+     *
+     * @response array{success: bool, message: string|null, data: SessionResource}
      */
     public function updateSession(UpdateSessionRequest $request, Session $session): JsonResponse
     {

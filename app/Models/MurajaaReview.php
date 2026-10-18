@@ -11,9 +11,9 @@ class MurajaaReview extends Model
     const UPDATED_AT = null;
     protected $fillable = ['student_id','season_id','term_id','week_from','week_to','weeks_covered','session_id','hizb_from','hizb_to','surah_from','ayah_from','surah_to','ayah_to','score','entered_by','reviewed_at'];
     protected $casts = [
-        'hizb_from' => 'decimal:2',
-        'hizb_to' => 'decimal:2',
-        'score' => 'decimal:2',
+        'hizb_from' => 'float',
+        'hizb_to' => 'float',
+        'score' => 'float',
         'reviewed_at' => 'date',
         'created_at' => 'datetime',
     ];

@@ -10,6 +10,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 
+/**
+ * Enum columns are annotated as literal unions so Scramble emits them precisely
+ * instead of widening to `string`; keep in step with the `Rule::enum` requests.
+ *
+ * @property 'male'|'female'|null $gender
+ * @property 'active'|'paused'|'graduated'|'left' $status
+ * @property 'child'|'adult'|null $student_type
+ * @property 'surah'|'thumn' $memorization_mode
+ */
 #[ScopedBy([CenterScope::class])]
 class Student extends Model
 {
@@ -19,7 +28,7 @@ class Student extends Model
     protected $casts = [
         'birth_date' => 'date',
         'enrollment_date' => 'date',
-        'start_hizb' => 'decimal:2',
+        'start_hizb' => 'float',
         'created_at' => 'datetime',
     ];
 

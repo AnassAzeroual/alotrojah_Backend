@@ -15,12 +15,14 @@ use App\Models\Week;
 use App\Models\WeeklyGoal;
 use App\Services\ScoreEntryService;
 use App\Services\ScoringService;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ScoreController extends Controller
 {
     /** Bulk module-score entry (hifz/tajwid/mowathaba/sarraj). Max enforced from module rows. */
+    #[Response(status: 201, type: 'array{success: bool, message: string, data: array{weekly_totals: array<string, float>, memorizations_saved: int}}')]
     public function bulk(StoreScoresBulkRequest $request, ScoreEntryService $entry): JsonResponse
     {
         $out = $entry->storeScores(
@@ -37,6 +39,8 @@ class ScoreController extends Controller
      * List session scores with their module (100/page).
      *
      * Role-narrowed; filters: student_id, session_id, week_id, module_id.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<SessionScoreResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
     {
@@ -58,7 +62,11 @@ class ScoreController extends Controller
         return $this->ok(SessionScoreResource::collection($q->paginate(100))->response()->getData(true));
     }
 
-    /** All scores of one session, grouped per student with totals (marking sheet). */
+    /**
+     * All scores of one session, grouped per student with totals (marking sheet).
+     *
+     * @response array{success: bool, message: null, data: list<array{student_id: int, scores: list<SessionScoreResource>, weekly_total: float}>}
+     */
     public function bySession(Request $request, int $session, ScoringService $scoring): JsonResponse
     {
         $this->authorize('viewAny', SessionScore::class);
@@ -74,7 +82,7 @@ class ScoreController extends Controller
         $out = [];
         foreach ($rows as $sid => $scores) {
             $out[] = [
-                'student_id' => $sid,
+                'student_id' => (int) $sid,
                 'scores' => SessionScoreResource::collection($scores),
                 'weekly_total' => $scoring->weeklyTotal((int) $sid, $session),
             ];

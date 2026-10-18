@@ -123,7 +123,10 @@ class GroupStatsService
         return [
             'group' => $summary['groups'][0],
             'breakdown' => $summary['breakdown'],
-            'trend' => $trend->all(),
+            'trend' => $trend->map(static fn ($r) => [
+                'week' => (int) $r->week,
+                'avg_score' => (float) $r->avg_score,
+            ])->values()->all(),
             'students' => $students->map(fn ($s) => [
                 'id' => $s->id,
                 'full_name' => $s->full_name,

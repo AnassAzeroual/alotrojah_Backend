@@ -3,8 +3,18 @@
 namespace App\Http\Requests;
 
 use App\Models\Exam;
+use Dedoc\Scramble\Attributes\BodyParameter;
+use Dedoc\Scramble\Attributes\IgnoreParam;
 use Illuminate\Foundation\Http\FormRequest;
 
+/**
+ * `rows.*.scores` is keyed by scoring-module code (a map), but the `scores.*`
+ * rule makes Scramble infer a numeric list — so the wildcard child is hidden
+ * from the docs and the map type is declared explicitly. Runtime rules are
+ * unchanged; this only corrects the generated OpenAPI/TS shape.
+ */
+#[IgnoreParam('rows.*.scores.*', 'body')]
+#[BodyParameter('rows.*.scores', type: 'array<string, float|null>', infer: true)]
 class WeeklyBatchRequest extends FormRequest
 {
     public function authorize(): bool

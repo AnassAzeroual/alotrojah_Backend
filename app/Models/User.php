@@ -13,6 +13,14 @@ use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 /**
  * Auth identity. Password lives in `password_hash` (legacy schema),
  * so getAuthPassword() is overridden. Roles/center travel as JWT claims.
+ *
+ * The enum-valued columns are annotated so Scramble emits their literal
+ * unions in the OpenAPI spec (it would otherwise widen them to `string`
+ * from the DB column type). Keep them in step with the `Rule::in` lists in
+ * the Store/Update requests.
+ *
+ * @property 'admin'|'supervisor'|'teacher'|'student'|'board' $role
+ * @property 'hifz'|'murajaa'|'both'|null $teacher_type
  */
 #[ScopedBy([CenterScope::class])]
 class User extends Authenticatable implements JWTSubject

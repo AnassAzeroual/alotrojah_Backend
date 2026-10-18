@@ -5,7 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** One background + pattern config and its display controls per center. */
+/**
+ * One background + pattern config and its display controls per center.
+ *
+ * The CSS-value columns are annotated with their literal unions so Scramble
+ * emits them precisely instead of widening to `string`; keep them in step with
+ * the `in:` rules in UpdateAppearanceSettingsRequest.
+ *
+ * @property 'none'|'color'|'image'|'gradient' $background_type
+ * @property string $background_color
+ * @property 'linear'|'radial'|'conic' $gradient_type
+ * @property string $gradient_from
+ * @property string $gradient_to
+ * @property string $background_size
+ * @property string $background_position
+ * @property 'no-repeat'|'repeat'|'repeat-x'|'repeat-y'|'space'|'round' $background_repeat
+ * @property 'scroll'|'fixed' $background_attachment
+ * @property 'normal'|'multiply'|'screen'|'overlay'|'darken'|'lighten'|'color-dodge'|'color-burn'|'hard-light'|'soft-light'|'difference'|'exclusion'|'hue'|'saturation'|'color'|'luminosity' $background_blend_mode
+ * @property string|null $pattern_tint
+ * @property string $glass_tint
+ * @property string $orb_primary
+ * @property string $orb_secondary
+ * @property string|null $scrim_color
+ */
 class AppearanceSetting extends Model
 {
     protected $table = 'appearance_settings';

@@ -26,6 +26,8 @@ class ExamController extends Controller
      *
      * Students see only their own exams. Filters: student_id, term_id,
      * season_id, exam_type.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<ExamResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
     {
@@ -133,6 +135,11 @@ class ExamController extends Controller
      * weekly-total modules (the sheet columns, always totaling 20) and the
      * group's exam-taker pupils with their memorization modes (portion
      * inputs render per pupil).
+     *
+     * Pupils are a 3-column projection off Student, so the shape is declared
+     * (Scramble would otherwise infer the whole Student model).
+     *
+     * @response array{success: bool, message: null, data: array{season_id: int, modules: list<array{code: string, name_ar: string, max_points: float}>, pupils: list<array{id: int, full_name: string, memorization_mode: 'surah'|'thumn'}>}}
      */
     public function weeklyTemplate(WeeklyTemplateRequest $request): JsonResponse
     {

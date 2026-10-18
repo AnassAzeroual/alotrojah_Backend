@@ -5,6 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property 'present'|'absent'|'late'|'excused' $status
+ */
 class Attendance extends Model
 {
     protected $table = 'attendance';

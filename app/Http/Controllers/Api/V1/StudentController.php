@@ -21,6 +21,8 @@ class StudentController extends Controller
      * Students see only themselves; teachers/supervisors their center; admins
      * all (optional center_id). Filters: group_id, level_id, status,
      * memorization_mode, q (full_name substring), unassigned (no group).
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<StudentResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
     {

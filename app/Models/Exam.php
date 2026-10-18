@@ -6,13 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property 'hizb_completion'|'term_batch'|'final_season'|'weekly' $exam_type
+ */
 class Exam extends Model
 {    protected $table = 'exams';
     const UPDATED_AT = null;
     protected $fillable = ['student_id','season_id','term_id','exam_type','exam_date','examiner_id','overall_avg','examiner_report'];
     protected $casts = [
         'exam_date' => 'date',
-        'overall_avg' => 'decimal:2',
+        'overall_avg' => 'float',
         'created_at' => 'datetime',
     ];
 

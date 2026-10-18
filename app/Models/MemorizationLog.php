@@ -12,10 +12,10 @@ class MemorizationLog extends Model
     protected $fillable = ['student_id','season_id','term_id','week_id','session_id','log_date','log_mode','hizb_no','thumn_no','thumn_amount','hizb_from','hizb_to','surah_from','ayah_from','surah_to','ayah_to','created_by'];
     protected $casts = [
         'log_date' => 'date',
-        'hizb_no' => 'decimal:2',
-        'thumn_amount' => 'decimal:2',
-        'hizb_from' => 'decimal:2',
-        'hizb_to' => 'decimal:2',
+        'hizb_no' => 'float',
+        'thumn_amount' => 'float',
+        'hizb_from' => 'float',
+        'hizb_to' => 'float',
         'created_at' => 'datetime',
     ];
 

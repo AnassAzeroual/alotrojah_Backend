@@ -27,7 +27,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'
 			identifier: property.notFound
-			count: 3
+			count: 2
 			path: app/Http/Controllers/Api/V1/CalendarController.php
 
 		-
@@ -673,90 +673,6 @@ parameters:
 			path: app/Http/Resources/SeasonResultResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$end_time\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$group\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$group_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$planned_date\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$season_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$session_number_global\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$session_type\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$start_time\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$term\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$term_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$week\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SessionCalendarResource\:\:\$week_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SessionCalendarResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\SessionResource\:\:\$end_time\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1297,12 +1213,6 @@ parameters:
 			path: app/Models/Level.php
 
 		-
-			message: '#^Property App\\Models\\RegistrationRequest\:\:\$teacher_type \(''both''\|''hifz''\|''murajaa''\) does not accept null\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Models/RegistrationRequest.php
-
-		-
 			message: '#^Call to method where\(\) on an unknown class App\\Models\\Builder\.$#'
 			identifier: class.notFound
 			count: 1
@@ -1325,18 +1235,6 @@ parameters:
 			identifier: class.notFound
 			count: 1
 			path: app/Models/ScoringModule.php
-
-		-
-			message: '#^Property App\\Models\\User\:\:\$teacher_type \(''both''\|''hifz''\|''murajaa''\) does not accept null\.$#'
-			identifier: assign.propertyType
-			count: 1
-			path: app/Models/User.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between ''both''\|''hifz''\|''murajaa'' and null will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Models/User.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$center_id\.$#'

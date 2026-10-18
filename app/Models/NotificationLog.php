@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property 'whatsapp'|'other' $channel
+ * @property 'queued'|'sent'|'failed' $status
+ */
 class NotificationLog extends Model
 {
     protected $table = 'notifications_log';

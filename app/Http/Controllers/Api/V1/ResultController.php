@@ -18,6 +18,8 @@ class ResultController extends Controller
      * List term results (50/page).
      *
      * Students see only their own. Filters: student_id, term_id.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<TermResultResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function indexTerms(Request $request): JsonResponse
     {
@@ -66,6 +68,8 @@ class ResultController extends Controller
      * List season results (50/page).
      *
      * Students see only their own. Filter: student_id.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<SeasonResultResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function indexSeasons(Request $request): JsonResponse
     {

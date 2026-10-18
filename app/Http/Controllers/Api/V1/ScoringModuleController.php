@@ -10,6 +10,7 @@ use App\Http\Resources\ScoringModuleResource;
 use App\Models\ScoringModule;
 use App\Models\SessionScore;
 use App\Services\ScoringService;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,8 @@ class ScoringModuleController extends Controller
 {
     /**
      * Effective scoring module set for a center scope (null = shared defaults).
+     *
+     * @response array{success: bool, message: string|null, data: list<ScoringModuleResource>}
      */
     public function index(Request $request): JsonResponse
     {
@@ -35,6 +38,7 @@ class ScoringModuleController extends Controller
      * Rolled back with 422 SCORING_TOTAL when the center's weekly total would
      * leave 20.
      */
+    #[Response(status: 201, type: 'array{success: bool, message: string|null, data: ScoringModuleResource}')]
     public function store(StoreModuleRequest $request, ScoringService $scoring): JsonResponse
     {
         return DB::transaction(function () use ($request, $scoring) {
@@ -52,6 +56,8 @@ class ScoringModuleController extends Controller
 
     /**
      * Update a scoring module (admin only), with the same weekly-total guard as store.
+     *
+     * @response array{success: bool, message: string|null, data: ScoringModuleResource}
      */
     public function update(UpdateModuleRequest $request, ScoringModule $scoringModule, ScoringService $scoring): JsonResponse
     {
@@ -68,7 +74,11 @@ class ScoringModuleController extends Controller
         });
     }
 
-    /** Atomic multi-module rebalance within one set (null = shared defaults). */
+    /**
+     * Atomic multi-module rebalance within one set (null = shared defaults).
+     *
+     * @response array{success: bool, message: string|null, data: array{modules: list<ScoringModuleResource>, check: array{valid: bool, total: float}}}
+     */
     public function bulk(BulkModulesRequest $request, ScoringService $scoring): JsonResponse
     {
         return DB::transaction(function () use ($request, $scoring) {
@@ -99,6 +109,8 @@ class ScoringModuleController extends Controller
      *
      * Returns validity plus the would-be total — used by the settings UI
      * before saving a rebalance.
+     *
+     * @response array{success: bool, message: string|null, data: array{valid: bool, total: float}}
      */
     public function scoringCheck(Request $request, ScoringService $scoring): JsonResponse
     {
@@ -108,7 +120,11 @@ class ScoringModuleController extends Controller
         return $this->ok($scoring->scoringCheck($centerId));
     }
 
-    /** Delete one center's override set, revealing the shared defaults. */
+    /**
+     * Delete one center's override set, revealing the shared defaults.
+     *
+     * @response array{success: bool, message: string|null, data: array{deleted: int}}
+     */
     public function reset(ResetScoringModuleRequest $request): JsonResponse
     {
         $centerId = (int) $request->validated()['center_id'];

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCenterRequest;
 use App\Http\Requests\UpdateCenterRequest;
 use App\Http\Resources\CenterResource;
 use App\Models\Center;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 
 class CenterController extends Controller
@@ -14,6 +15,8 @@ class CenterController extends Controller
      * List centers with group/student counts (20/page).
      *
      * Non-admins always see only their own center.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<CenterResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(): JsonResponse
     {
@@ -57,6 +60,7 @@ class CenterController extends Controller
     /**
      * Centers cannot be deleted — always 403 ADMIN_ONLY.
      */
+    #[Response(status: 403, type: 'array{success: bool, message: string, errors: array{code: string}}')]
     public function destroy(Center $center): JsonResponse
     {
         $this->authorize('delete', $center);

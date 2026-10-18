@@ -6,13 +6,16 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
+/**
+ * @property 'weekly'|'murajaa' $scope
+ */
 class ScoringModule extends Model
 {
     protected $table = 'scoring_modules';
     const UPDATED_AT = null;
     protected $fillable = ['code','name_ar','max_points','scope','is_active','is_in_weekly_total','sort_order','created_by','center_id'];
     protected $casts = [
-        'max_points' => 'decimal:2',
+        'max_points' => 'float',
         'created_at' => 'datetime',
         'is_active' => 'boolean',
         'is_in_weekly_total' => 'boolean',

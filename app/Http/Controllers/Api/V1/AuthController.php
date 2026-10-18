@@ -20,7 +20,7 @@ class AuthController extends Controller
      * Deactivated accounts get the same generic 401 as wrong passwords — the is_active
      * check is merged into the JWT attempt, so callers cannot probe which emails exist.
      *
-     * @response array{success: bool, message: string, data: array{access_token: string, token_type: string, expires_in: int, user: array{id: int, full_name: string, role: string, center_id: int|null, center_name: string|null, teacher_type: string|null}}}
+     * @response array{success: bool, message: string, data: array{access_token: string, token_type: string, expires_in: int, user: array{id: int, full_name: string, role: 'admin'|'supervisor'|'teacher'|'student'|'board', center_id: int|null, center_name: string|null, teacher_type: 'hifz'|'murajaa'|'both'|null}}}
      */
     public function login(LoginRequest $request): JsonResponse
     {
@@ -71,6 +71,8 @@ class AuthController extends Controller
      *
      * Includes the center name (null for admins, who have no center) and
      * teacher_type (null unless role is teacher). Token-less calls get 401.
+     *
+     * @response array{success: bool, message: string|null, data: array{id: int, full_name: string, email: string, role: 'admin'|'supervisor'|'teacher'|'student'|'board', center_id: int|null, center_name: string|null, teacher_type: 'hifz'|'murajaa'|'both'|null}}
      */
     public function me(): JsonResponse
     {
@@ -88,7 +90,7 @@ class AuthController extends Controller
      *
      * Call before expires_in runs out; the previous token is invalidated by the blacklist.
      *
-     * @response array{success: bool, message: string, data: array{access_token: string, token_type: string, expires_in: int, user: array{id: int, full_name: string, role: string, center_id: int|null, center_name: string|null, teacher_type: string|null}}}
+     * @response array{success: bool, message: string, data: array{access_token: string, token_type: string, expires_in: int, user: array{id: int, full_name: string, role: 'admin'|'supervisor'|'teacher'|'student'|'board', center_id: int|null, center_name: string|null, teacher_type: 'hifz'|'murajaa'|'both'|null}}}
      */
     public function refresh(): JsonResponse
     {

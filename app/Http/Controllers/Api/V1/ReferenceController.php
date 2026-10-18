@@ -30,7 +30,11 @@ class ReferenceController extends Controller
     /**
      * Surah dropdown feed ({id, name_ar, ayahs_count}) computed from quran_verses.
      *
-     * Optional q filters by Arabic name substring.
+     * Optional q filters by Arabic name substring. The rows are aggregates
+     * aliased off QuranVerse, so the shape is declared explicitly (Scramble
+     * would otherwise infer the QuranVerse model) and cast to native scalars.
+     *
+     * @response array{success: bool, message: null, data: list<array{id: int, name_ar: string, ayahs_count: int}>}
      */
     public function surahs(Request $request): JsonResponse
     {
@@ -42,6 +46,14 @@ class ReferenceController extends Controller
             ->orderBy('sura_no');
         if ($request->filled('q')) $q->where('surah_name', 'like', '%'.$request->input('q').'%');
 
-        return $this->ok($q->get());
+        return $this->ok(
+            $q->get()
+                ->map(fn ($r) => [
+                    'id' => (int) $r->getAttribute('id'),
+                    'name_ar' => (string) $r->getAttribute('name_ar'),
+                    'ayahs_count' => (int) $r->getAttribute('ayahs_count'),
+                ])
+                ->values()
+        );
     }
 }

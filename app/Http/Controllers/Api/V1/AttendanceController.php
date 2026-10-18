@@ -6,6 +6,7 @@ use App\Http\Requests\StoreAttendanceBulkRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Models\Attendance;
 use App\Services\ScoreEntryService;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,8 @@ class AttendanceController extends Controller
      *
      * Role-narrowed like every operational list (own / own center / all for
      * admins). Filters: student_id, week_id, session_id, status.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<AttendanceResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
     {
@@ -38,6 +41,7 @@ class AttendanceController extends Controller
     }
 
     /** Bulk presence entry: one POST per session (teacher's daily flow). */
+    #[Response(status: 201, type: 'array{success: bool, message: string, data: array{attendance_ids: list<int>}}')]
     public function bulk(StoreAttendanceBulkRequest $request, ScoreEntryService $entry): JsonResponse
     {
         $ids = $entry->storeAttendance($request->user(), (int) $request->input('session_id'), $request->input('records'));

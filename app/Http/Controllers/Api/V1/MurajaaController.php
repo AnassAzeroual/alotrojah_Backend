@@ -19,6 +19,8 @@ class MurajaaController extends Controller
      * List murajaa cycle reviews (50/page).
      *
      * Non-admins see their center only. Filters: student_id, term_id.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<MurajaaReviewResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function indexReviews(Request $request): JsonResponse
     {
@@ -105,6 +107,8 @@ class MurajaaController extends Controller
      * List per-session revision practice logs (100/page).
      *
      * Non-admins see their center only. Filters: student_id, session_id, week_id.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<RevisionLogResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function indexLogs(Request $request): JsonResponse
     {

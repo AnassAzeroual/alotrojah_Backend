@@ -11,6 +11,7 @@ use App\Models\Group;
 use App\Models\User;
 use App\Services\GroupStatsService;
 use App\Services\SeasonTemplateService;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,8 @@ class GroupController extends Controller
      *
      * Students see only their own group; teachers/supervisors see their center;
      * admins see all and may filter by center_id and is_active.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<GroupResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
     {
@@ -46,7 +49,11 @@ class GroupController extends Controller
         return $this->ok(GroupResource::collection($q->paginate(20))->response()->getData(true));
     }
 
-    /** Overview feed: every visible group + KPIs + breakdowns, current season only. */
+    /**
+     * Overview feed: every visible group + KPIs + breakdowns, current season only.
+     *
+     * @response array{success: bool, message: null, data: array{season: array{id: int}|null, season_name: string|null, kpis: array{groups: int, students: int, avg_score: float|null, attendance_pct: float|null, fill_pct: float|null}, breakdown: array{status: array<string, int>, gender: array<string, int>, student_type: array<string, int>, memorization_mode: array<string, int>}, groups: list<array{id: int, name: string, center_id: int, teacher: array{id: int, full_name: string, phone: string|null, teacher_type: 'hifz'|'murajaa'|'both'}|null, academic_year: string|null, schedule_days: string, is_active: bool, capacity: int|null, students_count: int, fill_pct: float|null, avg_score: float|null, attendance_pct: float|null, thumn_total: float, breakdown: array{status?: array<string, int>, gender?: array<string, int>, student_type?: array<string, int>, memorization_mode?: array<string, int>}}>}}
+     */
     public function stats(Request $request, GroupStatsService $stats): JsonResponse
     {
         $this->authorize('viewAny', Group::class);
@@ -66,7 +73,11 @@ class GroupController extends Controller
         return $this->ok($stats->overview($q->get(), $season?->id) + ['season_name' => $season?->name]);
     }
 
-    /** One group: info, all its students with season metrics, weekly trend. */
+    /**
+     * One group: info, all its students with season metrics, weekly trend.
+     *
+     * @response array{success: bool, message: null, data: array{season_name: string|null, group: array{id: int, name: string, center_id: int, teacher: array{id: int, full_name: string, phone: string|null, teacher_type: 'hifz'|'murajaa'|'both'}|null, academic_year: string|null, schedule_days: string, is_active: bool, capacity: int|null, students_count: int, fill_pct: float|null, avg_score: float|null, attendance_pct: float|null, thumn_total: float, breakdown: array{status?: array<string, int>, gender?: array<string, int>, student_type?: array<string, int>, memorization_mode?: array<string, int>}}, breakdown: array{status: array<string, int>, gender: array<string, int>, student_type: array<string, int>, memorization_mode: array<string, int>}, trend: list<array{week: int, avg_score: float}>, students: list<array{id: int, full_name: string, gender: string|null, status: string, student_type: string|null, memorization_mode: 'surah'|'thumn', start_hizb: float|null, birth_date: string|null, enrollment_date: string|null, level_id: int|null, notes: string|null, avg_score: float|null, attendance_pct: float|null, thumn_total: float}>}}
+     */
     public function detail(Group $group, GroupStatsService $stats): JsonResponse
     {
         $this->authorize('view', $group);
@@ -205,6 +216,7 @@ class GroupController extends Controller
     /**
      * Groups cannot be deleted — always 403 ADMIN_ONLY. Deactivate instead.
      */
+    #[Response(status: 403, type: 'array{success: bool, message: string, errors: array{code: string}}')]
     public function destroy(Group $group): JsonResponse
     {
         $this->authorize('delete', $group);

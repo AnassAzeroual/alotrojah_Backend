@@ -12,7 +12,7 @@ class SessionScore extends Model
     protected $fillable = ['student_id','season_id','term_id','week_id','session_id','log_date','module_id','score','entered_by'];
     protected $casts = [
         'log_date' => 'date',
-        'score' => 'decimal:2',
+        'score' => 'float',
         'created_at' => 'datetime',
     ];
 

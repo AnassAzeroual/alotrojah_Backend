@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\UpdateAppearanceSettingsRequest;
 use App\Http\Requests\UploadAppearanceRequest;
+use App\Http\Resources\AppearanceResource;
 use App\Models\AppearanceSetting;
 use App\Models\Center;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * user reads their own center's row; admins may target any center by passing
  * center_id. Files sit on the public disk and are streamed by {@see self::file()}
  * — the production host has no storage symlink.
+ *
+ * All four endpoints answer with the same {@see AppearanceResource} payload.
  */
 class AppearanceController extends Controller
 {
@@ -25,16 +28,22 @@ class AppearanceController extends Controller
      *
      * Everyone reads their own center; admins may pass center_id to read any
      * center (for the global admin, center_id is required — they have none).
+     *
+     * @response array{success: bool, message: string|null, data: AppearanceResource}
      */
     public function show(Request $request): JsonResponse
     {
         $centerId = $this->centerId($request);
         $setting = $centerId !== null ? AppearanceSetting::forCenter($centerId) : null;
 
-        return $this->ok($this->payload($request, $centerId, $setting));
+        return $this->ok(new AppearanceResource($centerId, $setting));
     }
 
-    /** Partial update of the display controls (opacity, fit, position, size). */
+    /**
+     * Partial update of the display controls (opacity, fit, position, size).
+     *
+     * @response array{success: bool, message: string|null, data: AppearanceResource}
+     */
     public function update(UpdateAppearanceSettingsRequest $request): JsonResponse
     {
         $centerId = $this->centerId($request, true);
@@ -43,7 +52,7 @@ class AppearanceController extends Controller
         $setting->updated_by = $request->user()->id;
         $setting->save();
 
-        return $this->ok($this->payload($request, $centerId, $setting->fresh()));
+        return $this->ok(new AppearanceResource($centerId, $setting->fresh()));
     }
 
     /**
@@ -52,6 +61,8 @@ class AppearanceController extends Controller
      * The file lands on the public disk (no storage symlink on the production
      * host); the previous file of the same kind is deleted. Uploading a
      * background switches background_type to image automatically.
+     *
+     * @response array{success: bool, message: string|null, data: AppearanceResource}
      */
     public function upload(UploadAppearanceRequest $request, string $kind): JsonResponse
     {
@@ -72,7 +83,7 @@ class AppearanceController extends Controller
             Storage::disk('public')->delete($old);
         }
 
-        return $this->ok($this->payload($request, $centerId, $setting->fresh()));
+        return $this->ok(new AppearanceResource($centerId, $setting->fresh()));
     }
 
     /**
@@ -80,6 +91,8 @@ class AppearanceController extends Controller
      *
      * Removing the active background switches background_type to none. The
      * file is deleted from the disk.
+     *
+     * @response array{success: bool, message: string|null, data: AppearanceResource}
      */
     public function destroy(Request $request, string $kind): JsonResponse
     {
@@ -88,7 +101,7 @@ class AppearanceController extends Controller
         $centerId = $this->centerId($request, true);
         $setting = AppearanceSetting::forCenter($centerId);
         if ($setting === null) {
-            return $this->ok($this->payload($request, $centerId, null));
+            return $this->ok(new AppearanceResource($centerId, null));
         }
 
         $column = "{$kind}_path";
@@ -105,7 +118,7 @@ class AppearanceController extends Controller
             Storage::disk('public')->delete($old);
         }
 
-        return $this->ok($this->payload($request, $centerId, $setting->fresh()));
+        return $this->ok(new AppearanceResource($centerId, $setting->fresh()));
     }
 
     /** Public streaming endpoint referenced by the CSS layer on every client. */
@@ -156,58 +169,5 @@ class AppearanceController extends Controller
         }
 
         return $centerId;
-    }
-
-    /**
-     * Absolute URLs built from the request host: APP_URL is fixed to :8000,
-     * but the verify/shots harness serves the same backend on :8002.
-     */
-    private function payload(Request $request, ?int $centerId, ?AppearanceSetting $setting): array
-    {
-        $d = AppearanceSetting::DEFAULTS;
-
-        return [
-            'center_id' => $centerId,
-            'background_url' => $this->fileUrl($request, 'background', $setting?->background_path),
-            'background_type' => $setting?->background_type ?? $d['background_type'],
-            'background_color' => $setting?->background_color ?? $d['background_color'],
-            'gradient_type' => $setting?->gradient_type ?? $d['gradient_type'],
-            'gradient_angle' => (int) ($setting?->gradient_angle ?? $d['gradient_angle']),
-            'gradient_from' => $setting?->gradient_from ?? $d['gradient_from'],
-            'gradient_to' => $setting?->gradient_to ?? $d['gradient_to'],
-            'background_opacity' => (int) ($setting?->background_opacity ?? $d['background_opacity']),
-            'background_size' => $setting?->background_size ?? $d['background_size'],
-            'background_position' => $setting?->background_position ?? $d['background_position'],
-            'background_repeat' => $setting?->background_repeat ?? $d['background_repeat'],
-            'background_attachment' => $setting?->background_attachment ?? $d['background_attachment'],
-            'background_blend_mode' => $setting?->background_blend_mode ?? $d['background_blend_mode'],
-            'pattern_url' => $this->fileUrl($request, 'pattern', $setting?->pattern_path),
-            'pattern_enabled' => (bool) ($setting?->pattern_enabled ?? $d['pattern_enabled']),
-            'pattern_opacity' => (int) ($setting?->pattern_opacity ?? $d['pattern_opacity']),
-            'pattern_size' => (int) ($setting?->pattern_size ?? $d['pattern_size']),
-            'pattern_tint' => $setting?->pattern_tint,
-            'pattern_invert' => (bool) ($setting?->pattern_invert ?? $d['pattern_invert']),
-            'backdrop_blur' => (int) ($setting?->backdrop_blur ?? $d['backdrop_blur']),
-            'glass_tint' => $setting?->glass_tint ?? $d['glass_tint'],
-            'glass_opacity' => (int) ($setting?->glass_opacity ?? $d['glass_opacity']),
-            'orb_enabled' => (bool) ($setting?->orb_enabled ?? $d['orb_enabled']),
-            'orb_primary' => $setting?->orb_primary ?? $d['orb_primary'],
-            'orb_secondary' => $setting?->orb_secondary ?? $d['orb_secondary'],
-            'orb_opacity' => (int) ($setting?->orb_opacity ?? $d['orb_opacity']),
-            'scrim_enabled' => (bool) ($setting?->scrim_enabled ?? $d['scrim_enabled']),
-            'scrim_color' => $setting?->scrim_color ?? $d['scrim_color'],
-            'scrim_opacity' => (int) ($setting?->scrim_opacity ?? $d['scrim_opacity']),
-            'updated_at' => $setting?->updated_at?->toIso8601String(),
-        ];
-    }
-
-    private function fileUrl(Request $request, string $kind, ?string $path): ?string
-    {
-        if (! $path) {
-            return null;
-        }
-
-        return $request->getSchemeAndHttpHost()
-            .'/api/v1/appearance/files/'.$kind.'/'.rawurlencode(basename($path));
     }
 }

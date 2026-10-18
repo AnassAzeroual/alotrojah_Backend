@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * Waiting-room staging row. Accepted requests are copied into users
  * (+students for students) then deleted; canceled ones are deleted.
+ *
+ * @property 'supervisor'|'teacher'|'student'|'board' $role
+ * @property 'hifz'|'murajaa'|'both'|null $teacher_type
+ * @property 'male'|'female'|null $gender
  */
 class RegistrationRequest extends Model
 {

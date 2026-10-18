@@ -27,6 +27,8 @@ class UserController extends Controller
      * Filters: role, q (full_name substring), unassigned (no active group AND
      * no linked pupil row). Sortable via sort/direction: id, full_name, role,
      * center_id, is_active, email.
+     *
+     * @response array{success: bool, message: string|null, data: array{data: list<UserResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
     {
@@ -202,6 +204,8 @@ class UserController extends Controller
      * (or 'both' — strict, so a 'both' teacher needs a 'both' replacer), and
      * free (no active group assigned). Announcements authored + delegation
      * tokens involving the deleted teacher are removed.
+     *
+     * @response array{success: bool, message: string, data: array{replacer_id: int, moved: array<string, int>}}
      */
     public function replace(ReplaceUserRequest $request, User $user): JsonResponse
     {

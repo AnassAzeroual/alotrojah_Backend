@@ -48,10 +48,10 @@ class Level extends Model
         return $existing;
     }
     protected $casts = [
-        'thumn_per_session_value' => 'decimal:2',
-        'thumn_per_week_value' => 'decimal:2',
-        'ahzab_per_term' => 'decimal:2',
-        'ahzab_per_dawra' => 'decimal:2',
+        'thumn_per_session_value' => 'float',
+        'thumn_per_week_value' => 'float',
+        'ahzab_per_term' => 'float',
+        'ahzab_per_dawra' => 'float',
     ];
 
     public function students(): HasMany { return $this->hasMany(Student::class, 'level_id'); }

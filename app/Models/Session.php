@@ -6,6 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * One scheduled class meeting. Relations are annotated because resources read
+ * them with the nullsafe operator (`$this->group?->name`), which static
+ * analysis cannot resolve from the bare `BelongsTo` return type.
+ *
+ * @property 'memorization'|'revision'|'exam' $session_type
+ * @property 'planned'|'done'|'cancelled' $status
+ * @property-read AcademicSeason|null $season
+ * @property-read Group|null $group
+ * @property-read Term|null $term
+ * @property-read Week|null $week
+ */
 class Session extends Model
 {
     protected $table = 'sessions';

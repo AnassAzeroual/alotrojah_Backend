@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property 'all'|'teachers'|'manager'|'my_students' $audience
+ */
 class Announcement extends Model
 {
     protected $table = 'announcements';

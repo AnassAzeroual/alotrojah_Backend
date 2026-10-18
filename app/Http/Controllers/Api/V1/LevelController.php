@@ -80,7 +80,11 @@ class LevelController extends Controller
         return $this->ok($level->fresh());
     }
 
-    /** Delete one center's whole override set; the shared defaults reappear. */
+    /**
+     * Delete one center's whole override set; the shared defaults reappear.
+     *
+     * @response array{success: bool, message: string|null, data: array{deleted: int}}
+     */
     public function reset(ResetLevelRequest $request): JsonResponse
     {
         $centerId = (int) $request->validated()['center_id'];
