@@ -16,8 +16,12 @@ use Illuminate\View\View;
  */
 class DocsAuthController extends Controller
 {
-    public function showLogin(): View
+    public function showLogin(): View|RedirectResponse
     {
+        if (session()->has('docs_admin_id')) {
+            return redirect('/docs/api');
+        }
+
         return view('docs.login');
     }
 

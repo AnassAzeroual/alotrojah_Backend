@@ -9,8 +9,9 @@ use Tests\TestCase;
 
 /**
  * Docs access: session login for active admins only (viewApiDocs gate on the
- * Scramble routes). APP_ENV=testing here, so RestrictedDocsAccess takes the
- * gate path — the same path production runs.
+ * Scramble routes, enforced by App\Http\Middleware\EnsureDocsAccess). Browsers
+ * are redirected to the login page, JSON clients get 403. APP_ENV=testing here,
+ * so the gate path runs — the same path production runs.
  */
 class DocsLoginTest extends TestCase
 {
@@ -37,6 +38,12 @@ class DocsLoginTest extends TestCase
     public function test_guest_docs_are_forbidden(): void
     {
         $this->get('/docs/api.json')->assertForbidden();
+    }
+
+    public function test_guest_ui_navigations_redirect_to_login(): void
+    {
+        $this->get('/docs/api')->assertRedirect('/docs/login');
+        $this->get('/docs/api/')->assertRedirect('/docs/login');
     }
 
     public function test_login_page_renders(): void
@@ -112,5 +119,20 @@ class DocsLoginTest extends TestCase
 
         $this->post('/docs/logout')->assertRedirect('/docs/login');
         $this->get('/docs/api.json')->assertForbidden();
+    }
+
+    public function test_signed_in_admin_is_sent_straight_to_docs(): void
+    {
+        $admin = User::factory()->create([
+            'role' => 'admin',
+            'password_hash' => \Illuminate\Support\Facades\Hash::make(self::PASSWORD),
+        ]);
+
+        $this->post('/docs/login', [
+            'email' => $admin->email,
+            'password' => self::PASSWORD,
+        ]);
+
+        $this->get('/docs/login')->assertRedirect('/docs/api');
     }
 }
