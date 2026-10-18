@@ -51,6 +51,9 @@ class CalendarController extends Controller
 
         return $this->ok(SessionCalendarResource::collection($q->paginate(50))->response()->getData(true));
     }
+    /**
+     * List a season's terms with week counts.
+     */
     public function terms(Request $request, AcademicSeason $season): JsonResponse
     {
         $this->authorize('view', $season);
@@ -60,6 +63,11 @@ class CalendarController extends Controller
         ));
     }
 
+    /**
+     * Show one term with its weeks and their sessions.
+     *
+     * Students receive only their own group's sessions.
+     */
     public function showTerm(Request $request, Term $term): JsonResponse
     {
         $this->authorize('view', $term->season);
@@ -71,6 +79,9 @@ class CalendarController extends Controller
         }])));
     }
 
+    /**
+     * Update a term's fields. Non-admins: own center only (never shared rows).
+     */
     public function updateTerm(UpdateTermRequest $request, Term $term): JsonResponse
     {
         if ($refused = $this->refuseForeignSeason($request->user(), $term->season?->center_id)) {
@@ -81,6 +92,13 @@ class CalendarController extends Controller
         return $this->ok(new TermResource($term->fresh()));
     }
 
+    /**
+     * List weeks, optionally narrowed (50/page).
+     *
+     * Filters: term_id, season_id, center_id. The center_id anchor resolves
+     * the center's current season (else the newest season in its lane with
+     * weeks, else empty). Students see only weeks holding their group's sessions.
+     */
     public function weeks(Request $request): JsonResponse
     {
         $this->authorize('viewCalendar', AcademicSeason::class);
@@ -121,6 +139,9 @@ class CalendarController extends Controller
         return $this->ok(WeekResource::collection($q->paginate(50))->response()->getData(true));
     }
 
+    /**
+     * Update a week's fields. Non-admins: own center only (never shared rows).
+     */
     public function updateWeek(UpdateWeekRequest $request, Week $week): JsonResponse
     {
         if ($refused = $this->refuseForeignSeason($request->user(), $week->season?->center_id)) {
@@ -131,6 +152,13 @@ class CalendarController extends Controller
         return $this->ok(new WeekResource($week->fresh()));
     }
 
+    /**
+     * List calendar sessions (50/page).
+     *
+     * Filters: season_id, term_id, week_id, session_type, status, group_id,
+     * from/to date range. A non-admin filtering by another center's group is
+     * refused (403 CROSS_CENTER). Students see only their own group's sessions.
+     */
     public function sessions(Request $request): JsonResponse
     {
         $this->authorize('viewCalendar', AcademicSeason::class);
@@ -170,6 +198,12 @@ class CalendarController extends Controller
         return $this->ok(SessionResource::collection($q->paginate(50))->response()->getData(true));
     }
 
+    /**
+     * Update a session's fields (partial PATCH supported).
+     *
+     * End time must stay after start time (422 SESSION_TIME_ORDER). Non-admins:
+     * own center only (never shared rows).
+     */
     public function updateSession(UpdateSessionRequest $request, Session $session): JsonResponse
     {
         if ($refused = $this->refuseForeignSeason($request->user(), $session->season?->center_id)) {

@@ -12,6 +12,11 @@ use Illuminate\Http\Request;
 
 class AnnouncementController extends Controller
 {
+    /**
+     * List announcements visible to the caller (20/page).
+     *
+     * Visibility is audience-scoped (center-wide vs my_students). Filter: audience.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Announcement::class);
@@ -22,6 +27,12 @@ class AnnouncementController extends Controller
         return $this->ok(AnnouncementResource::collection($q->paginate(20))->response()->getData(true));
     }
 
+    /**
+     * Publish an announcement (author = caller).
+     *
+     * audience=my_students targets one group: teachers may only address their
+     * own group, supervisors only groups of their center (403 otherwise).
+     */
     public function store(StoreAnnouncementRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -41,6 +52,9 @@ class AnnouncementController extends Controller
         return $this->created(new AnnouncementResource(Announcement::create($data)->load('author')));
     }
 
+    /**
+     * Show one announcement with its author.
+     */
     public function show(Announcement $announcement): JsonResponse
     {
         $this->authorize('view', $announcement);
@@ -48,6 +62,9 @@ class AnnouncementController extends Controller
         return $this->ok(new AnnouncementResource($announcement->load('author')));
     }
 
+    /**
+     * Update an announcement's text/audience (author or admin).
+     */
     public function update(UpdateAnnouncementRequest $request, Announcement $announcement): JsonResponse
     {
         $announcement->update($request->validated());
@@ -55,6 +72,9 @@ class AnnouncementController extends Controller
         return $this->ok(new AnnouncementResource($announcement->fresh('author')));
     }
 
+    /**
+     * Delete an announcement (author or admin).
+     */
     public function destroy(Announcement $announcement): JsonResponse
     {
         $this->authorize('delete', $announcement);

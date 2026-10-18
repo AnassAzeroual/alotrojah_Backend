@@ -13,9 +13,17 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 
 class AuthController extends Controller
 {
+    /**
+     * Exchange credentials for a JWT access token.
+     *
+     * The returned token authorizes every other v1 call via `Authorization: Bearer <token>`.
+     * Deactivated accounts get the same generic 401 as wrong passwords — the is_active
+     * check is merged into the JWT attempt, so callers cannot probe which emails exist.
+     *
+     * @response array{success: bool, message: string, data: array{access_token: string, token_type: string, expires_in: int, user: array{id: int, full_name: string, role: string, center_id: int|null, center_name: string|null, teacher_type: string|null}}}
+     */
     public function login(LoginRequest $request): JsonResponse
     {
-        // is_active is matched as a WHERE clause: deactivated accounts get the same generic 401.
         $credentials = $request->only('email', 'password') + ['is_active' => true];
 
         if (! $token = Auth::guard('api')->attempt($credentials)) {
@@ -27,7 +35,10 @@ class AuthController extends Controller
 
     /**
      * Self-registration: parks the request in the waiting room.
-     * No token — the account only exists after admin acceptance.
+     *
+     * No token is issued — the account only exists after an admin accepts the request.
+     * Returns 422 with `email_taken` or `in_waiting_room` when the email is already
+     * registered or already awaiting approval.
      */
     public function register(RegisterRequest $request): JsonResponse
     {
@@ -55,6 +66,12 @@ class AuthController extends Controller
         return $this->created(null, 'Registration request received. Awaiting admin approval.');
     }
 
+    /**
+     * Return the authenticated user's profile from the JWT.
+     *
+     * Includes the center name (null for admins, who have no center) and
+     * teacher_type (null unless role is teacher). Token-less calls get 401.
+     */
     public function me(): JsonResponse
     {
         $u = Auth::guard('api')->user();
@@ -66,11 +83,23 @@ class AuthController extends Controller
         ]);
     }
 
+    /**
+     * Rotate the JWT: return a fresh access token (same shape as login).
+     *
+     * Call before expires_in runs out; the previous token is invalidated by the blacklist.
+     *
+     * @response array{success: bool, message: string, data: array{access_token: string, token_type: string, expires_in: int, user: array{id: int, full_name: string, role: string, center_id: int|null, center_name: string|null, teacher_type: string|null}}}
+     */
     public function refresh(): JsonResponse
     {
         return $this->tokenResponse(Auth::guard('api')->refresh(), 'Token refreshed.');
     }
 
+    /**
+     * Invalidate the current token (JWT blacklist).
+     *
+     * The client must discard its copy; subsequent calls with the same token get 401.
+     */
     public function logout(): JsonResponse
     {
         Auth::guard('api')->logout(); // blacklisted (JWT_BLACKLIST_ENABLED)

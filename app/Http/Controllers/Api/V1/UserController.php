@@ -20,6 +20,14 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    /**
+     * List users, paginated (20/page), with filters.
+     *
+     * Non-admins always see their own center; admins may pass center_id.
+     * Filters: role, q (full_name substring), unassigned (no active group AND
+     * no linked pupil row). Sortable via sort/direction: id, full_name, role,
+     * center_id, is_active, email.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', User::class);
@@ -60,6 +68,13 @@ class UserController extends Controller
         return $this->ok(UserResource::collection($q->paginate(20))->response()->getData(true));
     }
 
+    /**
+     * Create a user account (teacher, student, or admin).
+     *
+     * Only admins may create admins (403 ADMIN_ONLY otherwise); non-admins are
+     * pinned to their own center. Password is stored as a hash; the plain value
+     * never persists.
+     */
     public function store(StoreUserRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -78,6 +93,9 @@ class UserController extends Controller
         return $this->created(new UserResource(User::create($data)));
     }
 
+    /**
+     * Show one user.
+     */
     public function show(User $user): JsonResponse
     {
         $this->authorize('view', $user);
@@ -85,6 +103,14 @@ class UserController extends Controller
         return $this->ok(new UserResource($user));
     }
 
+    /**
+     * Update a user (profile fields, role, center, password, is_active).
+     *
+     * Self-service is one-way: anyone may switch themselves OFF (reactivation
+     * needs another admin) but cannot change their own role/center/type — those
+     * fields are stripped. Non-admins cannot grant the admin role or move a user
+     * across centers. The last active admin cannot be deactivated.
+     */
     public function update(UpdateUserRequest $request, User $user): JsonResponse
     {
         $data = $request->validated();
@@ -127,6 +153,14 @@ class UserController extends Controller
         return $this->ok(new UserResource($user->fresh()));
     }
 
+    /**
+     * Delete a user — inline when they own nothing.
+     *
+     * Deleting a teacher who owns an active group or entered history is refused
+     * with 422 NEED_REPLACER and a payload (teacher, groups, counts) for the
+     * frontend replacer dialog; use POST users/{user}/replace instead. Admin
+     * accounts can never be deleted (422).
+     */
     public function destroy(User $user): JsonResponse
     {
         $this->authorize('delete', $user);

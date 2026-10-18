@@ -20,6 +20,12 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class AppearanceController extends Controller
 {
+    /**
+     * Read the appearance payload for a center (defaults fill unset fields).
+     *
+     * Everyone reads their own center; admins may pass center_id to read any
+     * center (for the global admin, center_id is required — they have none).
+     */
     public function show(Request $request): JsonResponse
     {
         $centerId = $this->centerId($request);
@@ -40,6 +46,13 @@ class AppearanceController extends Controller
         return $this->ok($this->payload($request, $centerId, $setting->fresh()));
     }
 
+    /**
+     * Upload a background/pattern image (multipart, field `image`).
+     *
+     * The file lands on the public disk (no storage symlink on the production
+     * host); the previous file of the same kind is deleted. Uploading a
+     * background switches background_type to image automatically.
+     */
     public function upload(UploadAppearanceRequest $request, string $kind): JsonResponse
     {
         $centerId = $this->centerId($request, true);
@@ -62,6 +75,12 @@ class AppearanceController extends Controller
         return $this->ok($this->payload($request, $centerId, $setting->fresh()));
     }
 
+    /**
+     * Remove the background/pattern image (manage permission).
+     *
+     * Removing the active background switches background_type to none. The
+     * file is deleted from the disk.
+     */
     public function destroy(Request $request, string $kind): JsonResponse
     {
         $this->authorize('manage', AppearanceSetting::class);

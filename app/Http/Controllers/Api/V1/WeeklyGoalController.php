@@ -12,6 +12,11 @@ use Illuminate\Http\Request;
 
 class WeeklyGoalController extends Controller
 {
+    /**
+     * List weekly goals (per_page 1–100, default 50).
+     *
+     * Non-admins see their center only. Filters: student_id, week_id.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', WeeklyGoal::class);
@@ -30,6 +35,12 @@ class WeeklyGoalController extends Controller
         return $this->ok(WeeklyGoalResource::collection($q->paginate($perPage))->response()->getData(true));
     }
 
+    /**
+     * Create or update one pupil's goal for one week (one row per pair).
+     *
+     * Records who checked the goal and when. A non-admin writing for a pupil
+     * of another center gets 403 CROSS_CENTER.
+     */
     public function upsert(UpsertWeeklyGoalRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -51,6 +62,9 @@ class WeeklyGoalController extends Controller
         return $this->created(new WeeklyGoalResource($goal));
     }
 
+    /**
+     * Show one weekly goal.
+     */
     public function show(WeeklyGoal $weeklyGoal): JsonResponse
     {
         $this->authorize('view', $weeklyGoal);
@@ -58,6 +72,9 @@ class WeeklyGoalController extends Controller
         return $this->ok(new WeeklyGoalResource($weeklyGoal));
     }
 
+    /**
+     * Delete a weekly goal (manage permission — admin/supervisor).
+     */
     public function destroy(WeeklyGoal $weeklyGoal): JsonResponse
     {
         $this->authorize('manage', WeeklyGoal::class);

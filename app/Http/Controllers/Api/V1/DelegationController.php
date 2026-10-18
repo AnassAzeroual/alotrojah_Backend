@@ -12,6 +12,9 @@ use Illuminate\Http\JsonResponse;
 
 class DelegationController extends Controller
 {
+    /**
+     * List a group's delegation tokens (newest 50).
+     */
     public function index(Group $group): JsonResponse
     {
         $this->authorize('viewGroup', [DelegationToken::class, $group]);
@@ -34,6 +37,13 @@ class DelegationController extends Controller
         ], 'Share this link via WhatsApp.');
     }
 
+    /**
+     * Redeem a delegation token: gain time-boxed mark-entry rights for its group.
+     *
+     * The token must be valid, unexpired, and unredeemed (throttle: 30/min).
+     * On success the caller may enter scores for the group's sessions until
+     * expires_at.
+     */
     public function redeem(RedeemDelegationRequest $request, DelegationService $service): JsonResponse
     {
         $token = $service->redeem($request->input('token'), $request->user());
@@ -45,6 +55,10 @@ class DelegationController extends Controller
         ], 'Access granted. You may now enter marks for this group.');
     }
 
+    /**
+     * Revoke a delegation token (granter or admin) — the token stops working
+     * immediately, even if unexpired.
+     */
     public function revoke(DelegationToken $delegation): JsonResponse
     {
         $this->authorize('revoke', $delegation);

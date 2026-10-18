@@ -16,6 +16,9 @@ use Illuminate\Support\Facades\DB;
 
 class ScoringModuleController extends Controller
 {
+    /**
+     * Effective scoring module set for a center scope (null = shared defaults).
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', ScoringModule::class);
@@ -26,6 +29,12 @@ class ScoringModuleController extends Controller
         ));
     }
 
+    /**
+     * Create a scoring module (admin only).
+     *
+     * Rolled back with 422 SCORING_TOTAL when the center's weekly total would
+     * leave 20.
+     */
     public function store(StoreModuleRequest $request, ScoringService $scoring): JsonResponse
     {
         return DB::transaction(function () use ($request, $scoring) {
@@ -41,6 +50,9 @@ class ScoringModuleController extends Controller
         });
     }
 
+    /**
+     * Update a scoring module (admin only), with the same weekly-total guard as store.
+     */
     public function update(UpdateModuleRequest $request, ScoringModule $scoringModule, ScoringService $scoring): JsonResponse
     {
         return DB::transaction(function () use ($request, $scoringModule, $scoring) {
@@ -82,6 +94,12 @@ class ScoringModuleController extends Controller
         });
     }
 
+    /**
+     * Dry-run the weekly-total check for a center scope without writing.
+     *
+     * Returns validity plus the would-be total — used by the settings UI
+     * before saving a rebalance.
+     */
     public function scoringCheck(Request $request, ScoringService $scoring): JsonResponse
     {
         $this->authorize('viewAny', ScoringModule::class);
@@ -105,6 +123,11 @@ class ScoringModuleController extends Controller
         return $this->ok(['deleted' => $deleted]);
     }
 
+    /**
+     * Delete a single module (admin only).
+     *
+     * Refused with 422 MODULE_HAS_SCORES while recorded scores reference it.
+     */
     public function destroy(ScoringModule $scoringModule): JsonResponse
     {
         $this->authorize('delete', $scoringModule);

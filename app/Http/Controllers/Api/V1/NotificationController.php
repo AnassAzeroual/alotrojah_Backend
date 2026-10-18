@@ -11,6 +11,11 @@ use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    /**
+     * List notification logs (50/page, newest first).
+     *
+     * Non-admins see only their center's. Filters: status, channel.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', NotificationLog::class);
@@ -37,6 +42,9 @@ class NotificationController extends Controller
         return $this->created(new NotificationResource(NotificationLog::create($data)));
     }
 
+    /**
+     * Show one notification log.
+     */
     public function show(NotificationLog $notification): JsonResponse
     {
         $this->authorize('view', $notification);
@@ -44,6 +52,11 @@ class NotificationController extends Controller
         return $this->ok(new NotificationResource($notification));
     }
 
+    /**
+     * Mark a notification queued/sent/failed.
+     *
+     * Setting status=sent stamps sent_at; any other status clears it.
+     */
     public function mark(UpdateNotificationStatusRequest $request, NotificationLog $notification): JsonResponse
     {
         $notification->update([
@@ -54,6 +67,9 @@ class NotificationController extends Controller
         return $this->ok(new NotificationResource($notification->fresh()));
     }
 
+    /**
+     * Delete a notification log.
+     */
     public function destroy(NotificationLog $notification): JsonResponse
     {
         $this->authorize('delete', $notification);

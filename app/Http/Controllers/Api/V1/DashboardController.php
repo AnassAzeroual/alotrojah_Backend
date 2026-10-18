@@ -43,6 +43,9 @@ class DashboardController extends Controller
         ]);
     }
 
+    /**
+     * The season summary row for one pupil (season totals vs plan).
+     */
     public function season(StudentSeasonRequest $request, DashboardService $dash): JsonResponse
     {
         $data = $request->validated();
@@ -52,6 +55,9 @@ class DashboardController extends Controller
         return $this->ok($dash->seasonRow($student->id, $data['season_id']));
     }
 
+    /**
+     * One pupil's per-week progress bars for a season.
+     */
     public function weekly(StudentSeasonRequest $request, DashboardService $dash): JsonResponse
     {
         $data = $request->validated();
@@ -60,6 +66,10 @@ class DashboardController extends Controller
         return $this->ok($dash->weeklyProgress($data['student_id'], $data['season_id']));
     }
 
+    /**
+     * Center-level dashboard for a season: KPI cards + honor distribution +
+     * attendance breakdown.
+     */
     public function center(CenterSeasonRequest $request, DashboardService $dash): JsonResponse
     {
         $data = $request->validated();

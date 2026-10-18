@@ -11,6 +11,12 @@ use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
+    /**
+     * List attendance rows with their student (50/page).
+     *
+     * Role-narrowed like every operational list (own / own center / all for
+     * admins). Filters: student_id, week_id, session_id, status.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Attendance::class);
@@ -39,6 +45,9 @@ class AttendanceController extends Controller
         return $this->created(['attendance_ids' => $ids], 'Attendance saved.');
     }
 
+    /**
+     * Show one attendance row with its student.
+     */
     public function show(Attendance $attendance): JsonResponse
     {
         $this->authorize('view', $attendance);
@@ -46,6 +55,9 @@ class AttendanceController extends Controller
         return $this->ok(new AttendanceResource($attendance->load('student')));
     }
 
+    /**
+     * Delete an attendance row (manage permission — admin/supervisor).
+     */
     public function destroy(Attendance $attendance): JsonResponse
     {
         $this->authorize('manage', Attendance::class);

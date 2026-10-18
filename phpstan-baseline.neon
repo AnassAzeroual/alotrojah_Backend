@@ -469,42 +469,6 @@ parameters:
 			path: app/Http/Resources/MurajaaReviewResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$channel\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$message\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$recipient_phone\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$sent_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/NotificationResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\NotificationResource\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/NotificationResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\RegistrationRequestResource\:\:\$birth_date\.$#'
 			identifier: property.notFound
 			count: 1
@@ -647,60 +611,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/ScoringModuleResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$center_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$end_date\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$hijri_year\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$is_current\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$start_date\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$total_sessions\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResource\:\:\$total_weeks\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/SeasonResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\SeasonResultResource\:\:\$board_report\.$#'

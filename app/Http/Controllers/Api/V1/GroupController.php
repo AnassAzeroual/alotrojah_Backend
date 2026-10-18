@@ -19,6 +19,12 @@ class GroupController extends Controller
 {
     use StudentGroupScope;
 
+    /**
+     * List groups with teacher and student counts (20/page).
+     *
+     * Students see only their own group; teachers/supervisors see their center;
+     * admins see all and may filter by center_id and is_active.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Group::class);
@@ -70,6 +76,13 @@ class GroupController extends Controller
         return $this->ok($stats->detail($group, $season?->id) + ['season_name' => $season?->name]);
     }
 
+    /**
+     * Create a group (schedule days + optional teacher).
+     *
+     * The assigned teacher must be a teacher of the same center (422 otherwise).
+     * The group is backfilled with session sets for every open season of its
+     * center, so it starts with a calendar immediately.
+     */
     public function store(StoreGroupRequest $request, SeasonTemplateService $tpl): JsonResponse
     {
         $data = $request->validated();
@@ -101,6 +114,9 @@ class GroupController extends Controller
         return $this->created(new GroupResource($group->load('teacher')));
     }
 
+    /**
+     * Show one group with its teacher and student count.
+     */
     public function show(Group $group): JsonResponse
     {
         $this->authorize('view', $group);
@@ -108,6 +124,13 @@ class GroupController extends Controller
         return $this->ok(new GroupResource($group->load('teacher')->loadCount('students')));
     }
 
+    /**
+     * Update a group's fields, teacher, and/or schedule days.
+     *
+     * Side effects: reactivating a group backfills its future sessions (same as
+     * creation); changing weekdays rebuilds future planned sessions on the new
+     * days — recorded history never moves.
+     */
     public function update(UpdateGroupRequest $request, Group $group, SeasonTemplateService $tpl): JsonResponse
     {
         $data = $request->validated();
@@ -179,6 +202,9 @@ class GroupController extends Controller
             })->get();
     }
 
+    /**
+     * Groups cannot be deleted — always 403 ADMIN_ONLY. Deactivate instead.
+     */
     public function destroy(Group $group): JsonResponse
     {
         $this->authorize('delete', $group);

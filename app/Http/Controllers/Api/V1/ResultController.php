@@ -14,6 +14,11 @@ use Illuminate\Http\Request;
 
 class ResultController extends Controller
 {
+    /**
+     * List term results (50/page).
+     *
+     * Students see only their own. Filters: student_id, term_id.
+     */
     public function indexTerms(Request $request): JsonResponse
     {
         $this->authorize('viewAny', TermResult::class);
@@ -32,6 +37,12 @@ class ResultController extends Controller
         return $this->ok(TermResultResource::collection($q->paginate(50))->response()->getData(true));
     }
 
+    /**
+     * Create or update one pupil's result for one term (one row per pair).
+     *
+     * The season is derived from the term. Non-admins writing for another
+     * center's pupil get 403 CROSS_CENTER.
+     */
     public function upsertTerm(UpsertTermResultRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -51,6 +62,11 @@ class ResultController extends Controller
         return $this->created(new TermResultResource($result));
     }
 
+    /**
+     * List season results (50/page).
+     *
+     * Students see only their own. Filter: student_id.
+     */
     public function indexSeasons(Request $request): JsonResponse
     {
         $this->authorize('viewAny', SeasonResult::class);
@@ -68,6 +84,11 @@ class ResultController extends Controller
         return $this->ok(SeasonResultResource::collection($q->paginate(50))->response()->getData(true));
     }
 
+    /**
+     * Create or update one pupil's result for one season (one row per pair).
+     *
+     * Non-admins writing for another center's pupil get 403 CROSS_CENTER.
+     */
     public function upsertSeason(UpsertSeasonResultRequest $request): JsonResponse
     {
         $data = $request->validated();

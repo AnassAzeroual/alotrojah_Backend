@@ -17,6 +17,12 @@ use Illuminate\Support\Facades\DB;
 
 class SeasonController extends Controller
 {
+    /**
+     * List seasons with their term counts (20/page, newest first).
+     *
+     * Staff see legacy shared (NULL-center) seasons plus their own center's;
+     * admins see everything.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', AcademicSeason::class);
@@ -31,6 +37,12 @@ class SeasonController extends Controller
         return $this->ok(SeasonResource::collection($q->paginate(20))->response()->getData(true));
     }
 
+    /**
+     * Create a season with its terms/weeks/sessions skeleton.
+     *
+     * The template service generates the full calendar structure from the
+     * given start date, term list, and review-weeks-per-term.
+     */
     public function store(StoreSeasonRequest $request, SeasonTemplateService $tpl): JsonResponse
     {
         $season = $tpl->createSeason(
@@ -44,6 +56,9 @@ class SeasonController extends Controller
         return $this->created(new SeasonResource($season->loadCount('terms')->loadMin('terms as first_term_id', 'id')));
     }
 
+    /**
+     * Show one season with its term count and first term id.
+     */
     public function show(AcademicSeason $season): JsonResponse
     {
         $this->authorize('view', $season);
@@ -51,6 +66,12 @@ class SeasonController extends Controller
         return $this->ok(new SeasonResource($season->loadCount('terms')->loadMin('terms as first_term_id', 'id')));
     }
 
+    /**
+     * Update a season's header fields (name, dates, hijri year, …).
+     *
+     * Seasons are center-owned: non-admins may touch only their own center's
+     * seasons; legacy shared rows are admin-only for writes (403 CROSS_CENTER).
+     */
     public function update(UpdateSeasonRequest $request, AcademicSeason $season): JsonResponse
     {
         // Seasons are center-owned: a non-admin touches only their own
@@ -65,6 +86,13 @@ class SeasonController extends Controller
         return $this->ok(new SeasonResource($season->fresh()));
     }
 
+    /**
+     * Mark a season as current — exclusive per center lane (shared NULL lane included).
+     *
+     * The previous current season of the same lane is unset in the same
+     * transaction. Requires manage permission; non-admins only for their own
+     * center's seasons.
+     */
     public function activate(AcademicSeason $season): JsonResponse
     {
         $this->authorize('manage', AcademicSeason::class);
@@ -86,6 +114,12 @@ class SeasonController extends Controller
         return $this->ok(new SeasonResource($season->fresh()));
     }
 
+    /**
+     * Delete a season with no recorded facts.
+     *
+     * Refused with 422 SEASON_HAS_FACTS once memorization logs, scores,
+     * attendance, or exams reference the season.
+     */
     public function destroy(AcademicSeason $season): JsonResponse
     {
         $this->authorize('delete', $season);

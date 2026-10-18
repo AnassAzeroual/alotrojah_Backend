@@ -101,6 +101,9 @@ class ExamQuestionController extends Controller
         return $this->ok(new ExamResource($exam->fresh(['questions', 'student'])));
     }
 
+    /**
+     * Show one exam question.
+     */
     public function show(ExamQuestion $examQuestion): JsonResponse
     {
         $this->authorize('view', $examQuestion->exam);
@@ -108,6 +111,13 @@ class ExamQuestionController extends Controller
         return $this->ok(new ExamQuestionResource($examQuestion));
     }
 
+    /**
+     * Update one question (score and/or max_score).
+     *
+     * A score may not exceed its weight, and the exam's weights must total
+     * exactly 20 after the change — rebalance via question-weights instead.
+     * overall_avg is recomputed.
+     */
     public function update(UpdateQuestionRequest $request, ExamQuestion $examQuestion): JsonResponse
     {
         $data = $request->validated();
@@ -127,6 +137,9 @@ class ExamQuestionController extends Controller
         return $this->ok(new ExamQuestionResource($examQuestion->fresh()));
     }
 
+    /**
+     * Delete one question and recompute the exam's overall_avg.
+     */
     public function destroy(ExamQuestion $examQuestion): JsonResponse
     {
         $this->authorize('manageExam', $examQuestion->exam);

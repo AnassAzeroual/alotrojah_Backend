@@ -33,6 +33,11 @@ class ScoreController extends Controller
         return $this->created(['weekly_totals' => $out['weekly_totals'], 'memorizations_saved' => $out['memorizations_saved']], 'Scores saved.');
     }
 
+    /**
+     * List session scores with their module (100/page).
+     *
+     * Role-narrowed; filters: student_id, session_id, week_id, module_id.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', SessionScore::class);

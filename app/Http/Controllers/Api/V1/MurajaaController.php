@@ -15,6 +15,11 @@ use Illuminate\Http\Request;
 
 class MurajaaController extends Controller
 {
+    /**
+     * List murajaa cycle reviews (50/page).
+     *
+     * Non-admins see their center only. Filters: student_id, term_id.
+     */
     public function indexReviews(Request $request): JsonResponse
     {
         $this->authorize('viewAny', MurajaaReview::class);
@@ -54,6 +59,9 @@ class MurajaaController extends Controller
         return $this->created(new MurajaaReviewResource($review->fresh()));
     }
 
+    /**
+     * Show one cycle review.
+     */
     public function showReview(MurajaaReview $murajaaReview): JsonResponse
     {
         $this->authorize('view', $murajaaReview);
@@ -61,6 +69,9 @@ class MurajaaController extends Controller
         return $this->ok(new MurajaaReviewResource($murajaaReview));
     }
 
+    /**
+     * Show one revision log row.
+     */
     public function showLog(RevisionLog $revisionLog): JsonResponse
     {
         $this->authorize('view', $revisionLog);
@@ -68,6 +79,9 @@ class MurajaaController extends Controller
         return $this->ok(new RevisionLogResource($revisionLog));
     }
 
+    /**
+     * Delete a revision log row.
+     */
     public function destroyLog(RevisionLog $revisionLog): JsonResponse
     {
         $this->authorize('delete', $revisionLog);
@@ -76,6 +90,9 @@ class MurajaaController extends Controller
         return $this->ok(null, 'Deleted.');
     }
 
+    /**
+     * Delete a cycle review.
+     */
     public function destroyReview(MurajaaReview $murajaaReview): JsonResponse
     {
         $this->authorize('delete', $murajaaReview);
@@ -84,6 +101,11 @@ class MurajaaController extends Controller
         return $this->ok(null, 'Deleted.');
     }
 
+    /**
+     * List per-session revision practice logs (100/page).
+     *
+     * Non-admins see their center only. Filters: student_id, session_id, week_id.
+     */
     public function indexLogs(Request $request): JsonResponse
     {
         $this->authorize('viewAny', RevisionLog::class);

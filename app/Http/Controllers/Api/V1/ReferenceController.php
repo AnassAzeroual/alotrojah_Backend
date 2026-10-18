@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 /** Read-only dropdown feeds (any authenticated user). */
 class ReferenceController extends Controller
 {
+    /**
+     * Level dropdown feed: effective set for a center (overrides win, shared
+     * defaults fill the gaps; unknown/absent center_id = defaults).
+     */
     public function levels(Request $request): JsonResponse
     {
         // Copy-on-write sets: overrides win, shared defaults fill the gaps.
@@ -23,6 +27,11 @@ class ReferenceController extends Controller
         return $this->ok(Level::effectiveFor($centerId)->values());
     }
 
+    /**
+     * Surah dropdown feed ({id, name_ar, ayahs_count}) computed from quran_verses.
+     *
+     * Optional q filters by Arabic name substring.
+     */
     public function surahs(Request $request): JsonResponse
     {
         // Item 11: same JSON shape as the old `surahs` stub

@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\DB;
 /** Printable pages consume these composites (book fidelity + better). */
 class ReportController extends Controller
 {
+    /**
+     * Printable term report for one pupil: result, plan, quiz averages,
+     * attendance rate, weekly progress, murajaa cycles.
+     */
     public function term(StudentTermRequest $request, ScoringService $scoring): JsonResponse
     {
         $data = $request->validated();
@@ -35,6 +39,10 @@ class ReportController extends Controller
         ]);
     }
 
+    /**
+     * Printable season report for one pupil: season/term results, scoring
+     * inputs, final average, quiz averages, honor flag.
+     */
     public function season(StudentSeasonRequest $request, ScoringService $scoring): JsonResponse
     {
         $data = $request->validated();

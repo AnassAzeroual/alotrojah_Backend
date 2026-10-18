@@ -50,7 +50,7 @@ class LevelController extends Controller
         return $this->created($level->fresh());
     }
 
-    /** Effective set for a center scope (null = shared defaults). */
+    /** Effective level set for a center scope (null = shared defaults only). */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Level::class);
@@ -60,10 +60,11 @@ class LevelController extends Controller
     }
 
     /**
-     * Single-row edit. With a `center_id` scope on a shared default row, the
-     * center's override set is cloned first and the clone is edited instead —
-     * defaults are never mutated through a scoped edit. (No store endpoint:
-     * `levels.code` is a fixed L1/L2/L3 ENUM, so rows are edited, never added.)
+     * Single-row edit (admin only).
+     *
+     * Editing a shared default *through* a center scope first clones the
+     * center's override set and edits the clone — shared defaults are never
+     * mutated by a scoped edit.
      */
     public function update(UpdateLevelRequest $request, Level $level): JsonResponse
     {
@@ -79,7 +80,7 @@ class LevelController extends Controller
         return $this->ok($level->fresh());
     }
 
-    /** Delete one center's override set, revealing the shared defaults. */
+    /** Delete one center's whole override set; the shared defaults reappear. */
     public function reset(ResetLevelRequest $request): JsonResponse
     {
         $centerId = (int) $request->validated()['center_id'];
@@ -94,6 +95,11 @@ class LevelController extends Controller
         return $this->ok(['deleted' => $deleted]);
     }
 
+    /**
+     * Delete a single level (admin only).
+     *
+     * Refused with 422 LEVEL_IN_USE while any pupil is assigned to it.
+     */
     public function destroy(Level $level): JsonResponse
     {
         $this->authorize('delete', $level);

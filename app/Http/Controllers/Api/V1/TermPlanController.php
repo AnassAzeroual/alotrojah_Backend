@@ -13,6 +13,12 @@ use Illuminate\Http\Request;
 
 class TermPlanController extends Controller
 {
+    /**
+     * List term plans (50/page).
+     *
+     * Students see only their own; staff their center; admins all. Filters:
+     * student_id, term_id.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', TermPlan::class);
@@ -64,6 +70,9 @@ class TermPlanController extends Controller
         return $this->created(new TermPlanResource($plan));
     }
 
+    /**
+     * Show one term plan.
+     */
     public function show(TermPlan $termPlan): JsonResponse
     {
         $this->authorize('view', $termPlan);
@@ -71,6 +80,9 @@ class TermPlanController extends Controller
         return $this->ok(new TermPlanResource($termPlan));
     }
 
+    /**
+     * Delete a term plan.
+     */
     public function destroy(TermPlan $termPlan): JsonResponse
     {
         $this->authorize('delete', $termPlan);

@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\DB;
 
 class RegistrationRequestController extends Controller
 {
+    /**
+     * List the waiting room, newest requests first (20/page).
+     */
     public function index(): JsonResponse
     {
         $this->authorize('viewAny', RegistrationRequest::class);
@@ -92,6 +95,9 @@ class RegistrationRequestController extends Controller
         return $this->ok(new UserResource($user), 'Request approved and account created.');
     }
 
+    /**
+     * Reject a waiting request: delete it without creating an account.
+     */
     public function destroy(RegistrationRequest $registrationRequest): JsonResponse
     {
         $this->authorize('delete', $registrationRequest);

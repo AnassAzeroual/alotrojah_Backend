@@ -15,6 +15,13 @@ use Illuminate\Support\Facades\DB;
 
 class StudentController extends Controller
 {
+    /**
+     * List pupils with their group (paginated; per_page 1–100, default 20).
+     *
+     * Students see only themselves; teachers/supervisors their center; admins
+     * all (optional center_id). Filters: group_id, level_id, status,
+     * memorization_mode, q (full_name substring), unassigned (no group).
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Student::class);
@@ -42,6 +49,13 @@ class StudentController extends Controller
         return $this->ok(StudentResource::collection($q->paginate($perPage))->response()->getData(true));
     }
 
+    /**
+     * Create a pupil row and link it to its login account.
+     *
+     * The group (when given) and the linked account must belong to the pupil's
+     * center (422 CROSS_CENTER otherwise). On a single-center deployment an
+     * admin may omit center_id and gets the sole center.
+     */
     public function store(StoreStudentRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -97,6 +111,9 @@ class StudentController extends Controller
         return $this->ok($q->get(['id', 'full_name', 'email', 'center_id']));
     }
 
+    /**
+     * Show one pupil with group and linked account.
+     */
     public function show(Student $student): JsonResponse
     {
         $this->authorize('view', $student);
@@ -104,6 +121,12 @@ class StudentController extends Controller
         return $this->ok(new StudentResource($student->load(['group', 'user'])));
     }
 
+    /**
+     * Update a pupil (placement, level, status, memorization mode, …).
+     *
+     * Only admins may move a pupil between centers (used to repair NULL-center
+     * rows). A new group must belong to the pupil's center.
+     */
     public function update(UpdateStudentRequest $request, Student $student): JsonResponse
     {
         $data = $request->validated();
@@ -124,6 +147,9 @@ class StudentController extends Controller
         return $this->ok(new StudentResource($student->fresh(['group'])));
     }
 
+    /**
+     * Delete a pupil row. The login account is kept.
+     */
     public function destroy(Student $student): JsonResponse
     {
         $this->authorize('delete', $student);

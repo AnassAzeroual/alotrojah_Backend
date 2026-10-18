@@ -21,6 +21,12 @@ use Illuminate\Validation\ValidationException;
 
 class ExamController extends Controller
 {
+    /**
+     * List exams with their student (50/page, newest first).
+     *
+     * Students see only their own exams. Filters: student_id, term_id,
+     * season_id, exam_type.
+     */
     public function index(Request $request): JsonResponse
     {
         $this->authorize('viewAny', Exam::class);
@@ -40,6 +46,14 @@ class ExamController extends Controller
         return $this->ok(ExamResource::collection($q->paginate(50))->response()->getData(true));
     }
 
+    /**
+     * Record one exam for one pupil.
+     *
+     * final_season and weekly exams carry no term (season comes from the
+     * request); the other types derive their season from the term. Teachers
+     * always sign as examiner of their own exams. A non-admin writing for
+     * another center's pupil gets 403 CROSS_CENTER.
+     */
     public function store(StoreExamRequest $request): JsonResponse
     {
         $data = $request->validated();
@@ -64,6 +78,9 @@ class ExamController extends Controller
         return $this->created(new ExamResource($exam));
     }
 
+    /**
+     * Show one exam with its student and ordered questions.
+     */
     public function show(Exam $exam): JsonResponse
     {
         $this->authorize('view', $exam);
@@ -71,6 +88,12 @@ class ExamController extends Controller
         return $this->ok(new ExamResource($exam->load(['student', 'questions' => fn ($q) => $q->orderBy('sort_order')->orderBy('question_no')])));
     }
 
+    /**
+     * Update an exam's fields (manage permission).
+     *
+     * Same term/season derivation as store; term-carrying types refuse a null
+     * term with 422 TERM_REQUIRED.
+     */
     public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
     {
         $this->authorize('manageExam', $exam);
@@ -93,6 +116,9 @@ class ExamController extends Controller
         return $this->ok(new ExamResource($exam->fresh(['questions', 'student'])));
     }
 
+    /**
+     * Delete an exam (with its questions).
+     */
     public function destroy(Exam $exam): JsonResponse
     {
         $this->authorize('delete', $exam);
