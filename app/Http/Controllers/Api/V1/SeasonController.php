@@ -23,6 +23,11 @@ class SeasonController extends Controller
      * Staff see legacy shared (NULL-center) seasons plus their own center's;
      * admins see everything.
      *
+     * Optional center_id narrows the feed to that center's lane (own center
+     * plus legacy shared rows) for admins too — the student detail page uses
+     * it to resolve a pupil's current season instead of another center's.
+     * current=1 keeps only active rows in the selected lane.
+     *
      * @response array{success: bool, message: string|null, data: array{data: list<SeasonResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
@@ -34,6 +39,13 @@ class SeasonController extends Controller
         if ($me->role !== 'admin') {
             // Staff see legacy shared seasons plus their own center's.
             $q->where(fn ($w) => $w->whereNull('center_id')->orWhere('center_id', (int) $me->center_id));
+        } elseif ($request->filled('center_id')) {
+            // Admin lane filter: own center + legacy shared fallback.
+            $centerId = (int) $request->input('center_id');
+            $q->where(fn ($w) => $w->whereNull('center_id')->orWhere('center_id', $centerId));
+        }
+        if ($request->boolean('current')) {
+            $q->where('is_current', true);
         }
 
         return $this->ok(SeasonResource::collection($q->paginate(20))->response()->getData(true));
@@ -106,8 +118,11 @@ class SeasonController extends Controller
 
         // Current-season is exclusive per center lane (NULL lane included).
         $lane = AcademicSeason::where('is_current', true);
-        if ($season->center_id === null) $lane->whereNull('center_id');
-        else $lane->where('center_id', $season->center_id);
+        if ($season->center_id === null) {
+            $lane->whereNull('center_id');
+        } else {
+            $lane->where('center_id', $season->center_id);
+        }
         DB::transaction(function () use ($lane, $season) {
             $lane->update(['is_current' => false]);
             $season->update(['is_current' => true]);
@@ -130,7 +145,9 @@ class SeasonController extends Controller
             || SessionScore::where('season_id', $season->id)->exists()
             || Attendance::where('season_id', $season->id)->exists()
             || Exam::where('season_id', $season->id)->exists();
-        if ($hasFacts) return $this->fail('Season has recorded facts and cannot be deleted.', 422);
+        if ($hasFacts) {
+            return $this->fail('Season has recorded facts and cannot be deleted.', 422);
+        }
 
         $season->delete();
 

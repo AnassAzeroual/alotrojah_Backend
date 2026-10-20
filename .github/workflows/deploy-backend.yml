@@ -87,6 +87,7 @@ jobs:
           --path=database/migrations/2026_10_17_000029_appearance_background_engine.php
           --path=database/migrations/2026_10_17_000030_appearance_orb_controls.php
           --path=database/migrations/2026_10_17_000031_appearance_scrim_controls.php
+          --path=database/migrations/2026_10_20_000032_create_reporting_summary_tables.php
 
       - name: Run test suite
         env:
