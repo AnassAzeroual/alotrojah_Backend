@@ -308,9 +308,6 @@ class PerformanceFixture extends Command
         $modules = DB::table('scoring_modules')->whereNull('center_id')->where('is_active', 1)
             ->where('scope', 'weekly')->orderBy('id')->get()->map(fn ($r) => (array) $r)->all();
         self::validateModules($modules);
-        $levels = DB::table('levels')->whereNull('center_id')->orderBy('id')->get()
-            ->filter(fn ($l) => (float) $l->thumn_per_session_value > 0 && (float) $l->thumn_per_session_value <= 1.5)->values()->all();
-        self::ensure($levels !== [], 'LEVELS');
         // Exact namespace collision tests; no LIKE-based ownership or deletion.
         $emails = ['perf-'.$run.'@example.invalid'];
         for ($i = 1; $i <= $d['centers'] * $d['groups']; $i++) {
@@ -323,7 +320,7 @@ class PerformanceFixture extends Command
         $centerNames = array_map(fn ($n) => $prefix.' C'.$n, range(1, $d['centers']));
         self::ensure(! DB::table('centers')->whereIn('name', $centerNames)->exists(), 'NAMESPACE_EXISTS');
         $password = Hash::make(Env::get('PERFORMANCE_PASSWORD'));
-        $manifest = $this->transaction(function () use ($run, $size, $prefix, $d, $modules, $levels, $password) {
+        $manifest = $this->transaction(function () use ($run, $size, $prefix, $d, $modules, $password) {
             $m = ['run' => $run, 'size' => $size, 'prefix' => $prefix, 'admin_email' => 'perf-'.$run.'@example.invalid',
                 'state' => 'prepared', 'scope' => 'admin-only console; CenterScope skips console',
                 'notes' => ['groups/stats and group detail follow the selected center current-season lane with shared fallback.'],
@@ -331,6 +328,14 @@ class PerformanceFixture extends Command
                 'global_counts_before' => $this->globalCounts()];
             $admin = $this->insertRoot($m, 'users', $this->account($prefix.' Admin', $m['admin_email'], 'admin', null, $password));
             $m['admin_id'] = $admin;
+            // Levels are per season now: the fixture owns one private level
+            // season whose set the pupils point at (the per-center seasons
+            // below are created later and start empty).
+            $levelsSeason = $this->insertRoot($m, 'academic_seasons', [
+                'name' => $prefix.' Levels', 'start_date' => '2023-01-02',
+                'total_weeks' => 0, 'total_sessions' => 0, 'is_current' => 0,
+            ]);
+            $levels = $this->fixtureLevels($levelsSeason);
             $ordinal = 0;
             $teacherNumber = 0;
             foreach (range(1, $d['centers']) as $c) {
@@ -439,6 +444,28 @@ class PerformanceFixture extends Command
         return ['full_name' => $name, 'email' => $email, 'role' => $role, 'center_id' => $center,
             'teacher_type' => $role === 'teacher' ? 'both' : null, 'is_active' => 1,
             'password_hash' => $password, 'created_at' => '2022-12-01 12:00:00', 'updated_at' => '2022-12-01 12:00:00'];
+    }
+
+    /**
+     * The fixture's own level set (levels are per season; there is no global
+     * seed to borrow). Rows cascade-delete with their season at cleanup.
+     *
+     * @return list<object>
+     */
+    private function fixtureLevels(int $seasonId): array
+    {
+        foreach ([['L1', 1.25], ['L2', 1.0], ['L3', 0.66]] as [$code, $unit]) {
+            DB::table('levels')->insert([
+                'season_id' => $seasonId, 'center_id' => null, 'code' => $code,
+                'name_ar' => 'Perf '.$code, 'sessions_per_week' => 3,
+                'thumn_per_session_label' => 'thumn',
+                'thumn_per_session_value' => $unit, 'thumn_per_week_value' => round(3 * $unit, 2),
+                'ahzab_per_term' => 0, 'ahzab_per_dawra' => 0,
+                'duration_label' => 'perf', 'total_ahzab' => 60,
+            ]);
+        }
+
+        return DB::table('levels')->where('season_id', $seasonId)->orderBy('id')->get()->all();
     }
 
     private function insertRoot(array &$m, string $table, array $row): int

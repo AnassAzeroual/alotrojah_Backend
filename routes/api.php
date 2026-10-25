@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\V1\ResultController;
 use App\Http\Controllers\Api\V1\ScoreController;
 use App\Http\Controllers\Api\V1\ScoringModuleController;
 use App\Http\Controllers\Api\V1\SeasonController;
+use App\Http\Controllers\Api\V1\SetupController;
 use App\Http\Controllers\Api\V1\StudentController;
 use App\Http\Controllers\Api\V1\TermPlanController;
 use App\Http\Controllers\Api\V1\UserController;
@@ -52,6 +53,9 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:api')->group(function () {
+        // Admin setup guide progress (one request for the header checklist).
+        Route::get('setup/status', [SetupController::class, 'status']);
+
         // App-wide appearance: every role reads, admins write.
         Route::get('appearance', [AppearanceController::class, 'show']);
         Route::patch('appearance', [AppearanceController::class, 'update']);

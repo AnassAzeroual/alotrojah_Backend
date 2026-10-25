@@ -3,7 +3,6 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateSeasonRequest extends FormRequest
 {
@@ -15,7 +14,9 @@ class UpdateSeasonRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'string', 'max:50', Rule::unique('academic_seasons', 'name')->ignore($this->route('season'))],
+            // Name uniqueness is checked in the controller so the 422 carries
+            // the stable SEASON_EXISTS code (FormRequest bags have none).
+            'name' => ['sometimes', 'string', 'max:50'],
             'start_date' => ['sometimes', 'date'],
             'end_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:start_date'],
             'hijri_year' => ['sometimes', 'nullable', 'string', 'max:20'],

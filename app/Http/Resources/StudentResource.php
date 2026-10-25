@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Level;
+use App\Models\Student;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,6 +20,19 @@ class StudentResource extends JsonResource
                 'id' => $this->user->id, 'full_name' => $this->user->full_name,
                 'email' => $this->user->email,
             ]),
+            // Season-owned level row (the id alone is meaningless across seasons).
+            'level' => $this->whenLoaded('level', function (): ?array {
+                /** @var Student $student */
+                $student = $this->resource;
+                /** @var Level|null $level */
+                $level = $student->level;
+
+                return $level === null ? null : [
+                    'id' => $level->id,
+                    'code' => $level->code,
+                    'name_ar' => $level->name_ar,
+                ];
+            }),
             'level_id' => $this->level_id,
             'birth_date' => $this->birth_date?->toDateString(),
             'enrollment_date' => $this->enrollment_date?->toDateString(),

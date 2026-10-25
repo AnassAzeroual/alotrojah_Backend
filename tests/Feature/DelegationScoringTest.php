@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeasonLevelFixtures;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,8 @@ use Tests\TestCase;
  */
 class DelegationScoringTest extends TestCase
 {
+    use SeasonLevelFixtures;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -116,7 +119,7 @@ class DelegationScoringTest extends TestCase
         ]);
         $s = $this->postJson('/api/v1/students', [
             'full_name' => 'Fresh', 'memorization_mode' => 'thumn', 'center_id' => 1,
-            'group_id' => 1, 'level_id' => 1, 'user_id' => $acct->id,
+            'group_id' => 1, 'level_id' => $this->currentLevelId(1), 'user_id' => $acct->id,
         ], $this->tok(1))->assertCreated();
 
         $r = $this->getJson("/api/v1/dashboard/final?student_id={$s->json('data.id')}&season_id=1", $this->tok(1));

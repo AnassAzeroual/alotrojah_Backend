@@ -2,14 +2,15 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicSeason;
 use App\Models\Level;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Dynamic level codes (L{id}): admin-only POST /levels creates shared or
- * center-scoped rows; the code is server-generated, never client-supplied.
+ * Dynamic level codes (L{id}): admin-only POST /levels creates a row inside a
+ * season; the code is server-generated, never client-supplied.
  */
 class LevelStoreTest extends TestCase
 {
@@ -28,6 +29,7 @@ class LevelStoreTest extends TestCase
     private function payload(array $over = []): array
     {
         return array_merge([
+            'season_id' => 1,
             'name_ar' => 'L4 Test',
             'sessions_per_week' => 3,
             'thumn_per_session_label' => 'thumn',
@@ -40,19 +42,28 @@ class LevelStoreTest extends TestCase
         ], $over);
     }
 
-    public function test_admin_creates_shared_level_with_dynamic_code(): void
+    public function test_admin_creates_a_level_inside_a_season_with_dynamic_code(): void
     {
         $this->actingAs(User::find(1), 'api');
         $r = $this->postJson('/api/v1/levels', $this->payload())->assertCreated();
         $id = $r->json('data.id');
         $this->assertSame('L'.$id, $r->json('data.code'));
+        $this->assertSame(1, (int) $r->json('data.season_id'));
         $this->assertNull(Level::find($id)->center_id);
     }
 
-    public function test_admin_creates_center_scoped_level(): void
+    public function test_admin_creates_a_level_in_a_center_season(): void
     {
         $this->actingAs(User::find(1), 'api');
-        $r = $this->postJson('/api/v1/levels', $this->payload(['center_id' => 1]))->assertCreated();
+        $season = AcademicSeason::create([
+            'name' => 'Center Season '.uniqid(),
+            'start_date' => '2026-09-01',
+            'total_weeks' => 0,
+            'total_sessions' => 0,
+            'is_current' => false,
+            'center_id' => 1,
+        ]);
+        $r = $this->postJson('/api/v1/levels', $this->payload(['season_id' => $season->id]))->assertCreated();
         $this->assertSame(1, (int) $r->json('data.center_id'));
         $this->assertStringStartsWith('L', $r->json('data.code'));
     }
@@ -62,6 +73,16 @@ class LevelStoreTest extends TestCase
         $teacher = User::where('role', 'teacher')->firstOrFail();
         $this->actingAs($teacher, 'api');
         $this->postJson('/api/v1/levels', $this->payload())->assertForbidden();
+    }
+
+    public function test_season_is_required(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $payload = $this->payload();
+        unset($payload['season_id']);
+        $this->postJson('/api/v1/levels', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('season_id');
     }
 
     public function test_validation_rejects_blank_name(): void
@@ -89,7 +110,7 @@ class LevelStoreTest extends TestCase
         $this->assertNotSame('L1', $r->json('data.code'));
     }
 
-    public function test_identical_level_is_refused(): void
+    public function test_identical_level_in_the_same_season_is_refused(): void
     {
         $this->actingAs(User::find(1), 'api');
         $payload = $this->payload(['name_ar' => 'Twin Test']);
@@ -99,11 +120,18 @@ class LevelStoreTest extends TestCase
             ->assertJsonPath('errors.code', 'LEVEL_EXISTS');
     }
 
-    public function test_same_values_in_another_scope_are_allowed(): void
+    public function test_same_values_in_another_season_are_allowed(): void
     {
         $this->actingAs(User::find(1), 'api');
+        $season = AcademicSeason::create([
+            'name' => 'Other Season '.uniqid(),
+            'start_date' => '2026-09-01',
+            'total_weeks' => 0,
+            'total_sessions' => 0,
+            'is_current' => false,
+        ]);
         $this->postJson('/api/v1/levels', $this->payload(['name_ar' => 'Scope A']))->assertCreated();
-        $this->postJson('/api/v1/levels', $this->payload(['name_ar' => 'Scope B', 'center_id' => 1]))
+        $this->postJson('/api/v1/levels', $this->payload(['name_ar' => 'Scope B', 'season_id' => $season->id]))
             ->assertCreated();
     }
 }

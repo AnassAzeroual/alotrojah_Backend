@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Group;
 use App\Models\RegistrationRequest;
 use App\Models\Student;
+use App\Models\StudentLevel;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -73,7 +74,7 @@ class RegistrationRequestController extends Controller
             $user->save();
 
             if ($registrationRequest->role === 'student') {
-                Student::create([
+                $student = Student::create([
                     'user_id' => $user->id,
                     'center_id' => $centerId,
                     'group_id' => $groupId,
@@ -85,6 +86,12 @@ class RegistrationRequestController extends Controller
                         && $registrationRequest->birth_date->diffInYears(now()) >= 18 ? 'adult' : 'child',
                     'enrollment_date' => now()->toDateString(),
                 ]);
+                // The approval form's level is a template id: place the pupil
+                // in the center's current season and point the row at its clone.
+                $placed = StudentLevel::place($student, (int) $levelId);
+                if ($placed !== null && $placed !== (int) $levelId) {
+                    $student->update(['level_id' => $placed]);
+                }
             } elseif ($groupId !== null) {
                 Group::whereKey($groupId)->update(['teacher_id' => $user->id]);
             }

@@ -4,11 +4,10 @@ namespace App\Models;
 
 use App\Models\Scopes\CenterScope;
 use Illuminate\Database\Eloquent\Attributes\ScopedBy;
-
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Enum columns are annotated as literal unions so Scramble emits them precisely
@@ -23,8 +22,11 @@ use Illuminate\Database\Eloquent\Builder;
 class Student extends Model
 {
     protected $table = 'students';
+
     const UPDATED_AT = null;
-    protected $fillable = ['user_id','group_id','center_id','level_id','full_name','birth_date','gender','enrollment_date','status','student_type','memorization_mode','start_hizb','notes'];
+
+    protected $fillable = ['user_id', 'group_id', 'center_id', 'level_id', 'full_name', 'birth_date', 'gender', 'enrollment_date', 'status', 'student_type', 'memorization_mode', 'start_hizb', 'notes'];
+
     protected $casts = [
         'birth_date' => 'date',
         'enrollment_date' => 'date',
@@ -32,33 +34,84 @@ class Student extends Model
         'created_at' => 'datetime',
     ];
 
-    public function scopeForCenter(Builder $q, int $centerId): void { $q->where($this->getTable().'.center_id', $centerId); }
+    public function scopeForCenter(Builder $q, int $centerId): void
+    {
+        $q->where($this->getTable().'.center_id', $centerId);
+    }
 
-    public function group(): BelongsTo { return $this->belongsTo(Group::class, 'group_id'); }
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class, 'group_id');
+    }
 
-    public function user(): BelongsTo { return $this->belongsTo(User::class, 'user_id'); }
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
 
-    public function center(): BelongsTo { return $this->belongsTo(Center::class, 'center_id'); }
+    public function center(): BelongsTo
+    {
+        return $this->belongsTo(Center::class, 'center_id');
+    }
 
-    public function level(): BelongsTo { return $this->belongsTo(Level::class, 'level_id'); }
+    public function level(): BelongsTo
+    {
+        return $this->belongsTo(Level::class, 'level_id');
+    }
 
-    public function attendances(): HasMany { return $this->hasMany(Attendance::class, 'student_id'); }
+    /** Per-season placement history; `level_id` above is the current-season cache. */
+    public function levelPlacements(): HasMany
+    {
+        return $this->hasMany(StudentLevel::class, 'student_id');
+    }
 
-    public function exams(): HasMany { return $this->hasMany(Exam::class, 'student_id'); }
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'student_id');
+    }
 
-    public function memorizationLogs(): HasMany { return $this->hasMany(MemorizationLog::class, 'student_id'); }
+    public function exams(): HasMany
+    {
+        return $this->hasMany(Exam::class, 'student_id');
+    }
 
-    public function murajaaReviews(): HasMany { return $this->hasMany(MurajaaReview::class, 'student_id'); }
+    public function memorizationLogs(): HasMany
+    {
+        return $this->hasMany(MemorizationLog::class, 'student_id');
+    }
 
-    public function revisionLogs(): HasMany { return $this->hasMany(RevisionLog::class, 'student_id'); }
+    public function murajaaReviews(): HasMany
+    {
+        return $this->hasMany(MurajaaReview::class, 'student_id');
+    }
 
-    public function seasonResults(): HasMany { return $this->hasMany(SeasonResult::class, 'student_id'); }
+    public function revisionLogs(): HasMany
+    {
+        return $this->hasMany(RevisionLog::class, 'student_id');
+    }
 
-    public function sessionScores(): HasMany { return $this->hasMany(SessionScore::class, 'student_id'); }
+    public function seasonResults(): HasMany
+    {
+        return $this->hasMany(SeasonResult::class, 'student_id');
+    }
 
-    public function termPlans(): HasMany { return $this->hasMany(TermPlan::class, 'student_id'); }
+    public function sessionScores(): HasMany
+    {
+        return $this->hasMany(SessionScore::class, 'student_id');
+    }
 
-    public function termResults(): HasMany { return $this->hasMany(TermResult::class, 'student_id'); }
+    public function termPlans(): HasMany
+    {
+        return $this->hasMany(TermPlan::class, 'student_id');
+    }
 
-    public function weeklyGoals(): HasMany { return $this->hasMany(WeeklyGoal::class, 'student_id'); }
+    public function termResults(): HasMany
+    {
+        return $this->hasMany(TermResult::class, 'student_id');
+    }
+
+    public function weeklyGoals(): HasMany
+    {
+        return $this->hasMany(WeeklyGoal::class, 'student_id');
+    }
 }

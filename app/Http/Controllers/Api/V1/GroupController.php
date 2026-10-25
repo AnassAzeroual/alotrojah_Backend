@@ -90,7 +90,7 @@ class GroupController extends Controller
     {
         $this->authorize('view', $group);
         $group->load(['teacher'])->loadCount('students');
-        $season = $stats->currentSeason($group->center_id !== null ? (int) $group->center_id : null);
+        $season = $stats->currentSeason((int) $group->center_id);
 
         return $this->ok($stats->detail($group, $season?->id) + ['season_name' => $season?->name]);
     }

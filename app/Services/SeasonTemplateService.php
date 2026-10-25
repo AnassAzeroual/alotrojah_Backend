@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AcademicSeason;
 use App\Models\Group;
+use App\Models\Level;
 use App\Models\Term;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +84,11 @@ class SeasonTemplateService
                 $total += $this->generateForGroup($season->fresh(), $group, $defaultStart, $defaultEnd);
             }
             $season->update(['total_sessions' => $total]);
+
+            // Levels are per season (owner-directed 2026-10-24): a new season
+            // starts from the previous season of the same center, falling back
+            // to the shared template set.
+            Level::cloneIntoSeason($season);
 
             return $season;
         });

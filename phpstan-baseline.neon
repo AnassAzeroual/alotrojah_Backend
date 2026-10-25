@@ -1201,18 +1201,6 @@ parameters:
 			path: app/Http/Resources/WeeklyGoalResource.php
 
 		-
-			message: '#^Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Level\> does not accept static\(App\\Models\\Level\)\|null\.$#'
-			identifier: offsetAssign.valueType
-			count: 1
-			path: app/Models/Level.php
-
-		-
-			message: '#^Method App\\Models\\Level\:\:effectiveFor\(\) should return Illuminate\\Support\\Collection\<string, static\(App\\Models\\Level\)\> but returns Illuminate\\Database\\Eloquent\\Collection\<\(int\|string\), App\\Models\\Level\>\.$#'
-			identifier: return.type
-			count: 2
-			path: app/Models/Level.php
-
-		-
 			message: '#^Call to method where\(\) on an unknown class App\\Models\\Builder\.$#'
 			identifier: class.notFound
 			count: 1

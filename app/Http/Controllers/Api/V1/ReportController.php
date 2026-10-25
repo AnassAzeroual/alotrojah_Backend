@@ -10,6 +10,7 @@ use App\Http\Resources\SeasonResultResource;
 use App\Http\Resources\TermPlanResource;
 use App\Http\Resources\TermQuizAvgRow;
 use App\Http\Resources\TermResultResource;
+use App\Http\Resources\WeeklyProgressRow;
 use App\Models\SeasonResult;
 use App\Models\Student;
 use App\Models\Term;

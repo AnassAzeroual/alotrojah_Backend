@@ -58,6 +58,32 @@ class SeasonCenterTest extends TestCase
         $this->patchJson("/api/v1/terms/{$termId}", ['name_ar' => 'Hijacked'])->assertForbidden();
     }
 
+    public function test_duplicate_season_name_is_refused_with_a_stable_code(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $first = $this->postJson('/api/v1/seasons', [
+            'name' => 'Dup Season', 'start_date' => '2026-09-01', 'center_id' => 1,
+        ])->assertCreated()->json('data.id');
+
+        // Names are globally unique (uq_seasons_name), even across centers.
+        $this->postJson('/api/v1/seasons', [
+            'name' => 'Dup Season', 'start_date' => '2026-09-01', 'center_id' => 2,
+        ])->assertStatus(422)
+            ->assertJsonPath('errors.code', 'SEASON_EXISTS')
+            ->assertJsonPath('message', 'A season with this name already exists.');
+
+        // Renaming another season onto it is refused too…
+        $other = $this->postJson('/api/v1/seasons', [
+            'name' => 'Other Season', 'start_date' => '2026-09-01', 'center_id' => 1,
+        ])->assertCreated()->json('data.id');
+        $this->putJson("/api/v1/seasons/{$other}", ['name' => 'Dup Season'])
+            ->assertStatus(422)->assertJsonPath('errors.code', 'SEASON_EXISTS');
+
+        // …while re-saving a season under its own name is fine.
+        $this->putJson("/api/v1/seasons/{$first}", ['name' => 'Dup Season', 'hijri_year' => '1448'])
+            ->assertOk();
+    }
+
     public function test_season_index_can_filter_the_current_row_to_a_center_lane(): void
     {
         $this->actingAs(User::find(1), 'api');
