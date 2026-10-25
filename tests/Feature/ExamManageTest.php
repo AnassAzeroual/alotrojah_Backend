@@ -82,6 +82,51 @@ class ExamManageTest extends TestCase
         $this->deleteJson('/api/v1/exams/1')->assertForbidden();
     }
 
+    public function test_admin_starts_a_test_with_questions_atomically(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $before = Exam::where('student_id', 1)->count();
+        $response = $this->postJson('/api/v1/exams', [
+            'student_id' => 1, 'exam_type' => 'weekly', 'season_id' => 1,
+            'exam_date' => '2026-10-25',
+            'questions' => [
+                ['question_no' => 1, 'max_score' => 10, 'score' => 8, 'prompt_text' => 'Hizb 1'],
+                ['question_no' => 2, 'max_score' => 10, 'score' => 9, 'prompt_text' => 'Hizb 2'],
+            ],
+        ])->assertCreated()
+            ->assertJsonCount(2, 'data.questions')
+            ->assertJsonPath('data.overall_avg', 17);
+
+        $this->assertSame($before + 1, Exam::where('student_id', 1)->count());
+        $this->assertSame(2, DB::table('exam_questions')->where('exam_id', $response->json('data.id'))->count());
+    }
+
+    public function test_started_test_rejects_bad_weights_without_creating_an_exam(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $before = Exam::where('student_id', 1)->count();
+        $this->postJson('/api/v1/exams', [
+            'student_id' => 1, 'exam_type' => 'weekly', 'season_id' => 1,
+            'questions' => [
+                ['question_no' => 1, 'max_score' => 10, 'prompt_text' => 'Hizb 1'],
+                ['question_no' => 2, 'max_score' => 5, 'prompt_text' => 'Hizb 2'],
+            ],
+        ])->assertUnprocessable();
+        $this->assertSame($before, Exam::where('student_id', 1)->count());
+    }
+
+    public function test_started_test_rejects_a_score_above_its_weight(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $this->postJson('/api/v1/exams', [
+            'student_id' => 1, 'exam_type' => 'weekly', 'season_id' => 1,
+            'questions' => [
+                ['question_no' => 1, 'max_score' => 10, 'score' => 11, 'prompt_text' => 'Hizb 1'],
+                ['question_no' => 2, 'max_score' => 10, 'score' => 0, 'prompt_text' => 'Hizb 2'],
+            ],
+        ])->assertUnprocessable();
+    }
+
     public function test_admin_delete_cascades_questions(): void
     {
         $qid = DB::table('exam_questions')->where('exam_id', 1)->value('id');

@@ -4,13 +4,20 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Http\Resources\ExamResource;
+use App\Http\Resources\GroupResource;
 use App\Http\Resources\StudentResource;
+use App\Models\AcademicSeason;
 use App\Models\Center;
+use App\Models\Exam;
+use App\Models\ExamQuestion;
 use App\Models\Group;
 use App\Models\Level;
+use App\Models\MemorizationLog;
 use App\Models\Student;
 use App\Models\StudentLevel;
 use App\Models\User;
+use App\Services\DashboardService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -172,6 +179,95 @@ class StudentController extends Controller
         }
 
         return $this->ok($q->get(['id', 'full_name', 'email', 'center_id']));
+    }
+
+    /**
+     * Student-first exam builder brief: profile, season stats, memorization
+     * history, recent exams and a suggested current portion.
+     *
+     * The portion mode is the pupil's `memorization_mode` (thumn/surah); the
+     * suggestion comes from the newest previous exam's matching question, then
+     * from the latest memorization log's stored portion. The examiner may edit
+     * it before creating the exam.
+     *
+     * @response array{success: bool, message: string|null, data: array{student: StudentResource, group: GroupResource|null, season: array{id: int, name: string}|null, summary: array{season_thumn: float|null, season_avg_score: float|null, season_avg_sarraj: float|null, season_attendance_pct: float|null, season_overall_avg: float|null, honor_flag: string|null}|null, memorization: array{last: array{id: int, log_date: string, log_mode: 'thumn'|'surah', thumn_amount: float, hizb_no: float|null, thumn_no: int|null, surah_ref: int|null, ayah_from: int|null, ayah_to: int|null}|null, items: list<array{id: int, log_date: string, log_mode: 'thumn'|'surah', thumn_amount: float, hizb_no: float|null, thumn_no: int|null, surah_ref: int|null, ayah_from: int|null, ayah_to: int|null}>, total_thumn: float}, exams: list<ExamResource>, current: array{mode: 'thumn'|'surah', hizb: float|null, thumn: int|null, surah: int|null, ayah_from: int|null, ayah_to: int|null, source: 'last_exam'|'last_log'|null}}}
+     */
+    public function examBrief(Student $student, DashboardService $dash): JsonResponse
+    {
+        $this->authorize('view', $student);
+        $student->load(['group.teacher', 'level', 'user']);
+
+        $season = $student->center_id === null
+            ? null
+            : AcademicSeason::currentFor((int) $student->center_id);
+        $summary = $season === null ? null : $dash->seasonRow($student->id, $season->id);
+
+        $logs = MemorizationLog::where('student_id', $student->id)
+            ->orderByDesc('log_date')->orderByDesc('id')->get();
+        $mapLog = fn (MemorizationLog $log): array => [
+            'id' => (int) $log->id,
+            'log_date' => $log->log_date->toDateString(),
+            'log_mode' => $log->log_mode,
+            'thumn_amount' => (float) $log->thumn_amount,
+            'hizb_no' => $log->hizb_no === null ? null : (float) $log->hizb_no,
+            'thumn_no' => $log->thumn_no === null ? null : (int) $log->thumn_no,
+            'surah_ref' => $log->surah_from === null ? null : (int) $log->surah_from,
+            'ayah_from' => $log->ayah_from === null ? null : (int) $log->ayah_from,
+            'ayah_to' => $log->ayah_to === null ? null : (int) $log->ayah_to,
+        ];
+        $items = $logs->map($mapLog)->all();
+        $last = $items[0] ?? null;
+
+        $exams = Exam::where('student_id', $student->id)
+            ->with(['questions' => fn ($q) => $q->orderBy('sort_order')->orderBy('question_no')])
+            ->orderByDesc('exam_date')->orderByDesc('id')->limit(10)->get();
+
+        $mode = $student->memorization_mode;
+        $current = ['mode' => $mode, 'hizb' => null, 'thumn' => null, 'surah' => null,
+            'ayah_from' => null, 'ayah_to' => null, 'source' => null];
+        foreach ($exams as $exam) {
+            foreach ($exam->questions as $q) {
+                /** @var ExamQuestion $q */
+                if ($mode === 'thumn' && $q->hizb_ref !== null) {
+                    $current = ['mode' => 'thumn', 'hizb' => (float) $q->hizb_ref,
+                        'thumn' => $q->thumn_ref === null ? null : (int) $q->thumn_ref,
+                        'surah' => null, 'ayah_from' => null, 'ayah_to' => null, 'source' => 'last_exam'];
+                    break 2;
+                }
+                if ($mode === 'surah' && $q->surah_ref !== null) {
+                    $current = ['mode' => 'surah', 'hizb' => null, 'thumn' => null,
+                        'surah' => (int) $q->surah_ref,
+                        'ayah_from' => $q->ayah_from === null ? null : (int) $q->ayah_from,
+                        'ayah_to' => $q->ayah_to === null ? null : (int) $q->ayah_to,
+                        'source' => 'last_exam'];
+                    break 2;
+                }
+            }
+        }
+        if ($current['source'] === null && $last !== null) {
+            if ($mode === 'thumn' && $last['hizb_no'] !== null) {
+                $current = ['mode' => 'thumn', 'hizb' => $last['hizb_no'], 'thumn' => $last['thumn_no'],
+                    'surah' => null, 'ayah_from' => null, 'ayah_to' => null, 'source' => 'last_log'];
+            } elseif ($mode === 'surah' && $last['surah_ref'] !== null) {
+                $current = ['mode' => 'surah', 'hizb' => null, 'thumn' => null, 'surah' => $last['surah_ref'],
+                    'ayah_from' => $last['ayah_from'], 'ayah_to' => $last['ayah_to'], 'source' => 'last_log'];
+            }
+        }
+
+        $seasonThumn = $season === null
+            ? (float) $logs->sum('thumn_amount')
+            : (float) MemorizationLog::where('student_id', $student->id)
+                ->where('season_id', $season->id)->sum('thumn_amount');
+
+        return $this->ok([
+            'student' => new StudentResource($student),
+            'group' => $student->group === null ? null : new GroupResource($student->group),
+            'season' => $season === null ? null : ['id' => (int) $season->id, 'name' => $season->name],
+            'summary' => $summary,
+            'memorization' => ['last' => $last, 'items' => $items, 'total_thumn' => $seasonThumn],
+            'exams' => ExamResource::collection($exams)->resolve(),
+            'current' => $current,
+        ]);
     }
 
     /**
