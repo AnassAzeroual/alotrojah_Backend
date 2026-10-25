@@ -90,6 +90,10 @@ jobs:
           --path=database/migrations/2026_10_20_000032_create_reporting_summary_tables.php
           --path=database/migrations/2026_10_24_000033_levels_per_season.php
           --path=database/migrations/2026_10_24_000034_repair_level_placements.php
+          --path=database/migrations/2026_10_25_000035_remove_static_level_seeds.php
+          --path=database/migrations/2026_10_25_000036_backfill_term_exam_results.php
+          --path=database/migrations/2026_10_25_000037_backfill_term_hifz_results.php
+          --path=database/migrations/2026_10_25_000038_backfill_term_murajaa_results.php
 
       - name: Run test suite
         env:
