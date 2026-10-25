@@ -14,6 +14,7 @@ use App\Models\QuranVerse;
 use App\Models\ScoringModule;
 use App\Models\Student;
 use App\Models\Term;
+use App\Services\TermExamResultSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -58,7 +59,7 @@ class ExamController extends Controller
      * always sign as examiner of their own exams. A non-admin writing for
      * another center's pupil gets 403 CROSS_CENTER.
      */
-    public function store(StoreExamRequest $request): JsonResponse
+    public function store(StoreExamRequest $request, TermExamResultSync $termResults): JsonResponse
     {
         $data = $request->validated();
         $me = $request->user();
@@ -105,7 +106,7 @@ class ExamController extends Controller
             }
         }
 
-        $exam = DB::transaction(function () use ($data, $questions) {
+        $exam = DB::transaction(function () use ($data, $questions, $termResults) {
             $exam = Exam::create($data);
             foreach ($questions as $row) {
                 $row['sort_order'] ??= $row['question_no'];
@@ -119,6 +120,7 @@ class ExamController extends Controller
                         : round(array_sum(array_map(fn (array $q): float => (float) $q['score'], $scored)), 2),
                 ]);
             }
+            $termResults->apply($exam);
 
             return $exam;
         });
@@ -143,9 +145,11 @@ class ExamController extends Controller
      * Same term/season derivation as store; term-carrying types refuse a null
      * term with 422 TERM_REQUIRED.
      */
-    public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
+    public function update(UpdateExamRequest $request, Exam $exam, TermExamResultSync $termResults): JsonResponse
     {
         $this->authorize('manageExam', $exam);
+        $oldTermId = $exam->term_id;
+        $oldType = $exam->exam_type;
         $data = $request->validated();
         // Same term/season derivation as store: final + weekly exams carry
         // no term (season comes from the client); other types derive their
@@ -162,16 +166,25 @@ class ExamController extends Controller
         }
         $exam->update($data);
 
+        if ($oldType === 'term_batch' && (
+            $exam->exam_type !== 'term_batch'
+            || (int) $oldTermId !== (int) $exam->term_id
+        )) {
+            $termResults->forgetFor((int) $exam->student_id, $oldTermId);
+        }
+        $termResults->apply($exam);
+
         return $this->ok(new ExamResource($exam->fresh(['questions', 'student'])));
     }
 
     /**
      * Delete an exam (with its questions).
      */
-    public function destroy(Exam $exam): JsonResponse
+    public function destroy(Exam $exam, TermExamResultSync $termResults): JsonResponse
     {
         $this->authorize('delete', $exam);
         $exam->delete();
+        $termResults->forget($exam);
 
         return $this->ok(null, 'Deleted.');
     }

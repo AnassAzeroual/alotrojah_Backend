@@ -10,11 +10,15 @@ use App\Models\MurajaaReview;
 use App\Models\RevisionLog;
 use App\Models\Session;
 use App\Models\Student;
+use App\Models\Term;
+use App\Services\TermMurajaaResultSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class MurajaaController extends Controller
 {
+    public function __construct(private readonly TermMurajaaResultSync $termMurajaa) {}
+
     /**
      * List murajaa cycle reviews (50/page).
      *
@@ -31,8 +35,12 @@ class MurajaaController extends Controller
         if ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
-        if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
-        if ($request->filled('term_id')) $q->where('term_id', (int) $request->input('term_id'));
+        if ($request->filled('student_id')) {
+            $q->where('student_id', (int) $request->input('student_id'));
+        }
+        if ($request->filled('term_id')) {
+            $q->where('term_id', (int) $request->input('term_id'));
+        }
 
         return $this->ok(MurajaaReviewResource::collection($q->paginate(50))->response()->getData(true));
     }
@@ -51,12 +59,13 @@ class MurajaaController extends Controller
         if ($data['week_to'] < $data['week_from'] || $span < 1 || $span > 3) {
             return $this->fail('Review must cover 1 to 3 weeks.', 422);
         }
-        $term = \App\Models\Term::findOrFail($data['term_id']);
+        $term = Term::findOrFail($data['term_id']);
         $data['season_id'] = $term->season_id;
         $data['entered_by'] = $me->id;
         $data['weeks_covered'] = $data['week_to'] - $data['week_from'] + 1; // plain column (host MySQL rejects generated expr)
 
         $review = MurajaaReview::create($data);
+        $this->termMurajaa->apply((int) $review->student_id, (int) $review->term_id);
 
         return $this->created(new MurajaaReviewResource($review->fresh()));
     }
@@ -98,7 +107,10 @@ class MurajaaController extends Controller
     public function destroyReview(MurajaaReview $murajaaReview): JsonResponse
     {
         $this->authorize('delete', $murajaaReview);
+        $studentId = (int) $murajaaReview->student_id;
+        $termId = (int) $murajaaReview->term_id;
         $murajaaReview->delete();
+        $this->termMurajaa->apply($studentId, $termId);
 
         return $this->ok(null, 'Deleted.');
     }
@@ -120,7 +132,9 @@ class MurajaaController extends Controller
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
         foreach (['student_id', 'session_id', 'week_id'] as $f) {
-            if ($request->filled($f)) $q->where($f, (int) $request->input($f));
+            if ($request->filled($f)) {
+                $q->where($f, (int) $request->input($f));
+            }
         }
 
         return $this->ok(RevisionLogResource::collection($q->paginate(100))->response()->getData(true));

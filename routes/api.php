@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\ScoringModuleController;
 use App\Http\Controllers\Api\V1\SeasonController;
 use App\Http\Controllers\Api\V1\SetupController;
 use App\Http\Controllers\Api\V1\StudentController;
+use App\Http\Controllers\Api\V1\TermBreakdownController;
 use App\Http\Controllers\Api\V1\TermPlanController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WeeklyGoalController;
@@ -126,6 +127,7 @@ Route::prefix('v1')->group(function () {
         Route::post('exams/{exam}/questions', [ExamQuestionController::class, 'bulk']);
         Route::put('exams/{exam}/question-weights', [ExamQuestionController::class, 'reweight']);
         Route::apiResource('exam-questions', ExamQuestionController::class)->only(['show', 'update', 'destroy']);
+        Route::get('term-results/breakdown', TermBreakdownController::class);
         Route::get('term-results', [ResultController::class, 'indexTerms']);
         Route::put('term-results', [ResultController::class, 'upsertTerm']);
         Route::get('season-results', [ResultController::class, 'indexSeasons']);
