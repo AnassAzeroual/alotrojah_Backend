@@ -6,13 +6,15 @@ use App\Models\Level;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
- * Pupil↔account link (owner-directed 2026-10-15): every pupil rides a
- * login account — POST /students rejects NULL user_id, non-student users
- * and already-linked accounts; the account must share the pupil's center.
- * Grandfathered NULL rows link later through PUT.
+ * Pupil↔account link (owner-directed): every pupil rides a login account.
+ * POST /students accepts either an existing unlinked student account
+ * (user_id) or a new account object {email,password}, which is created with
+ * the pupil in one transaction. Non-student, already-linked and cross-center
+ * accounts are rejected; grandfathered NULL rows link later through PUT.
  */
 class StudentAccountTest extends TestCase
 {
@@ -46,10 +48,69 @@ class StudentAccountTest extends TestCase
         ], $over);
     }
 
-    public function test_store_rejects_missing_user_id(): void
+    public function test_store_rejects_no_account_and_no_user(): void
     {
         $this->actingAs(User::find(1), 'api');
         $this->postJson('/api/v1/students', $this->payload())->assertUnprocessable();
+    }
+
+    public function test_store_creates_the_user_and_student_in_one_request(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $response = $this->postJson('/api/v1/students', $this->payload([
+            'full_name' => 'New Pupil',
+            'account' => ['email' => 'new-pupil@example.org', 'password' => 'secret123'],
+        ]))->assertCreated();
+
+        $student = Student::findOrFail($response->json('data.id'));
+        $user = User::findOrFail($student->user_id);
+        $this->assertSame('new-pupil@example.org', $user->email);
+        $this->assertSame('student', $user->role);
+        $this->assertSame(1, (int) $user->center_id);
+        $this->assertTrue($user->is_active);
+        $this->assertTrue(Hash::check('secret123', $user->password_hash));
+        $this->assertSame($user->id, (int) $response->json('data.user.id'));
+        $this->assertSame($user->id, (int) $student->user_id);
+    }
+
+    public function test_store_rejects_both_account_sources(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $u = $this->account('both-sources@example.org');
+        $this->postJson('/api/v1/students', $this->payload([
+            'user_id' => $u->id,
+            'account' => ['email' => 'both-new@example.org', 'password' => 'secret123'],
+        ]))->assertUnprocessable();
+    }
+
+    public function test_store_rejects_a_duplicate_new_account_email(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $this->account('taken-email@example.org');
+        $this->postJson('/api/v1/students', $this->payload([
+            'account' => ['email' => 'taken-email@example.org', 'password' => 'secret123'],
+        ]))->assertUnprocessable();
+    }
+
+    public function test_store_rejects_a_new_account_without_password(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $this->postJson('/api/v1/students', $this->payload([
+            'account' => ['email' => 'no-password@example.org'],
+        ]))->assertUnprocessable();
+    }
+
+    public function test_teacher_creates_the_account_in_their_own_center(): void
+    {
+        $this->actingAs(User::find(3), 'api');
+        $response = $this->postJson('/api/v1/students', $this->payload([
+            'center_id' => 2,
+            'account' => ['email' => 'teacher-created@example.org', 'password' => 'secret123'],
+        ]))->assertCreated();
+
+        $user = User::where('email', 'teacher-created@example.org')->firstOrFail();
+        $this->assertSame((int) User::find(3)->center_id, (int) $user->center_id);
+        $this->assertSame((int) $user->id, (int) $response->json('data.user.id'));
     }
 
     public function test_store_rejects_non_student_account(): void

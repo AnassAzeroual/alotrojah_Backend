@@ -46,30 +46,18 @@ class SeedDemoViaApi extends Command
 
         $this->login('admin', $this->option('admin'), $this->option('password'));
 
-        $levelsPage = $this->get('/v1/reference/levels', 'admin', 'list levels');
-        $levels = $levelsPage['data'] ?? $levelsPage;
-        $levelId = function (string $code) use ($levels): int {
-            foreach ($levels as $row) {
-                if (($row['code'] ?? null) === $code) {
-                    return (int) $row['id'];
-                }
-            }
-
-            return (int) $levels[0]['id'];
-        };
-
         $this->seedCenter(
-            flag: 'C1', name: 'C1 · Al Amal', city: 'Casablanca', level: $levelId('L1'),
+            flag: 'C1', name: 'C1 · Al Amal', city: 'Casablanca', levelCode: 'L1',
             staff: ['sup' => 'Salma', 'hifz' => 'Yassine', 'murajaa' => 'Khadija'],
             days: [['Mon', 'Wed', 'Fri'], ['Tue', 'Thu']], mode: 'full',
         );
         $this->seedCenter(
-            flag: 'C2', name: 'C2 · An Noor', city: 'Rabat', level: $levelId('L2'),
+            flag: 'C2', name: 'C2 · An Noor', city: 'Rabat', levelCode: 'L2',
             staff: ['sup' => 'Omar', 'hifz' => 'Bilal', 'murajaa' => 'Sara'],
             days: [['Sat', 'Mon'], ['Wed', 'Thu']], mode: 'partial',
         );
         $this->seedCenter(
-            flag: 'C3', name: 'C3 · Ar Rihab', city: 'Marrakech', level: $levelId('L3'),
+            flag: 'C3', name: 'C3 · Ar Rihab', city: 'Marrakech', levelCode: 'L3',
             staff: ['sup' => 'Hicham', 'hifz' => 'Anas', 'murajaa' => 'Meriem'],
             days: [['Fri'], ['Sat', 'Sun']], mode: 'fresh',
         );
@@ -84,7 +72,7 @@ class SeedDemoViaApi extends Command
      * @param  array{sup:string,hifz:string,murajaa:string}  $staff  first names
      * @param  array<int,array<int,string>>  $days  weekday arrays for G1, G2
      */
-    private function seedCenter(string $flag, string $name, string $city, int $level, array $staff, array $days, string $mode): void
+    private function seedCenter(string $flag, string $name, string $city, string $levelCode, array $staff, array $days, string $mode): void
     {
         $lc = strtolower($flag);
         $center = $this->post('/v1/centers', [
@@ -100,6 +88,19 @@ class SeedDemoViaApi extends Command
             "{$staff['murajaa']} Murajaa {$flag}", strtolower("{$staff['murajaa']}.murajaa.{$lc}@example.org"),
             'teacher', $center, 'murajaa'
         );
+
+        // Strict setup order: center → season → levels → groups → pupils.
+        // Levels are per season now, so the approval form needs one from this
+        // season (there is no global template list).
+        $season = $this->post('/v1/seasons', [
+            'name' => "{$flag} · 1447 Season", 'center_id' => $center,
+            'start_date' => '2026-10-01',
+        ], 'admin', "create season {$flag}")['id'];
+        $levels = $this->createLevels($flag, $season);
+        $level = (int) ($levels[$levelCode] ?? reset($levels));
+        if ($mode !== 'fresh') {
+            $this->post("/v1/seasons/{$season}/activate", [], 'admin', "activate season {$flag}");
+        }
 
         $groups = [];
         foreach ([['G1', 'Hifz', $hifz, 0], ['G2', 'Murajaa', $murajaa, 1]] as [$gflag, $kind, $teacher, $di]) {
@@ -133,13 +134,6 @@ class SeedDemoViaApi extends Command
             }
         }
 
-        $season = $this->post('/v1/seasons', [
-            'name' => "{$flag} · 1447 Season", 'center_id' => $center,
-            'start_date' => '2026-10-01',
-        ], 'admin', "create season {$flag}")['id'];
-        if ($mode !== 'fresh') {
-            $this->post("/v1/seasons/{$season}/activate", [], 'admin', "activate season {$flag}");
-        }
         $terms = $this->get("/v1/seasons/{$season}/terms", 'admin', "list terms {$flag}");
         $termId = $terms[0]['id'];
         $term = $this->get("/v1/terms/{$termId}", 'admin', "read term {$termId}");
@@ -209,6 +203,33 @@ class SeedDemoViaApi extends Command
             // PARTIAL: delegation generated but never redeemed (holder only).
             $this->post("/v1/groups/{$groups['G1']}/delegations", ['minutes' => 30], $hifzToken, "delegate {$flag} G1");
         }
+    }
+
+    /**
+     * Create the demo level set inside one season (levels are per season;
+     * there is no global template list to read).
+     *
+     * @return array<string,int> code => level id
+     */
+    private function createLevels(string $flag, int $season): array
+    {
+        $rows = [
+            ['L1', 'المستوى الأول — نصف في الأسبوع', 1.25, 4.0, 2.0, 15.0, '4 سنوات'],
+            ['L2', 'المستوى الثاني — 3 أثمان في الأسبوع', 1.0, 3.0, 2.25, 11.5, '5 سنوات وشهران'],
+            ['L3', 'المستوى الثالث — ربع في الأسبوع', 0.66, 2.0, 1.5, 7.5, '8 سنوات'],
+        ];
+        $out = [];
+        foreach ($rows as [$code, $name, $unit, $week, $term, $dawra, $duration]) {
+            $id = $this->post('/v1/levels', [
+                'season_id' => $season, 'name_ar' => $name, 'sessions_per_week' => 3,
+                'thumn_per_session_label' => 'ثمن', 'thumn_per_session_value' => $unit,
+                'thumn_per_week_value' => $week, 'ahzab_per_term' => $term,
+                'ahzab_per_dawra' => $dawra, 'duration_label' => $duration, 'total_ahzab' => 60,
+            ], 'admin', "create level {$flag} {$code}")['id'];
+            $out[$code] = (int) $id;
+        }
+
+        return $out;
     }
 
     private function makeUser(string $name, string $email, string $role, int $centerId, ?string $type): int

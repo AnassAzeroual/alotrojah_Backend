@@ -10,12 +10,17 @@ use App\Http\Resources\ExamResource;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\QuranVerse;
+use App\Services\TermExamResultSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ExamQuestionController extends Controller
 {
+    public function __construct(
+        private readonly TermExamResultSync $termResults,
+    ) {}
+
     /** Flexible count (Q16): append a batch; overall_avg recomputed. */
     public function bulk(StoreQuestionsBulkRequest $request, Exam $exam): JsonResponse
     {
@@ -44,7 +49,9 @@ class ExamQuestionController extends Controller
                 }
             }
         }
-        if ($errors) throw ValidationException::withMessages($errors);
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
 
         // Weighted-sum rule (Item 6): weights must total exactly 20 — per-row
         // score caps plus the resulting total, checked inside the transaction.
@@ -53,7 +60,9 @@ class ExamQuestionController extends Controller
                 $errors["questions.$i.score"] = 'Score exceeds the question weight.';
             }
         }
-        if ($errors) throw ValidationException::withMessages($errors);
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
 
         $created = DB::transaction(function () use ($request, $exam) {
             $out = [];
@@ -155,6 +164,7 @@ class ExamQuestionController extends Controller
         $has = $exam->questions()->whereNotNull('score')->exists();
         $sum = $has ? round((float) $exam->questions()->whereNotNull('score')->sum('score'), 2) : null;
         $exam->update(['overall_avg' => $sum]);
+        $this->termResults->apply($exam);
     }
 
     /** Resulting weights must total exactly 20 (called inside a transaction). */

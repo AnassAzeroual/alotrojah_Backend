@@ -98,7 +98,8 @@ class ModuleOverrideTest extends TestCase
         $dupes = ScoringModule::selectRaw('code, COUNT(*) c')->whereNull('center_id')
             ->groupBy('code')->havingRaw('COUNT(*) > 1')->count();
         $this->assertSame(0, $dupes);
-        $this->assertSame(3, DB::table('levels')->whereNull('center_id')->count());
+        // No static level seed exists any more: every level belongs to a season.
+        $this->assertSame(0, DB::table('levels')->whereNull('season_id')->count());
     }
 
     public function test_levels_feed_serves_effective_set(): void

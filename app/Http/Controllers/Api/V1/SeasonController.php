@@ -10,7 +10,10 @@ use App\Models\Attendance;
 use App\Models\Exam;
 use App\Models\MemorizationLog;
 use App\Models\SessionScore;
+use App\Models\Student;
+use App\Models\StudentLevel;
 use App\Services\SeasonTemplateService;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +26,11 @@ class SeasonController extends Controller
      * Staff see legacy shared (NULL-center) seasons plus their own center's;
      * admins see everything.
      *
+     * Optional center_id narrows the feed to that center's lane (own center
+     * plus legacy shared rows) for admins too — the student detail page uses
+     * it to resolve a pupil's current season instead of another center's.
+     * current=1 keeps only active rows in the selected lane.
+     *
      * @response array{success: bool, message: string|null, data: array{data: list<SeasonResource>, links: array{first: string|null, last: string|null, prev: string|null, next: string|null}, meta: array{current_page: int, from: int|null, last_page: int, links: list<array{url: string|null, label: string, active: bool}>, path: string, per_page: int, to: int|null, total: int}}}
      */
     public function index(Request $request): JsonResponse
@@ -34,6 +42,13 @@ class SeasonController extends Controller
         if ($me->role !== 'admin') {
             // Staff see legacy shared seasons plus their own center's.
             $q->where(fn ($w) => $w->whereNull('center_id')->orWhere('center_id', (int) $me->center_id));
+        } elseif ($request->filled('center_id')) {
+            // Admin lane filter: own center + legacy shared fallback.
+            $centerId = (int) $request->input('center_id');
+            $q->where(fn ($w) => $w->whereNull('center_id')->orWhere('center_id', $centerId));
+        }
+        if ($request->boolean('current')) {
+            $q->where('is_current', true);
         }
 
         return $this->ok(SeasonResource::collection($q->paginate(20))->response()->getData(true));
@@ -47,13 +62,28 @@ class SeasonController extends Controller
      */
     public function store(StoreSeasonRequest $request, SeasonTemplateService $tpl): JsonResponse
     {
-        $season = $tpl->createSeason(
-            $request->input('name'), $request->input('start_date'),
-            $request->input('terms', []),
-            (int) $request->input('review_weeks_per_term', 1),
-            $request->input('hijri_year'),
-            $request->input('center_id'),
-        );
+        // Season names are globally unique (uq_seasons_name). Checked here so
+        // the 422 carries SEASON_EXISTS — a FormRequest bag has no code, which
+        // left the frontend showing the raw English validation sentence.
+        if (AcademicSeason::where('name', $request->input('name'))->exists()) {
+            return $this->fail('A season with this name already exists.', 422);
+        }
+
+        try {
+            $season = $tpl->createSeason(
+                $request->input('name'), $request->input('start_date'),
+                $request->input('terms', []),
+                (int) $request->input('review_weeks_per_term', 1),
+                $request->input('hijri_year'),
+                $request->input('center_id'),
+            );
+        } catch (QueryException $e) {
+            // Race backstop: two creates can pass the check together.
+            if ($this->isDuplicateSeasonName($e)) {
+                return $this->fail('A season with this name already exists.', 422);
+            }
+            throw $e;
+        }
 
         return $this->created(new SeasonResource($season->loadCount('terms')->loadMin('terms as first_term_id', 'id')));
     }
@@ -83,9 +113,30 @@ class SeasonController extends Controller
             && ($season->center_id === null || (int) $season->center_id !== (int) $me->center_id)) {
             return $this->fail('Season belongs to another center.', 403);
         }
-        $season->update($request->validated());
+        $data = $request->validated();
+        if (array_key_exists('name', $data)
+            && AcademicSeason::where('name', $data['name'])->where('id', '!=', $season->id)->exists()) {
+            return $this->fail('A season with this name already exists.', 422);
+        }
+        try {
+            $season->update($data);
+        } catch (QueryException $e) {
+            // Race backstop: another write can take the name between the check
+            // and the update.
+            if ($this->isDuplicateSeasonName($e)) {
+                return $this->fail('A season with this name already exists.', 422);
+            }
+            throw $e;
+        }
 
         return $this->ok(new SeasonResource($season->fresh()));
+    }
+
+    /** True when MySQL refused a write because uq_seasons_name is taken. */
+    private function isDuplicateSeasonName(QueryException $e): bool
+    {
+        return (int) ($e->errorInfo[1] ?? 0) === 1062
+            && str_contains((string) ($e->errorInfo[2] ?? ''), 'uq_seasons_name');
     }
 
     /**
@@ -106,11 +157,18 @@ class SeasonController extends Controller
 
         // Current-season is exclusive per center lane (NULL lane included).
         $lane = AcademicSeason::where('is_current', true);
-        if ($season->center_id === null) $lane->whereNull('center_id');
-        else $lane->where('center_id', $season->center_id);
+        if ($season->center_id === null) {
+            $lane->whereNull('center_id');
+        } else {
+            $lane->where('center_id', $season->center_id);
+        }
         DB::transaction(function () use ($lane, $season) {
             $lane->update(['is_current' => false]);
             $season->update(['is_current' => true]);
+            // Every pupil keeps their level across the rollover: carry the
+            // current code into the new season's clone and re-point the
+            // compatibility pointer (students.level_id) at it.
+            StudentLevel::activate($season);
         });
 
         return $this->ok(new SeasonResource($season->fresh()));
@@ -129,8 +187,19 @@ class SeasonController extends Controller
         $hasFacts = MemorizationLog::where('season_id', $season->id)->exists()
             || SessionScore::where('season_id', $season->id)->exists()
             || Attendance::where('season_id', $season->id)->exists()
-            || Exam::where('season_id', $season->id)->exists();
-        if ($hasFacts) return $this->fail('Season has recorded facts and cannot be deleted.', 422);
+            || Exam::where('season_id', $season->id)->exists()
+            // A placement is a recorded fact too: deleting the season would
+            // drop the pupil's level history and hit fk_students_level. The
+            // pointer check also covers a stray current-level row with no
+            // placement row (the cascade would otherwise 500 on the FK).
+            || StudentLevel::where('season_id', $season->id)->exists()
+            || Student::whereIn(
+                'level_id',
+                DB::table('levels')->select('id')->where('season_id', $season->id)
+            )->exists();
+        if ($hasFacts) {
+            return $this->fail('Season has recorded facts and cannot be deleted.', 422);
+        }
 
         $season->delete();
 

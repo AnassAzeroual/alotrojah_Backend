@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeasonLevelFixtures;
 use Tests\TestCase;
 
 /**
@@ -15,6 +16,8 @@ use Tests\TestCase;
  */
 class PolicyTest extends TestCase
 {
+    use SeasonLevelFixtures;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -48,7 +51,7 @@ class PolicyTest extends TestCase
         $this->actingAs(User::find(3), 'api')
             ->postJson('/api/v1/students', [
                 'full_name' => 'X', 'memorization_mode' => 'thumn', 'group_id' => 3, // center 2
-                'level_id' => 1, 'user_id' => $acct->id,
+                'level_id' => $this->currentLevelId(2), 'user_id' => $acct->id,
             ])->assertStatus(422);
     }
 

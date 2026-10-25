@@ -16,7 +16,7 @@ class StoreLevelRequest extends FormRequest
     {
         return [
             'name_ar' => ['required', 'string', 'max:100'],
-            'center_id' => ['sometimes', 'nullable', 'integer', 'exists:centers,id'],
+            'season_id' => ['required', 'integer', 'exists:academic_seasons,id'],
             'sessions_per_week' => ['required', 'integer', 'min:1', 'max:7'],
             'thumn_per_session_label' => ['required', 'string', 'max:50'],
             'thumn_per_session_value' => ['required', 'numeric', 'min:1', 'max:480'],

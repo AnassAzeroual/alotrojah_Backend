@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\QuranHizb;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -25,7 +26,7 @@ class SeasonCenterTest extends TestCase
     public function test_hizb_reference_table_is_gone(): void
     {
         $this->assertFalse(Schema::hasTable('quran_hizb_reference'));
-        $this->assertFalse(class_exists(\App\Models\QuranHizb::class, false));
+        $this->assertFalse(class_exists(QuranHizb::class, false));
         $this->assertFileDoesNotExist(app_path('Models/QuranHizb.php'));
     }
 
@@ -55,6 +56,51 @@ class SeasonCenterTest extends TestCase
         $this->postJson("/api/v1/seasons/{$other}/activate")->assertForbidden();
         $termId = DB::table('terms')->where('season_id', $other)->value('id');
         $this->patchJson("/api/v1/terms/{$termId}", ['name_ar' => 'Hijacked'])->assertForbidden();
+    }
+
+    public function test_duplicate_season_name_is_refused_with_a_stable_code(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $first = $this->postJson('/api/v1/seasons', [
+            'name' => 'Dup Season', 'start_date' => '2026-09-01', 'center_id' => 1,
+        ])->assertCreated()->json('data.id');
+
+        // Names are globally unique (uq_seasons_name), even across centers.
+        $this->postJson('/api/v1/seasons', [
+            'name' => 'Dup Season', 'start_date' => '2026-09-01', 'center_id' => 2,
+        ])->assertStatus(422)
+            ->assertJsonPath('errors.code', 'SEASON_EXISTS')
+            ->assertJsonPath('message', 'A season with this name already exists.');
+
+        // Renaming another season onto it is refused too…
+        $other = $this->postJson('/api/v1/seasons', [
+            'name' => 'Other Season', 'start_date' => '2026-09-01', 'center_id' => 1,
+        ])->assertCreated()->json('data.id');
+        $this->putJson("/api/v1/seasons/{$other}", ['name' => 'Dup Season'])
+            ->assertStatus(422)->assertJsonPath('errors.code', 'SEASON_EXISTS');
+
+        // …while re-saving a season under its own name is fine.
+        $this->putJson("/api/v1/seasons/{$first}", ['name' => 'Dup Season', 'hijri_year' => '1448'])
+            ->assertOk();
+    }
+
+    public function test_season_index_can_filter_the_current_row_to_a_center_lane(): void
+    {
+        $this->actingAs(User::find(1), 'api');
+        $other = $this->postJson('/api/v1/seasons', [
+            'name' => 'C2 Current', 'start_date' => '2026-09-01', 'center_id' => 2,
+        ])->assertCreated()->json('data.id');
+        $this->postJson("/api/v1/seasons/{$other}/activate")->assertOk();
+
+        $rows = collect($this->getJson('/api/v1/seasons?center_id=2&current=1')->assertOk()->json('data.data'));
+        $this->assertTrue($rows->contains(fn ($s) => (int) $s['id'] === (int) $other));
+        $this->assertTrue($rows->every(fn ($s) => $s['center_id'] === null || (int) $s['center_id'] === 2));
+
+        // Staff cannot widen their own lane by asking for a foreign center.
+        $this->actingAs(User::find(2), 'api'); // supervisor, center 1
+        $staffRows = collect($this->getJson('/api/v1/seasons?center_id=2&current=1')->assertOk()->json('data.data'));
+        $this->assertFalse($staffRows->contains(fn ($s) => (int) $s['id'] === (int) $other));
+        $this->assertTrue($staffRows->every(fn ($s) => $s['center_id'] === null || (int) $s['center_id'] === 1));
     }
 
     public function test_season_index_hides_foreign_centers(): void

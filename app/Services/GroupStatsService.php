@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Group;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -13,13 +14,24 @@ use Illuminate\Support\Facades\DB;
  */
 class GroupStatsService
 {
-    public function currentSeason(): ?object
+    /**
+     * Current season for a center lane: the center's own current season,
+     * falling back to the legacy shared (NULL-center) one. A null center is
+     * the global/admin view, which keeps the first current season.
+     */
+    public function currentSeason(?int $centerId = null): ?object
     {
-        return DB::table('academic_seasons')->where('is_current', 1)->first(['id', 'name']);
+        $query = DB::table('academic_seasons')->where('is_current', 1);
+        if ($centerId !== null) {
+            $query->where(fn ($lane) => $lane->where('center_id', $centerId)->orWhereNull('center_id'))
+                ->orderByRaw('`center_id` IS NULL');
+        }
+
+        return $query->orderBy('id')->first(['id', 'name']);
     }
 
     /**
-     * @param  Collection<int, \App\Models\Group>  $groups  with teacher loaded
+     * @param  Collection<int, Group>  $groups  with teacher loaded
      */
     public function overview(Collection $groups, ?int $seasonId): array
     {
@@ -45,9 +57,38 @@ class GroupStatsService
             }
         }
 
-        $score = $this->perGroup($this->scoreQuery($ids, $seasonId), 'avg_score');
-        $att = $this->perGroup($this->attendanceQuery($ids, $seasonId), 'att');
-        $thumn = $this->perGroup($this->thumnQuery($ids, $seasonId), 'thumn');
+        $studentIds = $ids ? DB::table('students')->whereIn('group_id', $ids)->pluck('id')->all() : [];
+
+        $scoreRows = $studentIds && $seasonId
+            ? DB::query()->fromSub(ReportingQueries::sessionTotals($studentIds, $seasonId), 't')
+                ->join('students as s', 's.id', '=', 't.student_id')
+                ->selectRaw('s.group_id, ROUND(AVG(t.total_score),2) AS avg_score, SUM(t.total_score) AS sum_score, COUNT(*) AS n')
+                ->groupBy('s.group_id')->get()
+            : collect();
+
+        $attRows = $studentIds && $seasonId
+            ? DB::table('attendance_totals as a')
+                ->join('students as s', 's.id', '=', 'a.student_id')
+                ->whereIn('a.student_id', $studentIds)->where('a.season_id', $seasonId)
+                ->selectRaw('s.group_id, ROUND(100*SUM(a.present_count+a.late_count)/SUM(a.total_sessions),1) AS att,
+                    SUM(a.present_count+a.late_count) AS present_late, SUM(a.total_sessions) AS n')
+                ->groupBy('s.group_id')->get()
+            : collect();
+
+        $thumnRows = $studentIds && $seasonId
+            ? DB::table('memorization_logs as m')
+                ->join('students as s', 's.id', '=', 'm.student_id')
+                ->whereIn('m.student_id', $studentIds)->where('m.season_id', $seasonId)
+                ->selectRaw('s.group_id, ROUND(SUM(m.thumn_amount),2) AS thumn')
+                ->groupBy('s.group_id')->get()
+            : collect();
+
+        $score = $scoreRows->mapWithKeys(fn ($r) => [$r->group_id => (float) $r->avg_score])->all();
+        $att = $attRows->mapWithKeys(fn ($r) => [$r->group_id => (float) $r->att])->all();
+        $thumn = $thumnRows->mapWithKeys(fn ($r) => [$r->group_id => (float) $r->thumn])->all();
+
+        $scoreN = (int) $scoreRows->sum('n');
+        $attN = (int) $attRows->sum('n');
 
         $rows = $groups->map(function ($g) use ($score, $att, $thumn, $perGroupBreakdown) {
             $count = (int) ($g->students_count ?? 0);
@@ -82,8 +123,8 @@ class GroupStatsService
             'kpis' => [
                 'groups' => $groups->count(),
                 'students' => $total,
-                'avg_score' => $this->scalar($this->scoreQuery($ids, $seasonId), 'avg_score', false),
-                'attendance_pct' => $this->scalar($this->attendanceQuery($ids, $seasonId), 'att', false),
+                'avg_score' => $scoreN > 0 ? round((float) $scoreRows->sum('sum_score') / $scoreN, 2) : null,
+                'attendance_pct' => $attN > 0 ? round(100 * (float) $attRows->sum('present_late') / $attN, 1) : null,
                 'fill_pct' => $capacity > 0 ? round(100 * $total / $capacity, 1) : null,
             ],
             'breakdown' => $breakdown,
@@ -92,29 +133,30 @@ class GroupStatsService
     }
 
     /** One group: info + every student with season metrics + weekly trend. */
-    public function detail(\App\Models\Group $group, ?int $seasonId): array
+    public function detail(Group $group, ?int $seasonId): array
     {
-        $gid = [$group->id];
         $students = DB::table('students')->where('group_id', $group->id)->orderBy('full_name')
             ->get(['id', 'full_name', 'gender', 'status', 'student_type', 'memorization_mode',
                 'start_hizb', 'birth_date', 'enrollment_date', 'level_id', 'notes']);
         $sid = $students->pluck('id')->all();
 
-        $score = $sid && $seasonId ? DB::table('v_session_totals')->whereIn('student_id', $sid)
-            ->where('season_id', $seasonId)->selectRaw('student_id, ROUND(AVG(total_score),2) AS v')
-            ->groupBy('student_id')->pluck('v', 'student_id') : collect();
-        $att = $sid && $seasonId ? DB::table('attendance')->whereIn('student_id', $sid)
+        $score = $sid && $seasonId
+            ? DB::query()->fromSub(ReportingQueries::sessionTotals($sid, $seasonId), 't')
+                ->selectRaw('t.student_id, ROUND(AVG(t.total_score),2) AS v')
+                ->groupBy('t.student_id')->pluck('v', 'student_id')
+            : collect();
+
+        $att = $sid && $seasonId ? DB::table('attendance_totals')->whereIn('student_id', $sid)
             ->where('season_id', $seasonId)
-            ->selectRaw("student_id, ROUND(100*SUM(status IN ('present','late'))/COUNT(*),1) AS v")
+            ->selectRaw('student_id, ROUND(100*SUM(present_count+late_count)/SUM(total_sessions),1) AS v')
             ->groupBy('student_id')->pluck('v', 'student_id') : collect();
+
         $thumn = $sid && $seasonId ? DB::table('memorization_logs')->whereIn('student_id', $sid)
             ->where('season_id', $seasonId)->selectRaw('student_id, ROUND(SUM(thumn_amount),2) AS v')
             ->groupBy('student_id')->pluck('v', 'student_id') : collect();
 
-        $trend = $seasonId ? DB::table('v_session_totals as t')
-            ->join('students as s', 's.id', '=', 't.student_id')
+        $trend = $sid && $seasonId ? DB::query()->fromSub(ReportingQueries::sessionTotals($sid, $seasonId), 't')
             ->join('weeks as w', 'w.id', '=', 't.week_id')
-            ->whereIn('s.group_id', $gid)->where('t.season_id', $seasonId)
             ->selectRaw('w.week_number_global AS week, ROUND(AVG(t.total_score),2) AS avg_score')
             ->groupBy('w.week_number_global')->orderBy('w.week_number_global')->get() : collect();
 
@@ -144,42 +186,5 @@ class GroupStatsService
                 'thumn_total' => (float) ($thumn[$s->id] ?? 0),
             ])->all(),
         ];
-    }
-
-    // ---- query builders (no season => empty result, never "all seasons") ----
-
-    private function scoreQuery(array $ids, ?int $seasonId)
-    {
-        return DB::table('v_session_totals as t')->join('students as s', 's.id', '=', 't.student_id')
-            ->whereIn('s.group_id', $ids ?: [0])->where('t.season_id', $seasonId ?? 0)
-            ->selectRaw('ROUND(AVG(t.total_score),2) AS avg_score');
-    }
-
-    private function attendanceQuery(array $ids, ?int $seasonId)
-    {
-        return DB::table('attendance as a')->join('students as s', 's.id', '=', 'a.student_id')
-            ->whereIn('s.group_id', $ids ?: [0])->where('a.season_id', $seasonId ?? 0)
-            ->selectRaw("ROUND(100*SUM(a.status IN ('present','late'))/COUNT(*),1) AS att");
-    }
-
-    private function thumnQuery(array $ids, ?int $seasonId)
-    {
-        return DB::table('memorization_logs as m')->join('students as s', 's.id', '=', 'm.student_id')
-            ->whereIn('s.group_id', $ids ?: [0])->where('m.season_id', $seasonId ?? 0)
-            ->selectRaw('ROUND(SUM(m.thumn_amount),2) AS thumn');
-    }
-
-    /** @return array<int, float> group_id => value */
-    private function perGroup($query, string $alias): array
-    {
-        return $query->addSelect('s.group_id')->groupBy('s.group_id')->get()
-            ->mapWithKeys(fn ($r) => [$r->group_id => (float) $r->{$alias}])->all();
-    }
-
-    private function scalar($query, string $alias, mixed $default): ?float
-    {
-        $v = $query->first()?->{$alias};
-
-        return $v === null ? $default : (float) $v;
     }
 }

@@ -25,6 +25,7 @@ use App\Models\User;
 use App\Models\WeeklyGoal;
 use App\Observers\AttendanceObserver;
 use App\Observers\MurajaaReviewObserver;
+use App\Observers\ScoringModuleObserver;
 use App\Observers\SessionScoreObserver;
 use App\Policies\AnnouncementPolicy;
 use App\Policies\AppearancePolicy;
@@ -95,6 +96,7 @@ class AppServiceProvider extends ServiceProvider
         SessionScore::observe(SessionScoreObserver::class);
         Attendance::observe(AttendanceObserver::class);
         MurajaaReview::observe(MurajaaReviewObserver::class);
+        ScoringModule::observe(ScoringModuleObserver::class);
 
         // Scramble docs (RestrictedDocsAccess): active admins who signed in via
         // DocsAuthController. The nullable User param is what lets guests reach

@@ -23,7 +23,9 @@ class StoreSeasonRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:50', 'unique:academic_seasons,name'],
+            // Name uniqueness is checked in the controller so the 422 carries
+            // the stable SEASON_EXISTS code (FormRequest bags have none).
+            'name' => ['required', 'string', 'max:50'],
             // New seasons are always center-owned (legacy NULL rows stay shared).
             'center_id' => [
                 Rule::requiredIf(fn () => $this->user()?->role === 'admin'),

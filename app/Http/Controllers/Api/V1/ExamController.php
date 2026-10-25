@@ -14,6 +14,7 @@ use App\Models\QuranVerse;
 use App\Models\ScoringModule;
 use App\Models\Student;
 use App\Models\Term;
+use App\Services\TermExamResultSync;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +43,9 @@ class ExamController extends Controller
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
         foreach (['student_id', 'term_id', 'season_id', 'exam_type'] as $f) {
-            if ($request->filled($f)) $q->where($f, $request->input($f));
+            if ($request->filled($f)) {
+                $q->where($f, $request->input($f));
+            }
         }
 
         return $this->ok(ExamResource::collection($q->paginate(50))->response()->getData(true));
@@ -56,10 +59,12 @@ class ExamController extends Controller
      * always sign as examiner of their own exams. A non-admin writing for
      * another center's pupil gets 403 CROSS_CENTER.
      */
-    public function store(StoreExamRequest $request): JsonResponse
+    public function store(StoreExamRequest $request, TermExamResultSync $termResults): JsonResponse
     {
         $data = $request->validated();
         $me = $request->user();
+        $questions = $data['questions'] ?? [];
+        unset($data['questions']);
 
         $student = Student::findOrFail($data['student_id']);
         if ($me->role !== 'admin' && (int) $student->center_id !== (int) $me->center_id) {
@@ -71,13 +76,57 @@ class ExamController extends Controller
             $data['season_id'] = Term::findOrFail($data['term_id'])->season_id;
         }
         // teachers always sign their own exams (examiner = teacher)
-        if ($me->role === 'teacher') $data['examiner_id'] = $me->id;
-        else $data['examiner_id'] ??= $me->id;
+        if ($me->role === 'teacher') {
+            $data['examiner_id'] = $me->id;
+        } else {
+            $data['examiner_id'] ??= $me->id;
+        }
 
-        $exam = Exam::create($data);
+        if ($questions !== []) {
+            $numbers = array_column($questions, 'question_no');
+            if (count(array_unique($numbers)) !== count($numbers)) {
+                throw ValidationException::withMessages(['questions' => 'Question numbers must be unique.']);
+            }
+            $total = round(array_sum(array_map(
+                fn (array $q): float => (float) $q['max_score'],
+                $questions
+            )), 2);
+            if (abs($total - 20) > 0.009) {
+                throw ValidationException::withMessages([
+                    'code' => 'WEIGHTS_TOTAL',
+                    'weights' => "Weights must total 20 (got $total).",
+                ]);
+            }
+            foreach ($questions as $i => $q) {
+                if (isset($q['score']) && (float) $q['score'] > (float) $q['max_score']) {
+                    throw ValidationException::withMessages([
+                        "questions.$i.score" => 'Score exceeds the question weight.',
+                    ]);
+                }
+            }
+        }
+
+        $exam = DB::transaction(function () use ($data, $questions, $termResults) {
+            $exam = Exam::create($data);
+            foreach ($questions as $row) {
+                $row['sort_order'] ??= $row['question_no'];
+                $exam->questions()->create($row);
+            }
+            if ($questions !== []) {
+                $scored = array_filter($questions, fn (array $q): bool => isset($q['score']));
+                $exam->update([
+                    'overall_avg' => $scored === []
+                        ? null
+                        : round(array_sum(array_map(fn (array $q): float => (float) $q['score'], $scored)), 2),
+                ]);
+            }
+            $termResults->apply($exam);
+
+            return $exam;
+        });
         $exam->setRelation('student', $student);
 
-        return $this->created(new ExamResource($exam));
+        return $this->created(new ExamResource($exam->load('questions')));
     }
 
     /**
@@ -96,9 +145,11 @@ class ExamController extends Controller
      * Same term/season derivation as store; term-carrying types refuse a null
      * term with 422 TERM_REQUIRED.
      */
-    public function update(UpdateExamRequest $request, Exam $exam): JsonResponse
+    public function update(UpdateExamRequest $request, Exam $exam, TermExamResultSync $termResults): JsonResponse
     {
         $this->authorize('manageExam', $exam);
+        $oldTermId = $exam->term_id;
+        $oldType = $exam->exam_type;
         $data = $request->validated();
         // Same term/season derivation as store: final + weekly exams carry
         // no term (season comes from the client); other types derive their
@@ -115,16 +166,25 @@ class ExamController extends Controller
         }
         $exam->update($data);
 
+        if ($oldType === 'term_batch' && (
+            $exam->exam_type !== 'term_batch'
+            || (int) $oldTermId !== (int) $exam->term_id
+        )) {
+            $termResults->forgetFor((int) $exam->student_id, $oldTermId);
+        }
+        $termResults->apply($exam);
+
         return $this->ok(new ExamResource($exam->fresh(['questions', 'student'])));
     }
 
     /**
      * Delete an exam (with its questions).
      */
-    public function destroy(Exam $exam): JsonResponse
+    public function destroy(Exam $exam, TermExamResultSync $termResults): JsonResponse
     {
         $this->authorize('delete', $exam);
         $exam->delete();
+        $termResults->forget($exam);
 
         return $this->ok(null, 'Deleted.');
     }
@@ -224,8 +284,12 @@ class ExamController extends Controller
             if ($pupil) {
                 $portion = $row['portion'];
                 if ($pupil->memorization_mode === 'thumn') {
-                    if (empty($portion['hizb'])) $errors["rows.$i.portion.hizb"] = 'Hizb is required.';
-                    if (empty($portion['thumn'])) $errors["rows.$i.portion.thumn"] = 'Thumn is required.';
+                    if (empty($portion['hizb'])) {
+                        $errors["rows.$i.portion.hizb"] = 'Hizb is required.';
+                    }
+                    if (empty($portion['thumn'])) {
+                        $errors["rows.$i.portion.thumn"] = 'Thumn is required.';
+                    }
                 } else {
                     if (empty($portion['surah'])) {
                         $errors["rows.$i.portion.surah"] = 'Surah is required.';
@@ -249,7 +313,9 @@ class ExamController extends Controller
                 }
             }
         }
-        if ($errors) throw ValidationException::withMessages($errors);
+        if ($errors) {
+            throw ValidationException::withMessages($errors);
+        }
 
         foreach ($data['rows'] as $row) {
             foreach ($row['scores'] as $code => $score) {

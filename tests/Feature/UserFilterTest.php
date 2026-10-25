@@ -6,12 +6,15 @@ use App\Models\Group;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeasonLevelFixtures;
 use Tests\TestCase;
 
 /** `GET /users?unassigned=1` — no ACTIVE group to teach AND no pupil row
  * linked (free for either assignment). Transaction-wrapped. */
 class UserFilterTest extends TestCase
 {
+    use SeasonLevelFixtures;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -96,7 +99,7 @@ class UserFilterTest extends TestCase
         $this->postJson('/api/v1/students', [
             'full_name' => 'Linked Pupil', 'memorization_mode' => 'thumn',
             'status' => 'active', 'center_id' => 1, 'group_id' => 1,
-            'level_id' => 1, 'user_id' => $u->id,
+            'level_id' => $this->currentLevelId(1), 'user_id' => $u->id,
         ])->assertCreated();
 
         // Linked: gone from the flag, with or without a role filter.

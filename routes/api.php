@@ -21,7 +21,9 @@ use App\Http\Controllers\Api\V1\ResultController;
 use App\Http\Controllers\Api\V1\ScoreController;
 use App\Http\Controllers\Api\V1\ScoringModuleController;
 use App\Http\Controllers\Api\V1\SeasonController;
+use App\Http\Controllers\Api\V1\SetupController;
 use App\Http\Controllers\Api\V1\StudentController;
+use App\Http\Controllers\Api\V1\TermBreakdownController;
 use App\Http\Controllers\Api\V1\TermPlanController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\WeeklyGoalController;
@@ -52,6 +54,9 @@ Route::prefix('v1')->group(function () {
     });
 
     Route::middleware('auth:api')->group(function () {
+        // Admin setup guide progress (one request for the header checklist).
+        Route::get('setup/status', [SetupController::class, 'status']);
+
         // App-wide appearance: every role reads, admins write.
         Route::get('appearance', [AppearanceController::class, 'show']);
         Route::patch('appearance', [AppearanceController::class, 'update']);
@@ -73,6 +78,7 @@ Route::prefix('v1')->group(function () {
         Route::get('groups/{group}/detail', [GroupController::class, 'detail']);
         Route::apiResource('groups', GroupController::class);
         Route::get('students/unlinked-accounts', [StudentController::class, 'unlinkedAccounts']);
+        Route::get('students/{student}/exam-brief', [StudentController::class, 'examBrief']);
         Route::apiResource('students', StudentController::class);
 
         // S7 daily core
@@ -121,6 +127,7 @@ Route::prefix('v1')->group(function () {
         Route::post('exams/{exam}/questions', [ExamQuestionController::class, 'bulk']);
         Route::put('exams/{exam}/question-weights', [ExamQuestionController::class, 'reweight']);
         Route::apiResource('exam-questions', ExamQuestionController::class)->only(['show', 'update', 'destroy']);
+        Route::get('term-results/breakdown', TermBreakdownController::class);
         Route::get('term-results', [ResultController::class, 'indexTerms']);
         Route::put('term-results', [ResultController::class, 'upsertTerm']);
         Route::get('season-results', [ResultController::class, 'indexSeasons']);

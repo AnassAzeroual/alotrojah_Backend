@@ -2,14 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicSeason;
 use App\Models\Center;
 use App\Models\Group;
+use App\Models\Level;
 use App\Models\RegistrationRequest;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Tests\Concerns\SeasonLevelFixtures;
 use Tests\TestCase;
 
 /**
@@ -19,6 +22,8 @@ use Tests\TestCase;
  */
 class RegistrationTest extends TestCase
 {
+    use SeasonLevelFixtures;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -156,9 +161,15 @@ class RegistrationTest extends TestCase
             'teacher_id' => $teacher->id, 'is_active' => true,
         ]);
 
+        // Levels are per season: submit a level that exists in the pupil's
+        // current season (the form has no static template list any more).
+        $season = AcademicSeason::currentFor(2);
+        $this->assertNotNull($season);
+        $level = Level::forSeason($season->id)->where('code', 'L1')->firstOrFail();
+
         $this->actingAs(User::find(1), 'api')
             ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
-                'center_id' => 2, 'group_id' => $group->id, 'level_id' => 1,
+                'center_id' => 2, 'group_id' => $group->id, 'level_id' => $level->id,
             ])
             ->assertOk()
             ->assertJsonPath('data.email', 'accepted@example.org')
@@ -175,7 +186,13 @@ class RegistrationTest extends TestCase
         $this->assertSame(2, (int) $student->center_id);
         $this->assertSame('female', $student->gender);
         $this->assertSame($group->id, (int) $student->group_id);
-        $this->assertSame(1, (int) $student->level_id);
+        // The accepted pupil is placed on that level in the current season.
+        $this->assertSame($level->id, (int) $student->level_id);
+        $this->assertDatabaseHas('student_levels', [
+            'student_id' => $student->id,
+            'season_id' => $season->id,
+            'level_id' => $level->id,
+        ]);
 
         $this->assertDatabaseMissing('registration_requests', ['id' => $request->id]);
     }
@@ -208,7 +225,8 @@ class RegistrationTest extends TestCase
 
         $this->actingAs(User::find(1), 'api')
             ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
-                'center_id' => 1, 'group_id' => Group::firstOrFail()->id, 'level_id' => 1,
+                'center_id' => 1, 'group_id' => Group::firstOrFail()->id,
+                'level_id' => $this->currentLevelId(1),
             ])
             ->assertOk();
 
@@ -307,7 +325,7 @@ class RegistrationTest extends TestCase
             ->postJson("/api/v1/registration-requests/{$request->id}/accept", [
                 'center_id' => (int) $group->center_id,
                 'group_id' => (int) $group->id,
-                'level_id' => 1,
+                'level_id' => $this->currentLevelId((int) $group->center_id),
             ])
             ->assertOk();
 

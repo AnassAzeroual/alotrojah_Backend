@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Controllers\Concerns\StudentGroupScope;
 use App\Http\Requests\StoreGroupRequest;
 use App\Http\Requests\UpdateGroupRequest;
 use App\Http\Resources\GroupResource;
-use App\Http\Controllers\Concerns\StudentGroupScope;
 use App\Models\AcademicSeason;
 use App\Models\Group;
 use App\Models\User;
@@ -68,7 +68,15 @@ class GroupController extends Controller
             $q->where('center_id', (int) $request->input('center_id'));
         }
 
-        $season = $stats->currentSeason();
+        // Metrics follow the same center lane as season activation: the
+        // selected center's own current season, else the legacy shared one.
+        $centerId = null;
+        if ($me->role !== 'admin') {
+            $centerId = $me->center_id !== null ? (int) $me->center_id : null;
+        } elseif ($request->filled('center_id')) {
+            $centerId = (int) $request->input('center_id');
+        }
+        $season = $stats->currentSeason($centerId);
 
         return $this->ok($stats->overview($q->get(), $season?->id) + ['season_name' => $season?->name]);
     }
@@ -82,7 +90,7 @@ class GroupController extends Controller
     {
         $this->authorize('view', $group);
         $group->load(['teacher'])->loadCount('students');
-        $season = $stats->currentSeason();
+        $season = $stats->currentSeason((int) $group->center_id);
 
         return $this->ok($stats->detail($group, $season?->id) + ['season_name' => $season?->name]);
     }
@@ -161,7 +169,9 @@ class GroupController extends Controller
         $oldDays = $group->weekdays()->pluck('weekday')->all();
         sort($oldDays);
         $newDays = $days === null ? null : $days;
-        if (is_array($newDays)) sort($newDays);
+        if (is_array($newDays)) {
+            sort($newDays);
+        }
         $daysChanged = $newDays !== null && $newDays !== $oldDays;
         DB::transaction(function () use ($group, $data, $days) {
             $group->update($data);

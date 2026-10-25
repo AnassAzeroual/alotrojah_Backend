@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicSeason;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -48,6 +49,37 @@ class GroupStatsTest extends TestCase
         $this->assertContains(1, collect($r->json('data.students'))->pluck('id')->all());
         $this->assertSame($gid, $r->json('data.group.id'));
         $this->assertArrayHasKey('trend', $r->json('data'));
+    }
+
+    public function test_stats_and_detail_follow_the_selected_center_current_season(): void
+    {
+        // A center can own a current season while the legacy shared season
+        // stays current: metrics must use the center lane, not the first row.
+        $own = AcademicSeason::create([
+            'name' => 'center-lane-current', 'center_id' => 1, 'is_current' => true,
+            'start_date' => '2025-01-01', 'end_date' => '2025-12-31',
+            'total_weeks' => 42, 'total_sessions' => 126,
+        ]);
+        $admin = User::find(1);
+        $teacher = User::find(3);
+
+        $adminStats = $this->actingAs($admin, 'api')
+            ->getJson('/api/v1/groups/stats?center_id=1')->assertOk();
+        $this->assertSame($own->id, $adminStats->json('data.season.id'));
+
+        $teacherStats = $this->actingAs($teacher, 'api')
+            ->getJson('/api/v1/groups/stats')->assertOk();
+        $this->assertSame($own->id, $teacherStats->json('data.season.id'));
+
+        // Unfiltered admin stays on the global view (shared season id 1).
+        $globalStats = $this->actingAs($admin, 'api')
+            ->getJson('/api/v1/groups/stats')->assertOk();
+        $this->assertSame(1, $globalStats->json('data.season.id'));
+
+        $gid = (int) DB::table('groups')->where('center_id', 1)->value('id');
+        $detail = $this->actingAs($admin, 'api')
+            ->getJson("/api/v1/groups/$gid/detail")->assertOk();
+        $this->assertSame('center-lane-current', $detail->json('data.season_name'));
     }
 
     public function test_detail_of_other_center_group_is_denied(): void

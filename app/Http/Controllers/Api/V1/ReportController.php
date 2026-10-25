@@ -15,6 +15,7 @@ use App\Models\SeasonResult;
 use App\Models\Student;
 use App\Models\Term;
 use App\Models\TermResult;
+use App\Services\DashboardService;
 use App\Services\ScoringService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -28,7 +29,7 @@ class ReportController extends Controller
      *
      * @response array{success: bool, message: string|null, data: array{student: array{id: int, full_name: string}, term: array{id: int, name_ar: string}, result: TermResultResource|null, plan: TermPlanResource|null, quizzes: list<TermQuizAvgRow>, attendance: AttendanceRateRow|null, weekly: list<WeeklyProgressRow>, murajaa_cycles: list<MurajaaReviewResource>}}
      */
-    public function term(StudentTermRequest $request, ScoringService $scoring): JsonResponse
+    public function term(StudentTermRequest $request, ScoringService $scoring, DashboardService $dash): JsonResponse
     {
         $data = $request->validated();
         $student = Student::findOrFail($data['student_id']);
@@ -37,19 +38,20 @@ class ReportController extends Controller
 
         $result = TermResult::where('student_id', $student->id)->where('term_id', $term->id)->first();
         $plan = $student->termPlans()->where('term_id', $term->id)->first();
-        $attendance = DB::table('v_attendance_rate')
-            ->where('student_id', $student->id)->where('term_id', $term->id)->first();
+        $attendance = DB::table('attendance_totals')
+            ->where('student_id', $student->id)
+            ->where('season_id', $term->season_id)
+            ->where('term_id', $term->id)
+            ->first();
 
         return $this->ok([
             'student' => ['id' => $student->id, 'full_name' => $student->full_name],
             'term' => ['id' => $term->id, 'name_ar' => $term->name_ar],
             'result' => $result === null ? null : new TermResultResource($result),
             'plan' => $plan === null ? null : new TermPlanResource($plan),
-            'quizzes' => DB::table('v_term_quiz_avgs')->where('student_id', $student->id)->where('term_id', $term->id)->get()
-                ->map(static fn (object $row): TermQuizAvgRow => new TermQuizAvgRow($row))->values()->all(),
+            'quizzes' => $this->quizAverages($student->id, (int) $term->season_id, (int) $term->id),
             'attendance' => $attendance === null ? null : new AttendanceRateRow($attendance),
-            'weekly' => DB::table('v_weekly_progress')->where('student_id', $student->id)->where('term_id', $term->id)->orderBy('week_id')->get()
-                ->map(static fn (object $row): WeeklyProgressRow => new WeeklyProgressRow($row))->values()->all(),
+            'weekly' => $dash->weeklyProgress($student->id, (int) $term->season_id, (int) $term->id),
             'murajaa_cycles' => MurajaaReviewResource::collection(
                 $student->murajaaReviews()->where('term_id', $term->id)->orderBy('week_from')->get()
             )->resolve(),
@@ -79,9 +81,28 @@ class ReportController extends Controller
             )->resolve(),
             'inputs' => $avgs,
             'final' => $scoring->finalAverage($student->id, $data['season_id']),
-            'quizzes' => DB::table('v_term_quiz_avgs')->where('student_id', $student->id)->where('season_id', $data['season_id'])->orderBy('term_id')->get()
-                ->map(static fn (object $row): TermQuizAvgRow => new TermQuizAvgRow($row))->values()->all(),
+            'quizzes' => $this->quizAverages($student->id, (int) $data['season_id']),
             'honor' => $result?->honor_flag,
         ]);
+    }
+
+    /** @return list<TermQuizAvgRow> */
+    private function quizAverages(int $studentId, int $seasonId, ?int $termId = null): array
+    {
+        $query = DB::table('exams as e')
+            ->join('exam_questions as q', 'q.exam_id', '=', 'e.id')
+            ->where('e.student_id', $studentId)
+            ->where('e.season_id', $seasonId);
+        if ($termId !== null) {
+            $query->where('e.term_id', $termId);
+        }
+
+        return $query
+            ->selectRaw('e.student_id, e.season_id, e.term_id, e.exam_type,
+                ROUND(SUM(q.score),2) AS avg_score, COUNT(*) AS questions_count')
+            ->groupBy('e.student_id', 'e.season_id', 'e.term_id', 'e.exam_type')
+            ->orderBy('e.term_id')->get()
+            ->map(static fn (object $row): TermQuizAvgRow => new TermQuizAvgRow($row))
+            ->values()->all();
     }
 }

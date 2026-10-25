@@ -15,7 +15,7 @@ class ResetLevelRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'center_id' => ['required', 'integer', 'exists:centers,id'],
+            'season_id' => ['required', 'integer', 'exists:academic_seasons,id'],
         ];
     }
 }

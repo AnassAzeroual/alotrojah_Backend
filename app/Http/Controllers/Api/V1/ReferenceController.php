@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Http\Resources\LevelResource;
+use App\Models\AcademicSeason;
 use App\Models\Center;
 use App\Models\Level;
 use App\Models\QuranVerse;
@@ -12,19 +14,40 @@ use Illuminate\Http\Request;
 class ReferenceController extends Controller
 {
     /**
-     * Level dropdown feed: effective set for a center (overrides win, shared
-     * defaults fill the gaps; unknown/absent center_id = defaults).
+     * Level dropdown feed, season-scoped: `?season_id=` that season's set,
+     * `?center_id=` that center's current (else latest) season, with the
+     * legacy shared season as fallback. A center that has no season yet has no
+     * levels, and no scope never returns a global set (empty feed).
+     *
+     * @response array{success: bool, message: string|null, data: list<LevelResource>}
      */
     public function levels(Request $request): JsonResponse
     {
-        // Copy-on-write sets: overrides win, shared defaults fill the gaps.
-        // No param (or unknown center) = the default template, as before.
-        $centerId = $request->filled('center_id') ? (int) $request->input('center_id') : null;
-        if ($centerId !== null && ! Center::where('id', $centerId)->exists()) {
-            $centerId = null;
+        $season = null;
+        if ($request->filled('season_id')) {
+            $season = AcademicSeason::findOrFail((int) $request->input('season_id'));
+            $this->authorize('view', $season);
+        } elseif ($request->filled('center_id')) {
+            $centerId = (int) $request->input('center_id');
+            $season = Center::where('id', $centerId)->exists()
+                ? AcademicSeason::currentFor($centerId)
+                : null;
+            if ($season === null) {
+                return $this->ok([]);
+            }
         }
 
-        return $this->ok(Level::effectiveFor($centerId)->values());
+        $levels = $season !== null
+            ? Level::forSeason($season->id)->orderBy('id')->get()
+            : collect();
+
+        $terms = $season !== null
+            ? $season->terms()->with('weeks')->orderBy('term_number')->get()
+            : collect();
+
+        return $this->ok($levels
+            ->map(fn (Level $level) => (new LevelResource($level, $level->termGoals($terms)))->toArray())
+            ->all());
     }
 
     /**
@@ -44,7 +67,9 @@ class ReferenceController extends Controller
             ->selectRaw('sura_no as id, MIN(surah_name) as name_ar, COUNT(*) as ayahs_count')
             ->groupBy('sura_no')
             ->orderBy('sura_no');
-        if ($request->filled('q')) $q->where('surah_name', 'like', '%'.$request->input('q').'%');
+        if ($request->filled('q')) {
+            $q->where('surah_name', 'like', '%'.$request->input('q').'%');
+        }
 
         return $this->ok(
             $q->get()
