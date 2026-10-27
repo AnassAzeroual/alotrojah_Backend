@@ -13,13 +13,16 @@ use Tests\TestCase;
 class PerformanceTest extends TestCase
 {
     protected int $queryCount = 0;
+
     protected string $token;
 
     protected function setUp(): void
     {
         parent::setUp();
         DB::beginTransaction();
-        DB::listen(function () { $this->queryCount++; });
+        DB::listen(function () {
+            $this->queryCount++;
+        });
         $this->token = JWTAuth::fromUser(User::find(1));
     }
 

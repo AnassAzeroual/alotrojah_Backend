@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\ModuleScope;
+use App\Models\ScoringModule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class StoreModuleRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\ScoringModule::class);
+        return $this->user()->can('manage', ScoringModule::class);
     }
 
     public function rules(): array

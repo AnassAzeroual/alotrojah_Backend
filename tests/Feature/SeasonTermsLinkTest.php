@@ -30,6 +30,7 @@ class SeasonTermsLinkTest extends TestCase
             $this->assertArrayHasKey('first_term_id', $row);
             if ((int) $row['terms_count'] === 0) {
                 $this->assertNull($row['first_term_id']);
+
                 continue;
             }
             $this->assertNotNull($row['first_term_id']);

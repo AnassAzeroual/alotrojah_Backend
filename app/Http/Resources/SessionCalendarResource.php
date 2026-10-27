@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Session;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -9,7 +10,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * Display-ready calendar row: the session plus the names its card title
  * needs (group/term/week), so one windowed feed replaces four lookups.
  *
- * @mixin \App\Models\Session
+ * @mixin Session
  */
 class SessionCalendarResource extends JsonResource
 {

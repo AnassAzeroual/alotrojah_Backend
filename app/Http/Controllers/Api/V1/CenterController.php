@@ -24,7 +24,9 @@ class CenterController extends Controller
         $me = auth('api')->user();
 
         $q = Center::withCount(['groups', 'students'])->orderBy('id');
-        if ($me->role !== 'admin') $q->where('id', (int) $me->center_id);
+        if ($me->role !== 'admin') {
+            $q->where('id', (int) $me->center_id);
+        }
 
         return $this->ok(CenterResource::collection($q->paginate(20))->response()->getData(true));
     }

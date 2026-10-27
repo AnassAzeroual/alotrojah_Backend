@@ -1,5 +1,9 @@
 <?php
+
 declare(strict_types=1);
+use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Support\Facades\Artisan;
+
 // Server-side deploy extractor. No on-server backup.
 // Upload to api/public/deploy.php, then call once:
 //   https://api.alotrojah.ma/deploy.php?token=YOUR_DEPLOY_TOKEN
@@ -26,13 +30,13 @@ declare(strict_types=1);
 define('DEPLOY_TOKEN', '__DEPLOY_TOKEN__');
 header('Content-Type: application/json');
 
-$token = (string)($_GET['token'] ?? '');
-if (!hash_equals(DEPLOY_TOKEN, $token)) {
+$token = (string) ($_GET['token'] ?? '');
+if (! hash_equals(DEPLOY_TOKEN, $token)) {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'forbidden']);
     exit;
 }
-if (!class_exists('ZipArchive')) {
+if (! class_exists('ZipArchive')) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'ziparchive-missing']);
     exit;
@@ -40,10 +44,10 @@ if (!class_exists('ZipArchive')) {
 
 set_time_limit(600);
 
-$dest   = dirname(__DIR__);          // api/
-$newZip = $dest . '/backend.zip';    // incoming release
+$dest = dirname(__DIR__);          // api/
+$newZip = $dest.'/backend.zip';    // incoming release
 
-if (!file_exists($newZip)) {
+if (! file_exists($newZip)) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'backend.zip-missing']);
     exit;
@@ -57,20 +61,22 @@ function wipe_path(string $path): void
 {
     if (is_link($path)) {
         @unlink($path);
+
         return;
     }
     if (is_file($path)) {
         @unlink($path);
+
         return;
     }
-    if (!is_dir($path)) {
+    if (! is_dir($path)) {
         return;
     }
     foreach (@scandir($path) ?: [] as $item) {
         if ($item === '.' || $item === '..') {
             continue;
         }
-        wipe_path($path . '/' . $item);
+        wipe_path($path.'/'.$item);
     }
     @rmdir($path);
 }
@@ -86,8 +92,8 @@ foreach (@scandir($dest) ?: [] as $entry) {
     if ($entry === basename($newZip)) {
         continue; // incoming release
     }
-    $full = $dest . '/' . $entry;
-    if ($entry === 'storage' && !is_link($full) && is_dir($full)) {
+    $full = $dest.'/'.$entry;
+    if ($entry === 'storage' && ! is_link($full) && is_dir($full)) {
         foreach (@scandir($full) ?: [] as $sub) {
             if ($sub === '.' || $sub === '..') {
                 continue;
@@ -95,8 +101,9 @@ foreach (@scandir($dest) ?: [] as $entry) {
             if ($sub === 'app' || $sub === 'logs') {
                 continue; // user uploads + prod logs — keep, merge later
             }
-            wipe_path($full . '/' . $sub);
+            wipe_path($full.'/'.$sub);
         }
+
         continue;
     }
     wipe_path($full);
@@ -106,14 +113,14 @@ foreach (@scandir($dest) ?: [] as $entry) {
 // 2. Extract the new release. Overwrites tracked files; disk-only files
 //    (uploads in storage/app) survive. Skeleton files merge in harmlessly.
 // -------------------------------------------------------------------------- //
-$zip = new ZipArchive();
+$zip = new ZipArchive;
 if ($zip->open($newZip) !== true) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'zip-open-failed']);
     exit;
 }
 $count = $zip->numFiles;
-if (!$zip->extractTo($dest)) {
+if (! $zip->extractTo($dest)) {
     $zip->close();
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'extract-failed']);
@@ -129,24 +136,24 @@ $migrateOk = null;
 $migrateLog = null;
 if (($_GET['action'] ?? '') === 'migrate') {
     try {
-        require $dest . '/vendor/autoload.php';
-        $app = require $dest . '/bootstrap/app.php';
-        $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
-        $code = Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-        $migrateLog = Illuminate\Support\Facades\Artisan::output();
+        require $dest.'/vendor/autoload.php';
+        $app = require $dest.'/bootstrap/app.php';
+        $app->make(Kernel::class)->bootstrap();
+        $code = Artisan::call('migrate', ['--force' => true]);
+        $migrateLog = Artisan::output();
         $migrateOk = $code === 0;
         if ($migrateOk) {
             // First-admin bootstrap (no-op when admin@example.org exists).
-            $seedCode = Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
-            $migrateLog .= "\n" . Illuminate\Support\Facades\Artisan::output();
+            $seedCode = Artisan::call('db:seed', ['--force' => true]);
+            $migrateLog .= "\n".Artisan::output();
             $migrateOk = $seedCode === 0;
         }
     } catch (Throwable $e) {
         $migrateOk = false;
-        $migrateLog = get_class($e) . ': ' . $e->getMessage();
+        $migrateLog = get_class($e).': '.$e->getMessage();
     }
     @file_put_contents(
-        $dest . '/storage/logs/migrate-' . date('Ymd-His') . '.log',
+        $dest.'/storage/logs/migrate-'.date('Ymd-His').'.log',
         $migrateLog ?? '(no output)'
     );
 }
@@ -154,34 +161,36 @@ if (($_GET['action'] ?? '') === 'migrate') {
 // -------------------------------------------------------------------------- //
 // 4. Recreate runtime dirs, reset opcache, clean up.
 // -------------------------------------------------------------------------- //
-@mkdir($dest . '/storage/app/public', 0755, true);
-@mkdir($dest . '/storage/framework/cache/data', 0755, true);
-@mkdir($dest . '/storage/framework/sessions', 0755, true);
-@mkdir($dest . '/storage/framework/views', 0755, true);
-@mkdir($dest . '/storage/logs', 0755, true);
-@mkdir($dest . '/bootstrap/cache', 0755, true);
-if (function_exists('opcache_reset')) { @opcache_reset(); }
+@mkdir($dest.'/storage/app/public', 0755, true);
+@mkdir($dest.'/storage/framework/cache/data', 0755, true);
+@mkdir($dest.'/storage/framework/sessions', 0755, true);
+@mkdir($dest.'/storage/framework/views', 0755, true);
+@mkdir($dest.'/storage/logs', 0755, true);
+@mkdir($dest.'/bootstrap/cache', 0755, true);
+if (function_exists('opcache_reset')) {
+    @opcache_reset();
+}
 
 // PERF-B02: freeze config + routes for production (deploy is the only path
 // that changes code/env, so the cache is always rebuilt from fresh files).
 try {
-    Illuminate\Support\Facades\Artisan::call('config:cache');
-    Illuminate\Support\Facades\Artisan::call('route:cache');
-    Illuminate\Support\Facades\Artisan::call('view:cache');
-    $cacheLog = trim(Illuminate\Support\Facades\Artisan::output());
+    Artisan::call('config:cache');
+    Artisan::call('route:cache');
+    Artisan::call('view:cache');
+    $cacheLog = trim(Artisan::output());
     $cacheOk = true;
 } catch (Throwable $e) {
-    $cacheLog = 'cache-failed: ' . $e->getMessage();
+    $cacheLog = 'cache-failed: '.$e->getMessage();
     $cacheOk = false;
 }
 
 @unlink($newZip);
 // Self-delete so the token-bearing extractor does not linger publicly.
 @unlink(__FILE__);
-$extractorGone = !file_exists(__FILE__);
+$extractorGone = ! file_exists(__FILE__);
 
 $ok = ($migrateOk === null || $migrateOk) && $extractorGone;
-if (!$ok) {
+if (! $ok) {
     http_response_code(500);
 }
 echo json_encode([

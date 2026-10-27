@@ -17,10 +17,14 @@ class CenterScope implements Scope
 
     public function apply(Builder $builder, Model $model): void
     {
-        if (app()->runningInConsole()) return;
+        if (app()->runningInConsole()) {
+            return;
+        }
         // auth()->user() queries the users table, which carries this same
         // scope -> without this guard every authenticated query recurses forever.
-        if (static::$resolvingUser) return;
+        if (static::$resolvingUser) {
+            return;
+        }
 
         static::$resolvingUser = true;
         try {
@@ -30,10 +34,18 @@ class CenterScope implements Scope
         } finally {
             static::$resolvingUser = false;
         }
-        if (! $user) return;
-        if (in_array($user->role, ['admin', 'board'], true)) return;
-        if (! in_array($user->role, ['supervisor', 'teacher'], true)) return;
-        if ($user->center_id === null) return;
+        if (! $user) {
+            return;
+        }
+        if (in_array($user->role, ['admin', 'board'], true)) {
+            return;
+        }
+        if (! in_array($user->role, ['supervisor', 'teacher'], true)) {
+            return;
+        }
+        if ($user->center_id === null) {
+            return;
+        }
 
         $table = $model->getTable();
         if ($table === 'centers') {

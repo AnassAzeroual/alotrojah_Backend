@@ -16,7 +16,9 @@ class UserPolicy
 
     public function view(User $user, User $model): bool
     {
-        if ((int) $model->id === (int) $user->id) return true;
+        if ((int) $model->id === (int) $user->id) {
+            return true;
+        }
 
         return in_array($user->role, ['admin', 'supervisor'], true)
             && $this->sameCenter($user, $model->center_id);
@@ -29,7 +31,9 @@ class UserPolicy
 
     public function update(User $user, User $model): bool
     {
-        if ((int) $model->id === (int) $user->id) return true; // own profile (role/center locked in controller)
+        if ((int) $model->id === (int) $user->id) {
+            return true;
+        } // own profile (role/center locked in controller)
 
         return in_array($user->role, ['admin', 'supervisor'], true)
             && $this->sameCenter($user, $model->center_id);

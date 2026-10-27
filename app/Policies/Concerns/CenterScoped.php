@@ -17,7 +17,9 @@ trait CenterScoped
 
     protected function sameCenter(User $user, ?int $centerId): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return $user->center_id !== null && $user->center_id === $centerId;
     }

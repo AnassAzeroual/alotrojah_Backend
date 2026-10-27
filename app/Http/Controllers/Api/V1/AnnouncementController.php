@@ -24,7 +24,9 @@ class AnnouncementController extends Controller
         $this->authorize('viewAny', Announcement::class);
 
         $q = Announcement::visibleTo($request->user())->with('author')->orderByDesc('id');
-        if ($request->filled('audience')) $q->where('audience', $request->input('audience'));
+        if ($request->filled('audience')) {
+            $q->where('audience', $request->input('audience'));
+        }
 
         return $this->ok(AnnouncementResource::collection($q->paginate(20))->response()->getData(true));
     }

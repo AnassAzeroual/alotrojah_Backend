@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\AttendanceStatus;
+use App\Models\Attendance;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class StoreAttendanceBulkRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\Attendance::class);
+        return $this->user()->can('manage', Attendance::class);
     }
 
     public function rules(): array

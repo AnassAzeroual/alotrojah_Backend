@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\WeeklyGoal;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpsertWeeklyGoalRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\WeeklyGoal::class);
+        return $this->user()->can('manage', WeeklyGoal::class);
     }
 
     public function rules(): array

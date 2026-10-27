@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\HonorFlag;
+use App\Models\SeasonResult;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class UpsertSeasonResultRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\SeasonResult::class);
+        return $this->user()->can('manage', SeasonResult::class);
     }
 
     public function rules(): array

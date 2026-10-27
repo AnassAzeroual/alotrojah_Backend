@@ -8,6 +8,7 @@ use App\Http\Resources\SeasonResultResource;
 use App\Http\Resources\TermResultResource;
 use App\Models\SeasonResult;
 use App\Models\Student;
+use App\Models\Term;
 use App\Models\TermResult;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,8 +34,12 @@ class ResultController extends Controller
         } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
-        if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
-        if ($request->filled('term_id')) $q->where('term_id', (int) $request->input('term_id'));
+        if ($request->filled('student_id')) {
+            $q->where('student_id', (int) $request->input('student_id'));
+        }
+        if ($request->filled('term_id')) {
+            $q->where('term_id', (int) $request->input('term_id'));
+        }
 
         return $this->ok(TermResultResource::collection($q->paginate(50))->response()->getData(true));
     }
@@ -54,7 +59,7 @@ class ResultController extends Controller
         if ($me->role !== 'admin' && (int) $student->center_id !== (int) $me->center_id) {
             return $this->fail('Student is in another center.', 403);
         }
-        $term = \App\Models\Term::findOrFail($data['term_id']);
+        $term = Term::findOrFail($data['term_id']);
         $data['season_id'] = $term->season_id;
 
         $result = TermResult::updateOrCreate(
@@ -83,7 +88,9 @@ class ResultController extends Controller
         } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
-        if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
+        if ($request->filled('student_id')) {
+            $q->where('student_id', (int) $request->input('student_id'));
+        }
 
         return $this->ok(SeasonResultResource::collection($q->paginate(50))->response()->getData(true));
     }

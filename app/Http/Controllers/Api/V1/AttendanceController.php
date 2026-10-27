@@ -34,7 +34,9 @@ class AttendanceController extends Controller
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $request->input('center_id')));
         }
         foreach (['student_id' => 'student_id', 'week_id' => 'week_id', 'session_id' => 'session_id', 'status' => 'status'] as $in => $col) {
-            if ($request->filled($in)) $q->where($col, $request->input($in));
+            if ($request->filled($in)) {
+                $q->where($col, $request->input($in));
+            }
         }
 
         return $this->ok(AttendanceResource::collection($q->paginate(50))->response()->getData(true));

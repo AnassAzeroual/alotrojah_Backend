@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\RevisionLog;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreRevisionLogRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manageReviews', \App\Models\RevisionLog::class);
+        return $this->user()->can('manageReviews', RevisionLog::class);
     }
 
     public function rules(): array

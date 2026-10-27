@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Group;
 use App\Models\Level;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
@@ -123,6 +124,9 @@ class SessionGroupGenerationTest extends TestCase
     {
         // Owner-directed 2026-10-15: changing weekdays rebuilds the future —
         // fact-less planned rows move to the new days, past + recorded stay.
+        // Frozen clock: the 8-week season ends 2026-11-01, so after the last
+        // Monday (2026-10-26) passes there is no future Monday left to score.
+        $this->travelTo(Carbon::create(2026, 10, 15));
         $t = $this->makeTeacher('rebuild-t@example.org');
         $g = $this->makeGroup('Rebuild Me', $t->id, 1, ['Mon', 'Wed']);
 
@@ -132,7 +136,7 @@ class SessionGroupGenerationTest extends TestCase
             'terms' => [['name' => 'T1', 'weeks' => 8]],
         ])->assertCreated()->json('data.id');
 
-        $today = date('Y-m-d');
+        $today = now()->toDateString();
         $this->postJson("/api/v1/seasons/{$sid}/activate")->assertOk();
         $this->assertGreaterThan(0, DB::table('sessions')->where('season_id', $sid)
             ->where('group_id', $g->id)->where('planned_date', '<', $today)->count());

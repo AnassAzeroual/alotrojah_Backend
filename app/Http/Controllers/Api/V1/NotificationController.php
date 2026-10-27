@@ -27,8 +27,12 @@ class NotificationController extends Controller
         if ($me->role !== 'admin') {
             $q->whereHas('sentBy', fn ($u) => $u->where('users.center_id', (int) $me->center_id));
         }
-        if ($request->filled('status')) $q->where('status', $request->input('status'));
-        if ($request->filled('channel')) $q->where('channel', $request->input('channel'));
+        if ($request->filled('status')) {
+            $q->where('status', $request->input('status'));
+        }
+        if ($request->filled('channel')) {
+            $q->where('channel', $request->input('channel'));
+        }
 
         return $this->ok(NotificationResource::collection($q->paginate(50))->response()->getData(true));
     }

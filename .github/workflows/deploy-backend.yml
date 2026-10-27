@@ -23,7 +23,7 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, curl, fileinfo, mbstring, openssl, pdo_mysql, tokenizer, sodium, zip
           coverage: none
           tools: composer
@@ -121,7 +121,7 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: '8.5'
           extensions: bcmath, ctype, curl, fileinfo, mbstring, openssl, pdo_mysql, tokenizer, sodium, zip
           coverage: none
           tools: composer

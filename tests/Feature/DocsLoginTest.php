@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\User;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 /**
@@ -93,7 +94,7 @@ class DocsLoginTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'password_hash' => \Illuminate\Support\Facades\Hash::make(self::PASSWORD),
+            'password_hash' => Hash::make(self::PASSWORD),
         ]);
 
         $this->post('/docs/login', [
@@ -108,7 +109,7 @@ class DocsLoginTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'password_hash' => \Illuminate\Support\Facades\Hash::make(self::PASSWORD),
+            'password_hash' => Hash::make(self::PASSWORD),
         ]);
 
         $this->post('/docs/login', [
@@ -125,7 +126,7 @@ class DocsLoginTest extends TestCase
     {
         $admin = User::factory()->create([
             'role' => 'admin',
-            'password_hash' => \Illuminate\Support\Facades\Hash::make(self::PASSWORD),
+            'password_hash' => Hash::make(self::PASSWORD),
         ]);
 
         $this->post('/docs/login', [
