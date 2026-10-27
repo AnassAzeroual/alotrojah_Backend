@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Requests\UpsertTermPlanRequest;
 use App\Http\Resources\TermPlanResource;
-use App\Models\Student;
 use App\Models\QuranVerse;
+use App\Models\Student;
 use App\Models\Term;
 use App\Models\TermPlan;
 use Illuminate\Http\JsonResponse;
@@ -32,8 +32,12 @@ class TermPlanController extends Controller
         } elseif ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
-        if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
-        if ($request->filled('term_id')) $q->where('term_id', (int) $request->input('term_id'));
+        if ($request->filled('student_id')) {
+            $q->where('student_id', (int) $request->input('student_id'));
+        }
+        if ($request->filled('term_id')) {
+            $q->where('term_id', (int) $request->input('term_id'));
+        }
 
         return $this->ok(TermPlanResource::collection($q->paginate(50))->response()->getData(true));
     }
@@ -60,7 +64,9 @@ class TermPlanController extends Controller
             $data['plan_surah_from'] = $data['plan_ayah_from'] = $data['plan_surah_to'] = $data['plan_ayah_to'] = null;
         } else {
             $err = $this->checkSurahRange($data);
-            if ($err) return $this->fail($err, 422);
+            if ($err) {
+                return $this->fail($err, 422);
+            }
             $data['start_hizb'] = $data['end_hizb'] = null;
         }
 
@@ -96,13 +102,19 @@ class TermPlanController extends Controller
     private function checkSurahRange(array $d): ?string
     {
         foreach ([['plan_surah_from', 'plan_ayah_from'], ['plan_surah_to', 'plan_ayah_to']] as [$ss, $aa]) {
-            if (($d[$ss] ?? null) === null || ($d[$aa] ?? null) === null) return 'Surah range needs surah + ayah on both ends.';
+            if (($d[$ss] ?? null) === null || ($d[$aa] ?? null) === null) {
+                return 'Surah range needs surah + ayah on both ends.';
+            }
             $max = (int) QuranVerse::where('sura_no', $d[$ss])->max('ayah_no');
-            if ($d[$aa] < 1 || $d[$aa] > $max) return "Ayah out of range for surah {$d[$ss]} (1-$max).";
+            if ($d[$aa] < 1 || $d[$aa] > $max) {
+                return "Ayah out of range for surah {$d[$ss]} (1-$max).";
+            }
         }
         $a = [$d['plan_surah_from'], $d['plan_ayah_from']];
         $b = [$d['plan_surah_to'], $d['plan_ayah_to']];
-        if ($a > $b) return 'Range end must be after range start.';
+        if ($a > $b) {
+            return 'Range end must be after range start.';
+        }
 
         return null;
     }

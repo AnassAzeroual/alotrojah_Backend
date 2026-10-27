@@ -8,8 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MurajaaReview extends Model
 {
     protected $table = 'murajaa_reviews';
+
     const UPDATED_AT = null;
-    protected $fillable = ['student_id','season_id','term_id','week_from','week_to','weeks_covered','session_id','hizb_from','hizb_to','surah_from','ayah_from','surah_to','ayah_to','score','entered_by','reviewed_at'];
+
+    protected $fillable = ['student_id', 'season_id', 'term_id', 'week_from', 'week_to', 'weeks_covered', 'session_id', 'hizb_from', 'hizb_to', 'surah_from', 'ayah_from', 'surah_to', 'ayah_to', 'score', 'entered_by', 'reviewed_at'];
+
     protected $casts = [
         'hizb_from' => 'float',
         'hizb_to' => 'float',
@@ -18,9 +21,18 @@ class MurajaaReview extends Model
         'created_at' => 'datetime',
     ];
 
-    public function enteredBy(): BelongsTo { return $this->belongsTo(User::class, 'entered_by'); }
+    public function enteredBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'entered_by');
+    }
 
-    public function session(): BelongsTo { return $this->belongsTo(Session::class, 'session_id'); }
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(Session::class, 'session_id');
+    }
 
-    public function student(): BelongsTo { return $this->belongsTo(Student::class, 'student_id'); }
+    public function student(): BelongsTo
+    {
+        return $this->belongsTo(Student::class, 'student_id');
+    }
 }

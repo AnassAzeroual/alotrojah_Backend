@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\NotificationChannel;
+use App\Models\NotificationLog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class StoreNotificationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', \App\Models\NotificationLog::class);
+        return $this->user()->can('create', NotificationLog::class);
     }
 
     public function rules(): array

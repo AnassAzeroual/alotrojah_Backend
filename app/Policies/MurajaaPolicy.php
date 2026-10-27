@@ -19,14 +19,18 @@ class MurajaaPolicy
 
     public function view(User $user, MurajaaReview|RevisionLog $review): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return (int) $review->student?->center_id === (int) $user->center_id;
     }
 
     public function manageReviews(User $user): bool
     {
-        if (in_array($user->role, ['admin', 'supervisor'], true)) return true;
+        if (in_array($user->role, ['admin', 'supervisor'], true)) {
+            return true;
+        }
 
         return $user->role === 'teacher' && in_array($user->teacher_type, ['murajaa', 'both'], true);
     }

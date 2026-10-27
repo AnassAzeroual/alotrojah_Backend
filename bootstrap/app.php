@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\MapCustomAuthHeader;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,8 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         // Runs before route auth: restores Authorization from X-Auth-Token (host strips it).
-        $middleware->prependToGroup('api', \App\Http\Middleware\MapCustomAuthHeader::class);
-        $middleware->appendToGroup('api', \App\Http\Middleware\ForceJsonResponse::class);
+        $middleware->prependToGroup('api', MapCustomAuthHeader::class);
+        $middleware->appendToGroup('api', ForceJsonResponse::class);
         $middleware->throttleApi(); // default 60/min per user (IP for guests), limiter in AppServiceProvider
         $middleware->redirectGuestsTo(fn () => null); // API-only: 401 JSON, never redirect
     })

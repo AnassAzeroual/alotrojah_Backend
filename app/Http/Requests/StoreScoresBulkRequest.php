@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\SessionScore;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreScoresBulkRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\SessionScore::class);
+        return $this->user()->can('manage', SessionScore::class);
     }
 
     public function rules(): array

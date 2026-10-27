@@ -17,7 +17,9 @@ class TermPlanPolicy
 
     public function view(User $user, TermPlan $plan): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return (int) $plan->student?->center_id === (int) $user->center_id;
     }

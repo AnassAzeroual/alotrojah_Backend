@@ -53,6 +53,7 @@ class CalendarController extends Controller
 
         return $this->ok(SessionCalendarResource::collection($q->paginate(50))->response()->getData(true));
     }
+
     /**
      * List a season's terms with week counts.
      */
@@ -80,7 +81,9 @@ class CalendarController extends Controller
 
         return $this->ok(new TermResource($term->load(['weeks.sessions' => function ($q) use ($ids) {
             // Students read only their own group's sessions.
-            if ($ids !== null) $q->whereIn('group_id', $ids);
+            if ($ids !== null) {
+                $q->whereIn('group_id', $ids);
+            }
         }])));
     }
 

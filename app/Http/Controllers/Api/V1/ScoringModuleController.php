@@ -83,7 +83,9 @@ class ScoringModuleController extends Controller
     {
         return DB::transaction(function () use ($request, $scoring) {
             $centerId = $request->filled('center_id') ? (int) $request->input('center_id') : null;
-            if ($centerId !== null) ScoringModule::ensureOverrideSet($centerId);
+            if ($centerId !== null) {
+                ScoringModule::ensureOverrideSet($centerId);
+            }
             foreach ($request->input('modules') as $row) {
                 ScoringModule::where('code', $row['code'])->where('center_id', $centerId)->firstOrFail()
                     ->update(array_intersect_key($row, array_flip(['max_points', 'is_active', 'is_in_weekly_total', 'sort_order'])));
@@ -130,7 +132,9 @@ class ScoringModuleController extends Controller
         $centerId = (int) $request->validated()['center_id'];
 
         $ids = ScoringModule::where('center_id', $centerId)->pluck('id');
-        if ($ids->isEmpty()) return $this->ok(['deleted' => 0]);
+        if ($ids->isEmpty()) {
+            return $this->ok(['deleted' => 0]);
+        }
         if (SessionScore::whereIn('module_id', $ids)->exists()) {
             return $this->fail('Module has recorded scores and cannot be deleted.', 422);
         }

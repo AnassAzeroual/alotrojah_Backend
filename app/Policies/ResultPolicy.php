@@ -19,7 +19,9 @@ class ResultPolicy
 
     public function view(User $user, TermResult|SeasonResult $result): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return (int) $result->student?->center_id === (int) $user->center_id;
     }

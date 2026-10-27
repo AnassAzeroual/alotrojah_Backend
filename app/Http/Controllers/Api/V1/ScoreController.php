@@ -6,9 +6,9 @@ use App\Http\Requests\StoreScoresBulkRequest;
 use App\Http\Resources\AttendanceResource;
 use App\Http\Resources\SessionScoreResource;
 use App\Http\Resources\WeeklyGoalResource;
+use App\Models\Attendance;
 use App\Models\MemorizationLog;
 use App\Models\RevisionLog;
-use App\Models\Attendance;
 use App\Models\SessionScore;
 use App\Models\Student;
 use App\Models\Week;
@@ -56,7 +56,9 @@ class ScoreController extends Controller
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $request->input('center_id')));
         }
         foreach (['student_id', 'session_id', 'week_id', 'module_id'] as $f) {
-            if ($request->filled($f)) $q->where($f, (int) $request->input($f));
+            if ($request->filled($f)) {
+                $q->where($f, (int) $request->input($f));
+            }
         }
 
         return $this->ok(SessionScoreResource::collection($q->paginate(100))->response()->getData(true));

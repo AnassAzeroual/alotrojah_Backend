@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\AcademicSeason;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateSeasonRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\AcademicSeason::class);
+        return $this->user()->can('manage', AcademicSeason::class);
     }
 
     public function rules(): array

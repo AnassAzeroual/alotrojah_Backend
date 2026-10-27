@@ -30,7 +30,9 @@ class DashboardController extends Controller
         $me = $request->user();
         abort_unless($me->role === 'student', 403);
         $pupil = Student::where('user_id', $me->id)->first();
-        if (! $pupil) return $this->ok(null);
+        if (! $pupil) {
+            return $this->ok(null);
+        }
         $seasonId = AcademicSeason::where('is_current', true)->value('id')
             ?? AcademicSeason::max('id');
         if (! $seasonId) {

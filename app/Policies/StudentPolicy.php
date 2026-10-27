@@ -18,7 +18,9 @@ class StudentPolicy
 
     public function view(User $user, Student $student): bool
     {
-        if ($user->role === 'student') return (int) $student->user_id === (int) $user->id;
+        if ($user->role === 'student') {
+            return (int) $student->user_id === (int) $user->id;
+        }
 
         return $this->sameCenter($user, $student->center_id);
     }

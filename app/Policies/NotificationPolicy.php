@@ -17,7 +17,9 @@ class NotificationPolicy
 
     public function view(User $user, NotificationLog $notification): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return (int) $notification->sentBy?->center_id === (int) $user->center_id;
     }

@@ -14,7 +14,9 @@ trait StudentGroupScope
     /** @return int[]|null */
     private function studentGroupIds($user): ?array
     {
-        if ($user->role !== 'student') return null;
+        if ($user->role !== 'student') {
+            return null;
+        }
 
         return Student::where('user_id', $user->id)->whereNotNull('group_id')
             ->pluck('group_id')->map(fn ($v) => (int) $v)->all();

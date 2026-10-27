@@ -38,7 +38,7 @@ class ErrorCodesCoverageTest extends TestCase
             preg_match_all("/'code'\s*=>\s*'([A-Z_]+)'/", $src, $m);
             foreach ($m[1] as $code) {
                 if (! in_array($code, $known, true) && ! in_array($code, $this->frontendList(), true)) {
-                    $bad[] = basename($file) . ": $code";
+                    $bad[] = basename($file).": $code";
                 }
             }
         }
@@ -56,7 +56,9 @@ class ErrorCodesCoverageTest extends TestCase
     private function resolve(array $map, string $message): ?string
     {
         foreach ($map as $text => $code) {
-            if ($message === $text || str_starts_with($message, $text)) return $code;
+            if ($message === $text || str_starts_with($message, $text)) {
+                return $code;
+            }
         }
 
         return null;
@@ -74,11 +76,15 @@ class ErrorCodesCoverageTest extends TestCase
             foreach ($calls[1] as $call) {
                 // Explicit machine codes and field-token bags are covered by
                 // the second test / the frontend field-token map.
-                if (preg_match("/'code'\s*=>\s*'([A-Z_]+)'/", $call)) continue;
-                if (str_contains($call, 'email_taken') || str_contains($call, 'in_waiting_room')) continue;
-                if (preg_match("/->fail\(\s*'((?:[^'\\\\]|\\\\.)*)'/", '->fail(' . $call, $m)) {
+                if (preg_match("/'code'\s*=>\s*'([A-Z_]+)'/", $call)) {
+                    continue;
+                }
+                if (str_contains($call, 'email_taken') || str_contains($call, 'in_waiting_room')) {
+                    continue;
+                }
+                if (preg_match("/->fail\(\s*'((?:[^'\\\\]|\\\\.)*)'/", '->fail('.$call, $m)) {
                     $out[basename($file)][] = stripcslashes($m[1]);
-                } elseif (preg_match('/->fail\(\s*"((?:[^"\\\\]|\\\\.)*)"/', '->fail(' . $call, $m)) {
+                } elseif (preg_match('/->fail\(\s*"((?:[^"\\\\]|\\\\.)*)"/', '->fail('.$call, $m)) {
                     $out[basename($file)][] = stripcslashes($m[1]);
                 }
             }

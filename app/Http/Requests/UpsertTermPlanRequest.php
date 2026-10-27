@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\MemorizationMode;
+use App\Models\TermPlan;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class UpsertTermPlanRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('manage', \App\Models\TermPlan::class);
+        return $this->user()->can('manage', TermPlan::class);
     }
 
     public function rules(): array

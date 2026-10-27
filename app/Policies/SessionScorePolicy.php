@@ -17,7 +17,9 @@ class SessionScorePolicy
 
     public function view(User $user, SessionScore $score): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return (int) $score->student?->center_id === (int) $user->center_id;
     }

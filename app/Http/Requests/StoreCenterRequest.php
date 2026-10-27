@@ -2,13 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Center;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreCenterRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', \App\Models\Center::class);
+        return $this->user()->can('create', Center::class);
     }
 
     public function rules(): array

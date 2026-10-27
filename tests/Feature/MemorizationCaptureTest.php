@@ -32,6 +32,7 @@ class MemorizationCaptureTest extends TestCase
     private function sessionForGroupOne(): Session
     {
         $this->assertNotNull(Session::where('group_id', 1)->first());
+
         return Session::where('group_id', 1)->firstOrFail();
     }
 

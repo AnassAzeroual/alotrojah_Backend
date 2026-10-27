@@ -17,7 +17,9 @@ class WeeklyGoalPolicy
 
     public function view(User $user, WeeklyGoal $goal): bool
     {
-        if ($this->isAdmin($user)) return true;
+        if ($this->isAdmin($user)) {
+            return true;
+        }
 
         return (int) $goal->student?->center_id === (int) $user->center_id;
     }

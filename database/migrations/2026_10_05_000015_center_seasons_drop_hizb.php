@@ -38,7 +38,7 @@ return new class extends Migration
             DB::table('quran_hizb_reference')->insertOrIgnore([
                 'hizb_no' => $n,
                 'juz_no' => (int) ceil($n / 2),
-                'label_ar' => 'الحزب ' . $n,
+                'label_ar' => 'الحزب '.$n,
             ]);
         }
     }

@@ -28,8 +28,12 @@ class WeeklyGoalController extends Controller
         if ($me->role !== 'admin') {
             $q->whereHas('student', fn ($s) => $s->where('students.center_id', (int) $me->center_id));
         }
-        if ($request->filled('student_id')) $q->where('student_id', (int) $request->input('student_id'));
-        if ($request->filled('week_id')) $q->where('week_id', (int) $request->input('week_id'));
+        if ($request->filled('student_id')) {
+            $q->where('student_id', (int) $request->input('student_id'));
+        }
+        if ($request->filled('week_id')) {
+            $q->where('week_id', (int) $request->input('week_id'));
+        }
 
         // §2.20: honor per_page (clamped) like the students index.
         $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
@@ -57,8 +61,8 @@ class WeeklyGoalController extends Controller
         $goal = WeeklyGoal::updateOrCreate(
             ['student_id' => $student->id, 'week_id' => $week->id],
             ['season_id' => $week->season_id, 'target_text' => $data['target_text'] ?? null,
-             'is_completed' => $data['is_completed'] ?? null,
-             'checked_by' => $me->id, 'checked_at' => now()]
+                'is_completed' => $data['is_completed'] ?? null,
+                'checked_by' => $me->id, 'checked_at' => now()]
         );
 
         return $this->created(new WeeklyGoalResource($goal));
