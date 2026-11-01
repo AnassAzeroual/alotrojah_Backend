@@ -1,4 +1,4 @@
-name: Deploy Backend
+name: Deploy Backend v2
 
 on:
   push:
@@ -8,110 +8,20 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    services:
-      mariadb:
-        image: mariadb:10.6
-        env:
-          MYSQL_ROOT_PASSWORD: root
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
-          --health-interval=10s --health-timeout=5s --health-retries=5
     steps:
       - uses: actions/checkout@v5
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
-          extensions: bcmath, ctype, curl, fileinfo, mbstring, openssl, pdo_mysql, tokenizer, sodium, zip
+          php-version: "8.5"
+          extensions: ctype, curl, fileinfo, json, mbstring, openssl, pdo, pdo_mysql, tokenizer, zip
           coverage: none
-          tools: composer
 
-      - run: composer install --prefer-dist --no-interaction
-
-      - name: Install MySQL client
-        run: sudo apt-get update && sudo apt-get install -y mysql-client
-
-      - name: Import canonical schema + seed
+      - name: Lint all PHP files
         run: |
-          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE IF NOT EXISTS quran_memorization CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
-          mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_memorization_db.sql
-          mysql -h 127.0.0.1 -u root -proot quran_memorization < docs/database/quran_seed_data.sql
-
-      # The seed predates migration 000019 (NOT NULL on 9 FK columns); on the real
-      # DBs its NULL rows were deleted explicitly before applying (see 000019's
-      # comment). Mirror that purge so the strict ALTERs pass on a fresh dump+seed.
-      - name: Drop pre-000019 NULL rows from seed
-        run: |
-          mysql -h 127.0.0.1 -u root -proot quran_memorization -e "
-            DELETE FROM announcements WHERE group_id IS NULL;
-            DELETE FROM murajaa_reviews WHERE session_id IS NULL;
-            DELETE FROM delegation_tokens WHERE used_by_teacher_id IS NULL;"
-
-      # The dumps predate the newest migrations — bring the schema up to date
-      # (exam weights, reference data, quran_verses) the same way prod does.
-      # --path is required: with no ledger table a bare migrate would replay
-      # all 13 over existing tables. When adding migration 000014+, append its
-      # --path here (proven locally: full suite 167/167 on dump+seed+purge+this step).
-      - name: Run pending migrations
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: quran_memorization
-          DB_USERNAME: root
-          DB_PASSWORD: root
-          APP_KEY: base64:Re+ogP++t/UajqAFUxiFgvg9IkJo2AiZMl5+rV3inu4=
-        run: >
-          php artisan migrate --force
-          --path=database/migrations/2026_10_04_000011_exam_question_weights.php
-          --path=database/migrations/2026_10_04_000012_seed_reference_data.php
-          --path=database/migrations/2026_10_04_000013_quran_verses_replace_surahs.php
-          --path=database/migrations/2026_10_05_000014_season_dashboard_null_avgs.php
-          --path=database/migrations/2026_10_05_000015_center_seasons_drop_hizb.php
-          --path=database/migrations/2026_10_05_000016_center_module_level_overrides.php
-          --path=database/migrations/2026_10_07_000017_teacher_type_only_for_teachers.php
-          --path=database/migrations/2026_10_07_000018_group_weekdays_table.php
-          --path=database/migrations/2026_10_07_000019_not_null_foreign_keys.php
-          --path=database/migrations/2026_10_07_000020_session_times_and_group.php
-          --path=database/migrations/2026_10_14_000021_level_code_dynamic.php
-          --path=database/migrations/2026_10_14_000022_level_code_placeholder_default.php
-          --path=database/migrations/2026_10_15_000023_drop_group_level.php
-          --path=database/migrations/2026_10_16_000024_exam_type_weekly.php
-          --path=database/migrations/2026_10_16_000025_exam_question_thumn_ref.php
-          --path=database/migrations/2026_10_17_000026_appearance_settings.php
-          --path=database/migrations/2026_10_17_000027_appearance_options.php
-          --path=database/migrations/2026_10_17_000028_appearance_per_center.php
-          --path=database/migrations/2026_10_17_000029_appearance_background_engine.php
-          --path=database/migrations/2026_10_17_000030_appearance_orb_controls.php
-          --path=database/migrations/2026_10_17_000031_appearance_scrim_controls.php
-          --path=database/migrations/2026_10_20_000032_create_reporting_summary_tables.php
-          --path=database/migrations/2026_10_24_000033_levels_per_season.php
-          --path=database/migrations/2026_10_24_000034_repair_level_placements.php
-          --path=database/migrations/2026_10_25_000035_remove_static_level_seeds.php
-          --path=database/migrations/2026_10_25_000036_backfill_term_exam_results.php
-          --path=database/migrations/2026_10_25_000037_backfill_term_hifz_results.php
-          --path=database/migrations/2026_10_25_000038_backfill_term_murajaa_results.php
-
-      - name: Run test suite
-        env:
-          APP_ENV: testing
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: quran_memorization
-          DB_USERNAME: root
-          DB_PASSWORD: root
-          APP_KEY: base64:Re+ogP++t/UajqAFUxiFgvg9IkJo2AiZMl5+rV3inu4=
-          JWT_SECRET: cimidonlyfortestsdonotuseinprod0000000000000000000000000000
-          JWT_TTL: 60
-          JWT_REFRESH_TTL: 20160
-          CACHE_STORE: file
-          QUEUE_CONNECTION: sync
-          SESSION_DRIVER: file
-        run: php artisan test
+          set -euo pipefail
+          find config public src deploy_script -name '*.php' -print0 \
+            | xargs -0 -r -n1 php -l
 
   deploy:
     needs: test
@@ -121,16 +31,11 @@ jobs:
 
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
-          extensions: bcmath, ctype, curl, fileinfo, mbstring, openssl, pdo_mysql, tokenizer, sodium, zip
+          php-version: "8.5"
+          extensions: ctype, curl, fileinfo, json, mbstring, openssl, pdo, pdo_mysql, tokenizer, zip
           coverage: none
-          tools: composer
 
-      # 1. Production build (no dev deps, optimized autoloader).
-      - name: Production build (no dev deps)
-        run: composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction
-
-      # 2. Render the production .env from secrets (embedded into the zip next).
+      # Render the production .env from the same GitHub secrets as Laravel.
       - name: Render production .env
         run: |
           cat > .env <<'EOF'
@@ -139,53 +44,45 @@ jobs:
           APP_DEBUG=false
           APP_URL=https://api.alotrojah.ma
           APP_TIMEZONE=Africa/Casablanca
-          APP_KEY=${{ secrets.APP_KEY }}
           DB_CONNECTION=mysql
           DB_HOST=localhost
           DB_PORT=3306
           DB_DATABASE=${{ secrets.PROD_DB_DATABASE }}
           DB_USERNAME=${{ secrets.PROD_DB_USERNAME }}
           DB_PASSWORD=${{ secrets.PROD_DB_PASSWORD }}
-          CACHE_STORE=file
-          QUEUE_CONNECTION=sync
-          SESSION_DRIVER=file
           JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_ALGO=HS256
           JWT_TTL=60
           JWT_REFRESH_TTL=20160
-          JWT_ALGO=HS256
           FRONTEND_URL=https://alotrojah.ma
           FRONTEND_URLS=https://alotrojah.ma,https://www.alotrojah.ma
           EOF
 
-      # 3. Build ONE backend.zip using the existing production packer.
-      #    Build-Zip.php excludes .env-as-source, tests, docs, node_modules,
-      #    deploy_script, storage caches, .git, etc., and injects the rendered
-      #    .env into the archive as ".env".
       - name: Build backend.zip
         run: |
           php deploy_script/Build-Zip.php .env
           test -f deploy_script/backend.zip
           ls -lh deploy_script/backend.zip
 
-      # 4. Stamp the deploy token into a temp copy of the extractor.
       - name: Stamp extractor with deploy token
         env:
           DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
           set -euo pipefail
           if [ -z "${DEPLOY_TOKEN:-}" ]; then
-            echo "DEPLOY_TOKEN secret is required." >&2; exit 1
+            echo "DEPLOY_TOKEN secret is required." >&2
+            exit 1
           fi
           sed "s/__DEPLOY_TOKEN__/${DEPLOY_TOKEN}/" deploy_script/deploy.php > deploy_script/deploy.stamped.php
           if grep -q '__DEPLOY_TOKEN__' deploy_script/deploy.stamped.php; then
-            echo "token stamp failed" >&2; exit 1
+            echo "token stamp failed" >&2
+            exit 1
           fi
 
       - name: Install lftp (FTPS client)
         run: sudo apt-get update && sudo apt-get install -y lftp
 
-      # 5. Upload only TWO files over FTPS: the zip and the extractor.
-      #    This is the single transfer that beats the ~24 min host timeout.
+      # Upload only the archive and the extractor, same mechanism as Laravel.
       - name: Upload zip + extractor via FTPS
         env:
           FTP_HOST: ${{ secrets.FTP_HOST }}
@@ -209,15 +106,12 @@ jobs:
             bye"
           rm -f ~/.netrc deploy_script/deploy.stamped.php
 
-      # 6. Trigger the server-side extractor over HTTPS (PHP unzips in seconds).
-      #    &action=migrate boots the fresh release and runs pending migrations;
-      #    the JSON (incl. migrate output) is logged AND kept as a workflow artifact.
-      - name: Trigger server-side extract + migrate
+      - name: Trigger server-side extract
         env:
           DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
           set -euo pipefail
-          RESP=$(curl -s --max-time 590 "https://api.alotrojah.ma/deploy.php?token=${DEPLOY_TOKEN}&action=migrate")
+          RESP=$(curl -s --max-time 590 "https://api.alotrojah.ma/deploy.php?token=${DEPLOY_TOKEN}&action=seed")
           echo "$RESP" | tee deploy.log
           echo "$RESP" | grep -q '"ok":true'
 
@@ -228,12 +122,11 @@ jobs:
           name: deploy-log
           path: deploy.log
 
-      # 7. Verify production is healthy.
       - name: Verify production
         run: |
           set -e
-          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/up); test "$code" = "200"
-          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/api/v1/health); test "$code" = "200"
-          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/docs/api.json); test "$code" = "403"
-          hdr=$(curl -s -D - -o /dev/null -H 'Origin: https://alotrojah.ma' https://api.alotrojah.ma/api/v1/health); echo "$hdr" | grep -qi 'access-control-allow-origin: https://alotrojah.ma'
+          code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/api/v1/health)
+          test "$code" = "200"
+          hdr=$(curl -s -D - -o /dev/null -H 'Origin: https://alotrojah.ma' https://api.alotrojah.ma/api/v1/health)
+          echo "$hdr" | grep -qi 'access-control-allow-origin: https://alotrojah.ma'
           echo 'PROD VERIFIED'
