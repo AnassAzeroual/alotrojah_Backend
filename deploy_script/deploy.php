@@ -1,33 +1,24 @@
 <?php
 
 declare(strict_types=1);
-use Illuminate\Contracts\Console\Kernel;
-use Illuminate\Support\Facades\Artisan;
 
-// Server-side deploy extractor. No on-server backup.
-// Upload to api/public/deploy.php, then call once:
-//   https://api.alotrojah.ma/deploy.php?token=YOUR_DEPLOY_TOKEN
-//
-// Flow:
-//   1. Auth via token.
-//   2. Delete every old file/folder in api/, EXCEPT:
-//      - backend.zip (the incoming release)
-//      - storage/app/** (user uploads referenced by the DB — preserved)
-//      Symlinks are unlinked, never followed (so public/storage can never
-//      wipe storage/app/public through the link).
-//   3. Extract the new backend.zip into api/. Files present in the zip
-//      overwrite; files only on disk survive. storage/app therefore merges:
-//      old uploads stay, new skeleton files (.gitignore) are added.
-//   4. Optional `&action=migrate`: boot the fresh app and run
-//      `artisan migrate --force` plus `artisan db:seed --force` (prod .env ships
-//      inside the zip, so the DB is localhost — no remote MySQL needed). The
-//      seeder only creates the first admin when missing, so re-runs are safe.
-//      Output is persisted to storage/logs/migrate-<stamp>.log (that dir
-//      survives purges) AND returned in the JSON response for the workflow log.
-//   5. Recreate runtime dirs (framework cache/sessions/views, logs,
-//      bootstrap/cache), reset opcache, remove backend.zip, self-delete.
+/**
+ * Server-side deploy extractor for the native PHP v2 backend.
+ *
+ * Upload to api/public/deploy.php, then call once:
+ *   https://api.alotrojah.ma/deploy.php?token=YOUR_DEPLOY_TOKEN&action=seed
+ *
+ * 1. Authenticate with DEPLOY_TOKEN.
+ * 2. Purge the old release, preserving storage/uploads (user files) and
+ *    storage/logs (production logs).
+ * 3. Extract the incoming backend.zip over the release.
+ * 4. Optional `&action=seed`: create the first admin if missing (the v2
+ *    equivalent of the old Laravel `migrate` + `db:seed` action).
+ * 5. Recreate runtime directories, reset opcache, remove the zip and self-delete.
+ */
 
 define('DEPLOY_TOKEN', '__DEPLOY_TOKEN__');
+
 header('Content-Type: application/json');
 
 $token = (string) ($_GET['token'] ?? '');
@@ -53,10 +44,7 @@ if (! file_exists($newZip)) {
     exit;
 }
 
-/**
- * Delete a path without following symlinks: links are unlinked,
- * real dirs are emptied recursively then removed.
- */
+/** Delete a path without following symlinks. */
 function wipe_path(string $path): void
 {
     if (is_link($path)) {
@@ -81,38 +69,31 @@ function wipe_path(string $path): void
     @rmdir($path);
 }
 
-// -------------------------------------------------------------------------- //
-// 1. Purge old release. Preserve backend.zip + storage/app (user uploads).
-//    storage/framework/*, storage/logs/* and everything else is rebuilt.
-// -------------------------------------------------------------------------- //
+// 1. Preserve only uploads + logs; everything else is replaced.
 foreach (@scandir($dest) ?: [] as $entry) {
     if ($entry === '.' || $entry === '..') {
         continue;
     }
     if ($entry === basename($newZip)) {
-        continue; // incoming release
+        continue;
     }
     $full = $dest.'/'.$entry;
+
     if ($entry === 'storage' && ! is_link($full) && is_dir($full)) {
         foreach (@scandir($full) ?: [] as $sub) {
-            if ($sub === '.' || $sub === '..') {
+            if ($sub === '.' || $sub === '..' || $sub === 'uploads' || $sub === 'logs') {
                 continue;
-            }
-            if ($sub === 'app' || $sub === 'logs') {
-                continue; // user uploads + prod logs — keep, merge later
             }
             wipe_path($full.'/'.$sub);
         }
 
         continue;
     }
+
     wipe_path($full);
 }
 
-// -------------------------------------------------------------------------- //
-// 2. Extract the new release. Overwrites tracked files; disk-only files
-//    (uploads in storage/app) survive. Skeleton files merge in harmlessly.
-// -------------------------------------------------------------------------- //
+// 2. Extract the release.
 $zip = new ZipArchive;
 if ($zip->open($newZip) !== true) {
     http_response_code(500);
@@ -128,77 +109,93 @@ if (! $zip->extractTo($dest)) {
 }
 $zip->close();
 
-// -------------------------------------------------------------------------- //
-// 3. Optional migrate (only with &action=migrate). Boots the FRESH code so
-//    pending migrations run against the release that needs them.
-// -------------------------------------------------------------------------- //
-$migrateOk = null;
-$migrateLog = null;
-if (($_GET['action'] ?? '') === 'migrate') {
+// 3. Optional first-admin seed. Same one-shot extractor flow as the old
+//    Laravel `action=migrate` (which also ran db:seed), but native v2 has no
+//    Artisan: boot its autoloader, hash with Security::hashPassword() and
+//    insert through Database.
+$action = (string) ($_GET['action'] ?? 'deploy');
+$shouldSeed = in_array($action, ['seed', 'migrate'], true) || ($_POST['seed'] ?? '') === '1';
+$seedLog = '(not requested)';
+$seedOk = null;
+
+if ($shouldSeed) {
     try {
-        require $dest.'/vendor/autoload.php';
-        $app = require $dest.'/bootstrap/app.php';
-        $app->make(Kernel::class)->bootstrap();
-        $code = Artisan::call('migrate', ['--force' => true]);
-        $migrateLog = Artisan::output();
-        $migrateOk = $code === 0;
-        if ($migrateOk) {
-            // First-admin bootstrap (no-op when admin@example.org exists).
-            $seedCode = Artisan::call('db:seed', ['--force' => true]);
-            $migrateLog .= "\n".Artisan::output();
-            $migrateOk = $seedCode === 0;
+        spl_autoload_register(static function (string $class) use ($dest): void {
+            $prefix = 'App\\';
+            if (! str_starts_with($class, $prefix)) {
+                return;
+            }
+            $file = $dest.'/src/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+            if (is_file($file)) {
+                require_once $file;
+            }
+        });
+
+        \App\Core\Config::load($dest.'/.env');
+
+        $adminEmail = strtolower(trim((string) ($_POST['admin_email'] ?? $_GET['admin_email'] ?? 'admin@example.org')));
+        $adminPassword = (string) ($_POST['admin_password'] ?? 'password123');
+        $adminName = trim((string) ($_POST['admin_name'] ?? 'Admin'));
+
+        if (! filter_var($adminEmail, FILTER_VALIDATE_EMAIL)) {
+            throw new RuntimeException('invalid admin email');
+        }
+        if (strlen($adminPassword) < 6) {
+            throw new RuntimeException('admin password too short');
+        }
+
+        $existing = \App\Core\Database::fetchOne(
+            'SELECT id, role FROM `users` WHERE email = :email LIMIT 1',
+            ['email' => $adminEmail],
+        );
+        if ($existing !== null) {
+            $seedLog = "admin already exists (id={$existing['id']}); no change";
+            $seedOk = true;
+        } else {
+            $id = \App\Core\Database::insert('users', [
+                'full_name' => $adminName,
+                'email' => $adminEmail,
+                'password_hash' => \App\Core\Security::hashPassword($adminPassword),
+                'role' => 'admin',
+                'is_active' => 1,
+            ]);
+            $seedLog = "created admin id={$id}";
+            $seedOk = true;
         }
     } catch (Throwable $e) {
-        $migrateOk = false;
-        $migrateLog = get_class($e).': '.$e->getMessage();
+        $seedOk = false;
+        $seedLog = get_class($e).': '.$e->getMessage();
     }
-    @file_put_contents(
-        $dest.'/storage/logs/migrate-'.date('Ymd-His').'.log',
-        $migrateLog ?? '(no output)'
-    );
 }
 
-// -------------------------------------------------------------------------- //
-// 4. Recreate runtime dirs, reset opcache, clean up.
-// -------------------------------------------------------------------------- //
-@mkdir($dest.'/storage/app/public', 0755, true);
-@mkdir($dest.'/storage/framework/cache/data', 0755, true);
-@mkdir($dest.'/storage/framework/sessions', 0755, true);
-@mkdir($dest.'/storage/framework/views', 0755, true);
-@mkdir($dest.'/storage/logs', 0755, true);
-@mkdir($dest.'/bootstrap/cache', 0755, true);
+// 4. Runtime directories + opcache.
+foreach ([
+    $dest.'/storage/uploads',
+    $dest.'/storage/logs',
+    $dest.'/storage/cache',
+] as $dir) {
+    @mkdir($dir, 0755, true);
+}
 if (function_exists('opcache_reset')) {
     @opcache_reset();
 }
 
-// PERF-B02: freeze config + routes for production (deploy is the only path
-// that changes code/env, so the cache is always rebuilt from fresh files).
-try {
-    Artisan::call('config:cache');
-    Artisan::call('route:cache');
-    Artisan::call('view:cache');
-    $cacheLog = trim(Artisan::output());
-    $cacheOk = true;
-} catch (Throwable $e) {
-    $cacheLog = 'cache-failed: '.$e->getMessage();
-    $cacheOk = false;
-}
-
 @unlink($newZip);
-// Self-delete so the token-bearing extractor does not linger publicly.
+// Do not leave the token-bearing extractor on the public host.
 @unlink(__FILE__);
 $extractorGone = ! file_exists(__FILE__);
 
-$ok = ($migrateOk === null || $migrateOk) && $extractorGone;
+$ok = $extractorGone && ($seedOk === null || $seedOk);
 if (! $ok) {
     http_response_code(500);
 }
+
 echo json_encode([
     'ok' => $ok,
     'files' => $count,
-    'migrate' => $migrateLog,
-    'cache' => $cacheLog ?? '(not run)',
-    'cache_ok' => $cacheOk ?? false,
+    'seed' => $seedLog,
+    'seed_ok' => $seedOk,
     'extractor_deleted' => $extractorGone,
-    'storage_app' => 'preserved',
+    'storage_uploads' => 'preserved',
+    'storage_logs' => 'preserved',
 ]);

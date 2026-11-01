@@ -1,23 +1,10 @@
-/.phpunit.cache
-/node_modules
-/public/build
-/public/hot
-/public/storage
-/storage/*.key
-/storage/pail
-/vendor
+# Local environment and secrets
 .env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-Homestead.json
-Homestead.yaml
-npm-debug.log
-yarn-error.log
-/auth.json
-/.fleet
-/.idea
-/.nova
-/.vscode
-/.zed
+
+# Archived Laravel backend (contains the old .env; never commit)
+OLD_Backend.zip
+
+# Deployment artifacts
+deploy_script/backend.zip
+deploy_script/deploy.stamped.php
+deploy_script/.env.production
