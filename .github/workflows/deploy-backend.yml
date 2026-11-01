@@ -20,8 +20,10 @@ jobs:
       - name: Lint all PHP files
         run: |
           set -euo pipefail
-          find config public src deploy_script -name '*.php' -print0 \
-            | xargs -0 -r -n1 php -l
+          for dir in config public src deploy_script; do
+            [ -d "$dir" ] || continue
+            find "$dir" -name '*.php' -print0
+          done | xargs -0 -r -n1 php -l
 
   deploy:
     needs: test
