@@ -158,17 +158,17 @@ abstract class BaseController
                 $id = (int) $inputCenter;
                 $exists = Database::fetchValue("SELECT 1 FROM `centers` WHERE id = :id", ['id' => $id]);
                 if (!$exists) {
-                    throw new RuntimeException("The selected center is invalid.");
+                    throw new RuntimeException('The selected center is invalid.', 422);
                 }
                 return $id;
             }
             if ($required && $userCenterId === null) {
-                throw new RuntimeException("Select a center first.");
+                throw new RuntimeException('Select a center first.', 422);
             }
         }
 
         if ($required && $userCenterId === null) {
-            throw new RuntimeException("Select a center first.");
+            throw new RuntimeException('Select a center first.', 422);
         }
 
         return $userCenterId;
