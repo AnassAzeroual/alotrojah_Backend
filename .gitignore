@@ -8,3 +8,9 @@ OLD_Backend.zip
 deploy_script/backend.zip
 deploy_script/deploy.stamped.php
 deploy_script/.env.production
+
+# Runtime data: never commit uploads, logs, cache, or release backups
+storage/cache/*
+storage/logs/*
+storage/uploads/*
+storage/backups/*

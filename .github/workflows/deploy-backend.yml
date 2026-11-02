@@ -20,10 +20,7 @@ jobs:
       - name: Lint all PHP files
         run: |
           set -euo pipefail
-          for dir in config public src deploy_script; do
-            [ -d "$dir" ] || continue
-            find "$dir" -name '*.php' -print0
-          done | xargs -0 -r -n1 php -l
+          git ls-files -z -- '*.php' | xargs -0 -r -n1 php -l
 
   deploy:
     needs: test
@@ -113,7 +110,9 @@ jobs:
           DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
         run: |
           set -euo pipefail
-          RESP=$(curl -s --max-time 590 "https://api.alotrojah.ma/deploy.php?token=${DEPLOY_TOKEN}&action=seed")
+          RESP=$(curl -s --max-time 590 \
+            -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
+            "https://api.alotrojah.ma/deploy.php?action=seed")
           echo "$RESP" | tee deploy.log
           echo "$RESP" | grep -q '"ok":true'
 
@@ -125,10 +124,31 @@ jobs:
           path: deploy.log
 
       - name: Verify production
+        env:
+          SMOKE_ADMIN_EMAIL: ${{ secrets.SMOKE_ADMIN_EMAIL }}
+          SMOKE_ADMIN_PASSWORD: ${{ secrets.SMOKE_ADMIN_PASSWORD }}
         run: |
           set -e
           code=$(curl -s -o /dev/null -w '%{http_code}' https://api.alotrojah.ma/api/v1/health)
           test "$code" = "200"
           hdr=$(curl -s -D - -o /dev/null -H 'Origin: https://alotrojah.ma' https://api.alotrojah.ma/api/v1/health)
           echo "$hdr" | grep -qi 'access-control-allow-origin: https://alotrojah.ma'
+
+          if [ -n "${SMOKE_ADMIN_PASSWORD:-}" ]; then
+            email="${SMOKE_ADMIN_EMAIL:-admin@example.org}"
+            login=$(curl -s -X POST https://api.alotrojah.ma/api/v1/auth/login \
+              -H 'Content-Type: application/json' \
+              -H 'Accept: application/json' \
+              --data "{\"email\":\"${email}\",\"password\":\"${SMOKE_ADMIN_PASSWORD}\"}")
+            token=$(printf '%s' "$login" | php -r '$d=json_decode(stream_get_contents(STDIN),true); echo $d["data"]["access_token"] ?? "";')
+            test -n "$token"
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -H "Authorization: Bearer ${token}" \
+              -H 'Accept: application/json' \
+              https://api.alotrojah.ma/api/v1/auth/me)
+            test "$code" = "200"
+            echo 'AUTH SMOKE VERIFIED'
+          else
+            echo 'AUTH SMOKE SKIPPED (SMOKE_ADMIN_PASSWORD not set)'
+          fi
           echo 'PROD VERIFIED'

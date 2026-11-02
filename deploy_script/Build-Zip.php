@@ -31,6 +31,7 @@ $excludePrefixes = [
     'storage/cache/',
     'storage/logs/',
     'storage/uploads/',
+    'storage/backups/',
 ];
 $excludeExact = [
     '.env',

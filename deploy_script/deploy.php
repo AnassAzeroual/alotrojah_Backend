@@ -21,7 +21,7 @@ define('DEPLOY_TOKEN', '__DEPLOY_TOKEN__');
 
 header('Content-Type: application/json');
 
-$token = (string) ($_GET['token'] ?? '');
+$token = (string) ($_SERVER['HTTP_X_DEPLOY_TOKEN'] ?? $_GET['token'] ?? '');
 if (! hash_equals(DEPLOY_TOKEN, $token)) {
     http_response_code(403);
     echo json_encode(['ok' => false, 'error' => 'forbidden']);
@@ -41,6 +41,16 @@ $newZip = $dest.'/backend.zip';    // incoming release
 if (! file_exists($newZip)) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'backend.zip-missing']);
+    exit;
+}
+
+// One deploy at a time. The lock lives outside the extracted release.
+$lockPath = $dest.'/storage/deploy.lock';
+@mkdir(dirname($lockPath), 0755, true);
+$deployLock = @fopen($lockPath, 'c');
+if ($deployLock === false || ! flock($deployLock, LOCK_EX | LOCK_NB)) {
+    http_response_code(423);
+    echo json_encode(['ok' => false, 'error' => 'deploy-already-running']);
     exit;
 }
 
@@ -69,7 +79,66 @@ function wipe_path(string $path): void
     @rmdir($path);
 }
 
-// 1. Preserve only uploads + logs; everything else is replaced.
+/**
+ * Snapshot the outgoing release before it is wiped. Runtime data is excluded;
+ * keep the five newest snapshots for a manual rollback.
+ */
+function backup_release(string $dest): ?string
+{
+    $dir = $dest.'/storage/backups';
+    if (! @mkdir($dir, 0755, true) && ! is_dir($dir)) {
+        return null;
+    }
+    $rel = 'storage/backups/release-'.date('Ymd-His').'.zip';
+    $path = $dest.'/'.$rel;
+    $zip = new ZipArchive;
+    if ($zip->open($path, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+        return null;
+    }
+
+    $skipPrefixes = [
+        'storage/uploads/',
+        'storage/logs/',
+        'storage/cache/',
+        'storage/backups/',
+    ];
+    $skipExact = ['backend.zip', 'storage/deploy.lock', 'public/deploy.php', 'deploy_script/deploy.php'];
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dest, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST,
+    );
+    foreach ($files as $file) {
+        $name = str_replace('\\', '/', substr($file->getPathname(), strlen($dest) + 1));
+        if ($name === '' || $file->isDir() || in_array($name, $skipExact, true)) {
+            continue;
+        }
+        foreach ($skipPrefixes as $prefix) {
+            if (str_starts_with($name, $prefix)) {
+                continue 2;
+            }
+        }
+        $zip->addFile($file->getPathname(), $name);
+    }
+    $zip->close();
+
+    $backups = glob($dir.'/release-*.zip') ?: [];
+    sort($backups);
+    while (count($backups) > 5) {
+        @unlink(array_shift($backups));
+    }
+
+    return $rel;
+}
+
+$backup = backup_release($dest);
+if ($backup === null) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'backup-failed']);
+    exit;
+}
+
+// 1. Preserve uploads, logs, backups and the deploy lock; replace the rest.
 foreach (@scandir($dest) ?: [] as $entry) {
     if ($entry === '.' || $entry === '..') {
         continue;
@@ -81,7 +150,7 @@ foreach (@scandir($dest) ?: [] as $entry) {
 
     if ($entry === 'storage' && ! is_link($full) && is_dir($full)) {
         foreach (@scandir($full) ?: [] as $sub) {
-            if ($sub === '.' || $sub === '..' || $sub === 'uploads' || $sub === 'logs') {
+            if ($sub === '.' || $sub === '..' || $sub === 'uploads' || $sub === 'logs' || $sub === 'backups' || $sub === 'deploy.lock') {
                 continue;
             }
             wipe_path($full.'/'.$sub);
@@ -101,6 +170,15 @@ if ($zip->open($newZip) !== true) {
     exit;
 }
 $count = $zip->numFiles;
+for ($i = 0; $i < $count; $i++) {
+    $name = str_replace('\\', '/', (string) $zip->getNameIndex($i));
+    if ($name === '' || str_starts_with($name, '/') || preg_match('#^[A-Za-z]:#', $name) || preg_match('#(^|/)\.\.(/|$)#', $name)) {
+        $zip->close();
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'unsafe-zip-entry']);
+        exit;
+    }
+}
 if (! $zip->extractTo($dest)) {
     $zip->close();
     http_response_code(500);
@@ -193,6 +271,7 @@ if (! $ok) {
 echo json_encode([
     'ok' => $ok,
     'files' => $count,
+    'backup' => $backup,
     'seed' => $seedLog,
     'seed_ok' => $seedOk,
     'extractor_deleted' => $extractorGone,
