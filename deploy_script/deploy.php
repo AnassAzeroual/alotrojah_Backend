@@ -187,28 +187,51 @@ if (! $zip->extractTo($dest)) {
 }
 $zip->close();
 
-// 3. Optional first-admin seed. Same one-shot extractor flow as the old
-//    Laravel `action=migrate` (which also ran db:seed), but native v2 has no
-//    Artisan: boot its autoloader, hash with Security::hashPassword() and
-//    insert through Database.
 $action = (string) ($_GET['action'] ?? 'deploy');
+$shouldMigrate = $action === 'migrate' || ($_POST['migrate'] ?? '') === '1';
 $shouldSeed = in_array($action, ['seed', 'migrate'], true) || ($_POST['seed'] ?? '') === '1';
+$migrationLog = '(not requested)';
+$migrationOk = null;
 $seedLog = '(not requested)';
 $seedOk = null;
 
-if ($shouldSeed) {
-    try {
-        spl_autoload_register(static function (string $class) use ($dest): void {
-            $prefix = 'App\\';
-            if (! str_starts_with($class, $prefix)) {
-                return;
-            }
-            $file = $dest.'/src/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
-            if (is_file($file)) {
-                require_once $file;
-            }
-        });
+spl_autoload_register(static function (string $class) use ($dest): void {
+    $prefix = 'App\\';
+    if (! str_starts_with($class, $prefix)) {
+        return;
+    }
+    $file = $dest.'/src/'.str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
+// 3. Optional schema migrations (up-only SQL; checksummed in schema_migrations).
+if ($shouldMigrate) {
+    try {
+        \App\Core\Config::load($dest.'/.env');
+        $migrator = new \App\Core\Migrator($dest.'/database/migrations', \App\Core\Database::getPdo());
+        $result = $migrator->run();
+        $migrationOk = true;
+        $migrationLog = $result['applied'] === []
+            ? "no pending migrations ({$result['skipped']} skipped)"
+            : 'applied: '.implode(', ', $result['applied']);
+    } catch (Throwable $e) {
+        $migrationOk = false;
+        $migrationLog = get_class($e).': '.$e->getMessage();
+    }
+}
+
+// 4. Optional first-admin seed. Same one-shot extractor flow as the old
+//    Laravel `action=migrate` (which also ran db:seed), but native v2 has no
+//    Artisan: boot its autoloader, hash with Security::hashPassword() and
+//    insert through Database.
+if ($shouldSeed && $migrationOk === false) {
+    $seedLog = 'skipped: migration failed';
+}
+
+if ($shouldSeed && $migrationOk !== false) {
+    try {
         \App\Core\Config::load($dest.'/.env');
 
         $adminEmail = strtolower(trim((string) ($_POST['admin_email'] ?? $_GET['admin_email'] ?? 'admin@example.org')));
@@ -263,7 +286,9 @@ if (function_exists('opcache_reset')) {
 @unlink(__FILE__);
 $extractorGone = ! file_exists(__FILE__);
 
-$ok = $extractorGone && ($seedOk === null || $seedOk);
+$ok = $extractorGone
+    && ($migrationOk === null || $migrationOk)
+    && ($seedOk === null || $seedOk);
 if (! $ok) {
     http_response_code(500);
 }
@@ -272,6 +297,8 @@ echo json_encode([
     'ok' => $ok,
     'files' => $count,
     'backup' => $backup,
+    'migrations' => $migrationLog,
+    'migrations_ok' => $migrationOk,
     'seed' => $seedLog,
     'seed_ok' => $seedOk,
     'extractor_deleted' => $extractorGone,

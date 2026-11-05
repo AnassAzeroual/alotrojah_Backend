@@ -237,5 +237,17 @@ try {
         ],
     ], $statusCode);
 
+    // Keep unhandled-error bodies readable by the SPA instead of turning them
+    // into opaque CORS failures.
+    if (isset($request)) {
+        $origin = $request->header('origin');
+        $allowed = (array) Config::get('frontend_urls', []);
+        if ($origin !== null && in_array($origin, $allowed, true)) {
+            $errResponse->header('Access-Control-Allow-Origin', $origin);
+            $errResponse->header('Access-Control-Allow-Credentials', 'true');
+            $errResponse->header('Vary', 'Origin');
+        }
+    }
+
     $errResponse->send();
 }

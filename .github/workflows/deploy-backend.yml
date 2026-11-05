@@ -112,7 +112,7 @@ jobs:
           set -euo pipefail
           RESP=$(curl -s --max-time 590 \
             -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
-            "https://api.alotrojah.ma/deploy.php?action=seed")
+            "https://api.alotrojah.ma/deploy.php?action=migrate")
           echo "$RESP" | tee deploy.log
           echo "$RESP" | grep -q '"ok":true'
 

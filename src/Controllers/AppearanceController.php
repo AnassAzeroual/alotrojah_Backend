@@ -112,9 +112,9 @@ final class AppearanceController extends BaseController
 
         $updateData['updated_by'] = $this->userId($request);
 
-        $existing = Database::fetchOne("SELECT id FROM `appearance_settings` WHERE center_id = :cid", ['cid' => $centerId]);
+        $existing = Database::fetchOne("SELECT center_id FROM `appearance_settings` WHERE center_id = :cid", ['cid' => $centerId]);
         if ($existing) {
-            Database::update('appearance_settings', $updateData, 'id = :id', ['id' => $existing['id']]);
+            Database::update('appearance_settings', $updateData, 'center_id = :cid', ['cid' => $centerId]);
         } else {
             $updateData['center_id'] = $centerId;
             Database::insert('appearance_settings', $updateData);
@@ -154,7 +154,7 @@ final class AppearanceController extends BaseController
         $relativeCol = "{$kind}_path";
         $relativePath = "appearance/{$kind}/{$filename}";
 
-        $existing = Database::fetchOne("SELECT id, {$relativeCol} FROM `appearance_settings` WHERE center_id = :cid", ['cid' => $centerId]);
+        $existing = Database::fetchOne("SELECT center_id, {$relativeCol} FROM `appearance_settings` WHERE center_id = :cid", ['cid' => $centerId]);
         $fill = [
             $relativeCol => $relativePath,
             'updated_by' => $this->userId($request),
@@ -165,7 +165,7 @@ final class AppearanceController extends BaseController
         }
 
         if ($existing) {
-            Database::update('appearance_settings', $fill, 'id = :id', ['id' => $existing['id']]);
+            Database::update('appearance_settings', $fill, 'center_id = :cid', ['cid' => $centerId]);
             if (!empty($existing[$relativeCol])) {
                 $oldFile = (string) Config::get('upload_path') . '/' . $existing[$relativeCol];
                 if (file_exists($oldFile)) {
@@ -191,7 +191,7 @@ final class AppearanceController extends BaseController
 
         $centerId = $this->centerId($request, true);
         $relativeCol = "{$kind}_path";
-        $existing = Database::fetchOne("SELECT id, {$relativeCol}, background_type FROM `appearance_settings` WHERE center_id = :cid", ['cid' => $centerId]);
+        $existing = Database::fetchOne("SELECT center_id, {$relativeCol}, background_type FROM `appearance_settings` WHERE center_id = :cid", ['cid' => $centerId]);
 
         if ($existing) {
             $fill = [
@@ -202,7 +202,7 @@ final class AppearanceController extends BaseController
                 $fill['background_type'] = 'none';
             }
 
-            Database::update('appearance_settings', $fill, 'id = :id', ['id' => $existing['id']]);
+            Database::update('appearance_settings', $fill, 'center_id = :cid', ['cid' => $centerId]);
 
             if (!empty($existing[$relativeCol])) {
                 $oldFile = (string) Config::get('upload_path') . '/' . $existing[$relativeCol];
