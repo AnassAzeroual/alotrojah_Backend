@@ -7,10 +7,6 @@ namespace App\Core;
 use PDO;
 use Throwable;
 
-final class MigrationException extends \RuntimeException
-{
-}
-
 /**
  * Minimal, up-only SQL migrations for the native PHP backend.
  *
@@ -187,6 +183,7 @@ final class Migrator
     private function applyFile(string $version, string $path): void
     {
         $sql = $this->readSql($version, $path);
+        (new MigrationSafetyPolicy)->assertSafe($version, $sql);
         $splitter = new SqlStatementSplitter;
 
         foreach ($splitter->split($sql) as $index => $statement) {
