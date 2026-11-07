@@ -61,6 +61,7 @@ final class AuthController extends BaseController
                 'center_id' => $user['center_id'] !== null ? (int) $user['center_id'] : null,
                 'center_name' => $user['center_name'],
                 'teacher_type' => $user['teacher_type'],
+                'pending_registrations' => $this->pendingRegistrations($user),
             ],
         ], 'Logged in.');
     }
@@ -114,6 +115,15 @@ final class AuthController extends BaseController
         return $this->created(null, 'Registration request received. Awaiting admin approval.');
     }
 
+    private function pendingRegistrations(array $user): ?int
+    {
+        if (($user['role'] ?? null) !== 'admin') {
+            return null;
+        }
+
+        return (int) Database::fetchValue('SELECT COUNT(*) FROM `registration_requests`');
+    }
+
     public function me(Request $request): Response
     {
         $user = $request->getUser();
@@ -129,6 +139,7 @@ final class AuthController extends BaseController
             'center_id' => $user['center_id'] !== null ? (int) $user['center_id'] : null,
             'center_name' => $user['center_name'] ?? null,
             'teacher_type' => $user['teacher_type'],
+            'pending_registrations' => $this->pendingRegistrations($user),
         ]);
     }
 
@@ -165,6 +176,7 @@ final class AuthController extends BaseController
                 'center_id' => $user['center_id'] !== null ? (int) $user['center_id'] : null,
                 'center_name' => $user['center_name'] ?? null,
                 'teacher_type' => $user['teacher_type'],
+                'pending_registrations' => $this->pendingRegistrations($user),
             ],
         ], 'Token refreshed.');
     }

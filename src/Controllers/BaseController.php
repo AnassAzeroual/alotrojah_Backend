@@ -87,6 +87,11 @@ abstract class BaseController
         return Response::fail($message, $code, $errors);
     }
 
+    protected function forbidden(string $message = 'This action is unauthorized.'): Response
+    {
+        return $this->fail($message, 403, ['code' => 'FORBIDDEN']);
+    }
+
     /** Standard 422 shape used by the request validators in this backend. */
     protected function unprocessable(array $errors): Response
     {
