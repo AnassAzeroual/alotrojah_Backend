@@ -116,6 +116,7 @@ try {
             $auth->apiResource('users', UserController::class);
 
             $auth->get('registration-requests', [RegistrationRequestController::class, 'index']);
+            $auth->get('registration-requests/count', [RegistrationRequestController::class, 'pendingCount']);
             $auth->post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
             $auth->delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
 
