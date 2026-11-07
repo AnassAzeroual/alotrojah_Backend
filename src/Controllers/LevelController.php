@@ -109,9 +109,9 @@ final class LevelController extends BaseController
         $v = Validator::make($request->all(), [
             'season_id' => 'required|integer',
             'name_ar' => 'required|string',
-            'sessions_per_week' => 'required|integer',
+            'sessions_per_week' => 'required|integer|min:1|max:7',
             'thumn_per_session_label' => 'required|string',
-            'thumn_per_session_value' => 'required|numeric',
+            'thumn_per_session_value' => 'required|numeric|min:1|max:480',
             'thumn_per_week_value' => 'required|numeric',
             'ahzab_per_term' => 'required|numeric',
             'ahzab_per_dawra' => 'required|numeric',
@@ -120,6 +120,16 @@ final class LevelController extends BaseController
         ]);
         if ($v->fails()) {
             return $this->fail('The given data was invalid.', 422, $v->errors());
+        }
+
+        $paceError = $this->quranPaceError(
+            (int) $request->input('sessions_per_week'),
+            (float) $request->input('thumn_per_session_value'),
+            (float) $request->input('thumn_per_week_value'),
+            (float) $request->input('ahzab_per_dawra'),
+        );
+        if ($paceError !== null) {
+            return $paceError;
         }
 
         $seasonId = (int) $request->input('season_id');
@@ -184,6 +194,24 @@ final class LevelController extends BaseController
         $level = Database::fetchOne("SELECT * FROM `levels` WHERE id = :id", ['id' => $id]);
         if (!$level) {
             return $this->fail('Level not found.', 404);
+        }
+
+        $v = Validator::make($request->all(), [
+            'sessions_per_week' => 'integer|min:1|max:7',
+            'thumn_per_session_value' => 'numeric|min:1|max:480',
+        ]);
+        if ($v->fails()) {
+            return $this->unprocessable($v->errors());
+        }
+
+        $paceError = $this->quranPaceError(
+            (int) ($request->input('sessions_per_week') ?? $level['sessions_per_week']),
+            (float) ($request->input('thumn_per_session_value') ?? $level['thumn_per_session_value']),
+            (float) ($request->input('thumn_per_week_value') ?? $level['thumn_per_week_value']),
+            (float) ($request->input('ahzab_per_dawra') ?? $level['ahzab_per_dawra']),
+        );
+        if ($paceError !== null) {
+            return $paceError;
         }
 
         $fields = [
@@ -292,5 +320,33 @@ final class LevelController extends BaseController
 
             return $this->ok(['deleted' => $deletedCount, 'created' => $createdCount]);
         });
+    }
+
+    /**
+     * Quran-aware pace guard: a level is one 60-hizb cycle (480 thumn).
+     * Rejects inconsistent/tampered derived values as well as impossible pace.
+     */
+    private function quranPaceError(int $sessions, float $unit, float $week, float $dawra): ?Response
+    {
+        $expectedWeek = round($sessions * $unit, 2);
+        if (abs($week - $expectedWeek) > 0.01) {
+            return $this->unprocessable([
+                'thumn_per_week_value' => ['Weekly thumn must equal sessions × thumn per session.'],
+            ]);
+        }
+
+        if ($week > 480.01) {
+            return $this->unprocessable([
+                'thumn_per_week_value' => ['Weekly thumn cannot exceed 480 (the whole Quran).'],
+            ]);
+        }
+
+        if ($dawra > 60.01) {
+            return $this->unprocessable([
+                'ahzab_per_dawra' => ['A level cycle cannot exceed the Quran\'s 60 ahzab.'],
+            ]);
+        }
+
+        return null;
     }
 }
