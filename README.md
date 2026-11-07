@@ -289,7 +289,7 @@ Upload `Backendv2PHP/` via FTP or Git:
 | **Dashboard** | GET | `/v1/dashboard/me` | DashboardController::me | Student personal dashboard |
 | | GET | `/v1/dashboard/season` | DashboardController::season | Student season totals |
 | | GET | `/v1/dashboard/weekly` | DashboardController::weekly | Per-week progress bars |
-| | GET | `/v1/dashboard/center` | DashboardController::center | Center KPI cards + honors + attendance |
+| | GET | `/v1/dashboard/overview` | DashboardController::overview | Role-scoped staff statistics for the dashboard |
 | | GET | `/v1/dashboard/final` | DashboardController::final | Transparent final average formula |
 | **Reports** | GET | `/v1/reports/term` | ReportController::term | Printable composite term report |
 | | GET | `/v1/reports/season` | ReportController::season | Printable composite season report |

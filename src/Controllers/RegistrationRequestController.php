@@ -40,16 +40,6 @@ final class RegistrationRequestController extends BaseController
         return $this->ok($paginated);
     }
 
-    /** Lightweight header-bell count; avoids loading a page of rows. */
-    public function pendingCount(Request $request): Response
-    {
-        $this->authorizeRole($request, ['admin']);
-
-        $count = (int) Database::fetchValue('SELECT COUNT(*) FROM `registration_requests`');
-
-        return $this->ok(['count' => $count]);
-    }
-
     public function accept(Request $request, array $params): Response
     {
         $this->authorizeRole($request, ['admin']);

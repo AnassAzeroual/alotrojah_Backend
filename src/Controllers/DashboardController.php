@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Config;
 use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
@@ -121,109 +122,322 @@ class DashboardController extends BaseController
     }
 
     /**
-     * GET /v1/dashboard/center
-     * Center-level dashboard for a season: KPI cards + honor distribution + attendance breakdown.
+     * GET /v1/dashboard/overview
+     * One role-scoped request for the statistics-only staff dashboard.
      */
-    public function center(Request $request): Response
+    public function overview(Request $request): Response
     {
-        $v = (new Validator($request->query()))
-            ->required('center_id')->integer('center_id')
-            ->required('season_id')->integer('season_id');
-
-        if ($v->fails()) {
-            return $this->unprocessable($v->errors());
+        $user = $request->user();
+        if ($user === null || ! in_array($user['role'], ['admin', 'supervisor', 'teacher'], true)) {
+            return $this->forbidden('Staff access only.');
         }
 
-        $centerId = (int) $request->query('center_id');
-        $seasonId = (int) $request->query('season_id');
         $db = Database::getInstance();
+        $role = (string) $user['role'];
+        $seasonId = (int) $request->query('season_id', 0);
+        $centerId = $role === 'supervisor'
+            ? ($user['center_id'] !== null ? (int) $user['center_id'] : null)
+            : ($role === 'admin' && $request->query('center_id') !== null && $request->query('center_id') !== ''
+                ? (int) $request->query('center_id')
+                : null);
 
-        // Active students in season
-        $activeStudentsSql = '
-            SELECT DISTINCT s.id FROM students s
-            WHERE s.center_id = :cid
-            AND (
-                EXISTS (SELECT 1 FROM term_plans WHERE student_id = s.id AND season_id = :sid1)
-                OR EXISTS (SELECT 1 FROM memorization_logs WHERE student_id = s.id AND season_id = :sid2)
-                OR EXISTS (SELECT 1 FROM attendance_totals WHERE student_id = s.id AND season_id = :sid3)
-            )
-        ';
-        $studentRows = $db->query($activeStudentsSql, [
-            'cid' => $centerId,
-            'sid1' => $seasonId,
-            'sid2' => $seasonId,
-            'sid3' => $seasonId,
-        ])->fetchAll();
-        $studentCount = count($studentRows);
+        if ($role === 'admin' && $centerId !== null && ! Database::fetchValue(
+            'SELECT 1 FROM centers WHERE id = :id',
+            ['id' => $centerId],
+        )) {
+            return $this->unprocessable(['center_id' => ['The selected center is invalid.']]);
+        }
 
-        $avgScore = null;
-        $avgSarraj = null;
-        $avgAttendance = null;
-
-        if ($studentCount > 0) {
-            // Averages from views for active students
-            $kpi = $db->query(
-                "SELECT
-                    ROUND(AVG(season_avg_score), 2) as avg_score,
-                    ROUND(AVG(season_avg_sarraj), 2) as avg_sarraj,
-                    ROUND(AVG(season_attendance_pct), 1) as avg_attendance
-                 FROM v_season_dashboard v
-                 JOIN students s ON s.id = v.student_id
-                 WHERE s.center_id = :cid AND v.season_id = :sid",
-                ['cid' => $centerId, 'sid' => $seasonId]
+        if ($seasonId === 0) {
+            $seasonSql = $centerId !== null
+                ? 'SELECT id, name, start_date, end_date FROM academic_seasons WHERE center_id = :cid OR center_id IS NULL ORDER BY is_current DESC, id DESC LIMIT 1'
+                : 'SELECT id, name, start_date, end_date FROM academic_seasons ORDER BY is_current DESC, id DESC LIMIT 1';
+            $season = $db->query($seasonSql, $centerId !== null ? ['cid' => $centerId] : [])->fetch();
+            $seasonId = $season ? (int) $season['id'] : 0;
+        } else {
+            $season = $db->query(
+                'SELECT id, name, start_date, end_date FROM academic_seasons WHERE id = :id LIMIT 1',
+                ['id' => $seasonId],
             )->fetch();
+        }
 
-            if ($kpi) {
-                $avgScore = $kpi['avg_score'] !== null ? (float) $kpi['avg_score'] : null;
-                $avgSarraj = $kpi['avg_sarraj'] !== null ? (float) $kpi['avg_sarraj'] : null;
-                $avgAttendance = $kpi['avg_attendance'] !== null ? (float) $kpi['avg_attendance'] : null;
+        if (! $season) {
+            return $this->ok($this->emptyOverview($role, $centerId));
+        }
+        $seasonId = (int) $season['id'];
+
+        $cacheDir = (string) Config::get('storage_path') . '/cache/dashboard';
+        $cacheFile = $cacheDir . '/' . md5($role . '|' . ($role === 'teacher' ? (int) $user['id'] : 0) . '|' . ($centerId ?? 'all') . '|' . $seasonId) . '.json';
+        if (is_file($cacheFile) && filemtime($cacheFile) > time() - 30) {
+            $cached = json_decode((string) file_get_contents($cacheFile), true);
+            if (is_array($cached)) {
+                return $this->ok($cached);
             }
         }
 
-        // Honors distribution
-        $honors = $db->query(
-            "SELECT r.honor_flag, COUNT(*) as n
-             FROM term_results r
-             JOIN students s ON s.id = r.student_id
-             WHERE s.center_id = :cid AND r.season_id = :sid
+        $scopeCenterId = $centerId ?? ($user['center_id'] !== null ? (int) $user['center_id'] : null);
+        $centerName = $scopeCenterId !== null
+            ? Database::fetchValue('SELECT name FROM centers WHERE id = :id', ['id' => $scopeCenterId])
+            : null;
+
+        $studentWhere = '1 = 1';
+        $studentParams = [];
+        if ($role === 'teacher') {
+            $studentWhere = 's.group_id IN (SELECT g.id FROM `groups` g WHERE g.teacher_id = :uid)';
+            $studentParams['uid'] = (int) $user['id'];
+        } elseif ($centerId !== null) {
+            $studentWhere = 's.center_id = :cid';
+            $studentParams['cid'] = $centerId;
+        }
+
+        $studentScope = "SELECT s.id, s.full_name, s.group_id, s.center_id, s.level_id, s.status, s.gender
+            FROM students s WHERE {$studentWhere}";
+        $groupWhere = $role === 'teacher'
+            ? 'g.teacher_id = :uid'
+            : ($centerId !== null ? 'g.center_id = :cid' : '1 = 1');
+        $groupParams = $role === 'teacher' ? ['uid' => (int) $user['id']] : ($centerId !== null ? ['cid' => $centerId] : []);
+        $groupScope = "SELECT g.id, g.name, g.center_id, g.teacher_id FROM `groups` g WHERE {$groupWhere}";
+
+        $counts = $db->query(
+            "SELECT COUNT(*) AS students, COALESCE(SUM(status = 'active'), 0) AS active_students,
+                    COUNT(DISTINCT group_id) AS group_count
+             FROM ({$studentScope}) ss",
+            $studentParams,
+        )->fetch() ?: [];
+
+        $teacherCount = (int) $db->query(
+            "SELECT COUNT(DISTINCT teacher_id) FROM ({$groupScope}) gs",
+            $groupParams,
+        )->fetchColumn();
+
+        $viewParams = ['sid' => $seasonId] + $studentParams;
+        $kpi = $db->query(
+            "SELECT ROUND(AVG(v.season_avg_score), 2) AS avg_score,
+                    ROUND(AVG(v.season_avg_sarraj), 2) AS avg_sarraj,
+                    ROUND(AVG(v.season_attendance_pct), 1) AS attendance_pct
+             FROM v_season_dashboard v
+             JOIN ({$studentScope}) ss ON ss.id = v.student_id
+             WHERE v.season_id = :sid",
+            $viewParams,
+        )->fetch() ?: [];
+
+        $thumn = (float) $db->query(
+            "SELECT COALESCE(SUM(m.thumn_amount), 0)
+             FROM memorization_logs m
+             JOIN ({$studentScope}) ss ON ss.id = m.student_id
+             WHERE m.season_id = :sid",
+            $viewParams,
+        )->fetchColumn();
+
+        $honorRows = $db->query(
+            "SELECT r.honor_flag, COUNT(*) AS n
+             FROM season_results r
+             JOIN ({$studentScope}) ss ON ss.id = r.student_id
+             WHERE r.season_id = :sid
              GROUP BY r.honor_flag",
-            ['cid' => $centerId, 'sid' => $seasonId]
+            $viewParams,
         )->fetchAll();
+        $honors = ['tashji3' => 0, 'intibah' => 0, 'none' => 0];
+        foreach ($honorRows as $row) {
+            $honors[(string) $row['honor_flag']] = (int) $row['n'];
+        }
 
-        $formattedHonors = array_map(function (array $r): array {
-            return [
-                'honor_flag' => (string) $r['honor_flag'],
-                'n' => (int) $r['n'],
-            ];
-        }, $honors);
-
-        // Attendance breakdown
-        $attendance = $db->query(
-            "SELECT a.status, COUNT(*) as n
+        $attendanceRows = $db->query(
+            "SELECT a.status, COUNT(*) AS n
              FROM attendance a
-             JOIN students s ON s.id = a.student_id
-             WHERE s.center_id = :cid AND a.season_id = :sid
+             JOIN ({$studentScope}) ss ON ss.id = a.student_id
+             WHERE a.season_id = :sid
              GROUP BY a.status",
-            ['cid' => $centerId, 'sid' => $seasonId]
+            $viewParams,
         )->fetchAll();
 
-        $formattedAttendance = array_map(function (array $r): array {
-            return [
-                'status' => (string) $r['status'],
-                'n' => (int) $r['n'],
-            ];
-        }, $attendance);
+        $scoreBands = $db->query(
+            "SELECT CASE
+                WHEN r.overall_avg >= 18 THEN 'excellent'
+                WHEN r.overall_avg >= 15 THEN 'good'
+                WHEN r.overall_avg >= 12 THEN 'average'
+                ELSE 'support'
+             END AS band, COUNT(*) AS n
+             FROM season_results r
+             JOIN ({$studentScope}) ss ON ss.id = r.student_id
+             WHERE r.season_id = :sid
+             GROUP BY band",
+            $viewParams,
+        )->fetchAll();
 
-        return $this->ok([
-            'cards' => [
-                'students' => $studentCount,
-                'avg_score' => $avgScore,
-                'avg_sarraj' => $avgSarraj,
-                'avg_attendance' => $avgAttendance,
+        $genderRows = $db->query(
+            "SELECT gender, COUNT(*) AS n FROM ({$studentScope}) ss GROUP BY gender",
+            $studentParams,
+        )->fetchAll();
+
+        $levelRows = $db->query(
+            "SELECT l.name_ar AS label, COUNT(*) AS n
+             FROM ({$studentScope}) ss
+             LEFT JOIN levels l ON l.id = ss.level_id
+             GROUP BY l.id, l.name_ar",
+            $studentParams,
+        )->fetchAll();
+
+        $weeklyRows = $db->query(
+            "SELECT v.week_id, ROUND(AVG(v.avg_score), 2) AS avg_score,
+                    ROUND(SUM(v.total_thumn), 1) AS thumn
+             FROM v_weekly_progress v
+             JOIN ({$studentScope}) ss ON ss.id = v.student_id
+             WHERE v.season_id = :sid
+             GROUP BY v.week_id ORDER BY v.week_id",
+            $viewParams,
+        )->fetchAll();
+        $weeklyAttendance = $db->query(
+            "SELECT a.week_id,
+                    ROUND(100 * SUM(a.status IN ('present','late')) / COUNT(*), 1) AS attendance_pct
+             FROM attendance a
+             JOIN ({$studentScope}) ss ON ss.id = a.student_id
+             WHERE a.season_id = :sid
+             GROUP BY a.week_id ORDER BY a.week_id",
+            $viewParams,
+        )->fetchAll();
+        $attendanceByWeek = [];
+        foreach ($weeklyAttendance as $row) {
+            $attendanceByWeek[(int) $row['week_id']] = (float) $row['attendance_pct'];
+        }
+        $weekly = array_map(static fn (array $row): array => [
+            'week' => (int) $row['week_id'],
+            'avg_score' => $row['avg_score'] !== null ? (float) $row['avg_score'] : null,
+            'attendance_pct' => $attendanceByWeek[(int) $row['week_id']] ?? null,
+            'thumn' => (float) $row['thumn'],
+        ], $weeklyRows);
+
+        $groups = $db->query(
+            "SELECT g.id, g.name, COUNT(DISTINCT s.id) AS students,
+                    ROUND(AVG(v.season_avg_score), 2) AS avg_score,
+                    ROUND(AVG(v.season_attendance_pct), 1) AS attendance_pct
+             FROM ({$groupScope}) g
+             LEFT JOIN students s ON s.group_id = g.id
+             LEFT JOIN v_season_dashboard v ON v.student_id = s.id AND v.season_id = :sid
+             GROUP BY g.id, g.name ORDER BY avg_score DESC, g.name",
+            ['sid' => $seasonId] + $groupParams,
+        )->fetchAll();
+
+        $centers = [];
+        if ($role !== 'teacher') {
+            $centerWhere = $centerId !== null ? 'WHERE c.id = :cid' : '';
+            $centerParams = $centerId !== null ? ['cid' => $centerId] : [];
+            $centers = $db->query(
+                "SELECT c.id, c.name, COUNT(DISTINCT s.id) AS students,
+                        ROUND(AVG(v.season_avg_score), 2) AS avg_score,
+                        ROUND(AVG(v.season_attendance_pct), 1) AS attendance_pct
+                 FROM centers c
+                 LEFT JOIN students s ON s.center_id = c.id
+                 LEFT JOIN v_season_dashboard v ON v.student_id = s.id AND v.season_id = :sid
+                 {$centerWhere}
+                 GROUP BY c.id, c.name ORDER BY c.name",
+                ['sid' => $seasonId] + $centerParams,
+            )->fetchAll();
+        }
+
+        $scopeCenters = $role === 'admin'
+            ? $db->query('SELECT id, name FROM centers ORDER BY name')->fetchAll()
+            : $centers;
+        $scopeCenters = array_map(static fn (array $row): array => [
+            'id' => (int) $row['id'],
+            'name' => (string) $row['name'],
+        ], $scopeCenters);
+
+        $topStudents = $db->query(
+            "SELECT ss.id, ss.full_name, g.name AS group_name,
+                    v.season_avg_score AS avg_score, v.season_attendance_pct AS attendance_pct
+             FROM ({$studentScope}) ss
+             LEFT JOIN `groups` g ON g.id = ss.group_id
+             LEFT JOIN v_season_dashboard v ON v.student_id = ss.id AND v.season_id = :sid
+             WHERE v.season_avg_score IS NOT NULL
+             ORDER BY v.season_avg_score DESC LIMIT 5",
+            $viewParams,
+        )->fetchAll();
+
+        $payload = [
+            'scope' => [
+                'role' => $role,
+                'center_id' => $centerId,
+                'center_name' => $centerName,
+                'can_filter_center' => $role === 'admin',
+                'season' => [
+                    'id' => $seasonId,
+                    'name' => (string) $season['name'],
+                    'start_date' => $season['start_date'],
+                    'end_date' => $season['end_date'],
+                ],
+                'centers' => $role === 'admin' ? $scopeCenters : [],
             ],
-            'honors' => $formattedHonors,
-            'attendance' => $formattedAttendance,
-        ]);
+            'kpis' => [
+                'students' => (int) ($counts['students'] ?? 0),
+                'active_students' => (int) ($counts['active_students'] ?? 0),
+                'groups' => (int) ($counts['group_count'] ?? 0),
+                'teachers' => $teacherCount,
+                'avg_score' => isset($kpi['avg_score']) ? (float) $kpi['avg_score'] : null,
+                'avg_sarraj' => isset($kpi['avg_sarraj']) ? (float) $kpi['avg_sarraj'] : null,
+                'attendance_pct' => isset($kpi['attendance_pct']) ? (float) $kpi['attendance_pct'] : null,
+                'total_ahzab' => round($thumn / 8, 1),
+                'honors' => $honors,
+            ],
+            'trends' => ['weekly' => $weekly],
+            'distributions' => [
+                'attendance' => array_map(static fn (array $r): array => [
+                    'status' => (string) $r['status'], 'n' => (int) $r['n'],
+                ], $attendanceRows),
+                'scores' => array_map(static fn (array $r): array => [
+                    'band' => (string) $r['band'], 'n' => (int) $r['n'],
+                ], $scoreBands),
+                'genders' => array_map(static fn (array $r): array => [
+                    'gender' => (string) ($r['gender'] ?? 'unknown'), 'n' => (int) $r['n'],
+                ], $genderRows),
+                'levels' => array_map(static fn (array $r): array => [
+                    'label' => (string) ($r['label'] ?? 'Unassigned'), 'n' => (int) $r['n'],
+                ], $levelRows),
+            ],
+            'groups' => array_map(static fn (array $r): array => [
+                'id' => (int) $r['id'], 'name' => (string) $r['name'],
+                'students' => (int) $r['students'],
+                'avg_score' => $r['avg_score'] !== null ? (float) $r['avg_score'] : null,
+                'attendance_pct' => $r['attendance_pct'] !== null ? (float) $r['attendance_pct'] : null,
+            ], $groups),
+            'centers' => array_map(static fn (array $r): array => [
+                'id' => (int) $r['id'], 'name' => (string) $r['name'],
+                'students' => (int) $r['students'],
+                'avg_score' => $r['avg_score'] !== null ? (float) $r['avg_score'] : null,
+                'attendance_pct' => $r['attendance_pct'] !== null ? (float) $r['attendance_pct'] : null,
+            ], $centers),
+            'top_students' => array_map(static fn (array $r): array => [
+                'id' => (int) $r['id'], 'full_name' => (string) $r['full_name'],
+                'group_name' => $r['group_name'] !== null ? (string) $r['group_name'] : null,
+                'avg_score' => $r['avg_score'] !== null ? (float) $r['avg_score'] : null,
+                'attendance_pct' => $r['attendance_pct'] !== null ? (float) $r['attendance_pct'] : null,
+            ], $topStudents),
+        ];
+
+        if (! is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0775, true);
+        }
+        @file_put_contents($cacheFile, json_encode($payload), LOCK_EX);
+
+        return $this->ok($payload);
+    }
+
+    private function emptyOverview(string $role, ?int $centerId): array
+    {
+        return [
+            'scope' => [
+                'role' => $role, 'center_id' => $centerId, 'center_name' => null,
+                'can_filter_center' => $role === 'admin', 'season' => null, 'centers' => [],
+            ],
+            'kpis' => [
+                'students' => 0, 'active_students' => 0, 'groups' => 0, 'teachers' => 0,
+                'avg_score' => null, 'avg_sarraj' => null, 'attendance_pct' => null,
+                'total_ahzab' => 0, 'honors' => ['tashji3' => 0, 'intibah' => 0, 'none' => 0],
+            ],
+            'trends' => ['weekly' => []],
+            'distributions' => ['attendance' => [], 'scores' => [], 'genders' => [], 'levels' => []],
+            'groups' => [], 'centers' => [], 'top_students' => [],
+        ];
     }
 
     /**

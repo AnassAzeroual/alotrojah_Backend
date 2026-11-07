@@ -116,7 +116,6 @@ try {
             $auth->apiResource('users', UserController::class);
 
             $auth->get('registration-requests', [RegistrationRequestController::class, 'index']);
-            $auth->get('registration-requests/count', [RegistrationRequestController::class, 'pendingCount']);
             $auth->post('registration-requests/{registrationRequest}/accept', [RegistrationRequestController::class, 'accept']);
             $auth->delete('registration-requests/{registrationRequest}', [RegistrationRequestController::class, 'destroy']);
 
@@ -210,7 +209,7 @@ try {
             $auth->get('dashboard/me', [DashboardController::class, 'me']);
             $auth->get('dashboard/season', [DashboardController::class, 'season']);
             $auth->get('dashboard/weekly', [DashboardController::class, 'weekly']);
-            $auth->get('dashboard/center', [DashboardController::class, 'center']);
+            $auth->get('dashboard/overview', [DashboardController::class, 'overview']);
             $auth->get('dashboard/final', [DashboardController::class, 'final']);
 
             // Reports
