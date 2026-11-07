@@ -86,6 +86,7 @@ $id = Database::insert('users', [
     'email' => $email,
     'password_hash' => $hash,
     'role' => 'admin',
+    'teacher_type' => null,
     'is_active' => 1,
 ]);
 

@@ -258,6 +258,7 @@ if ($shouldSeed && $migrationOk !== false) {
                 'email' => $adminEmail,
                 'password_hash' => \App\Core\Security::hashPassword($adminPassword),
                 'role' => 'admin',
+                'teacher_type' => null,
                 'is_active' => 1,
             ]);
             $seedLog = "created admin id={$id}";
