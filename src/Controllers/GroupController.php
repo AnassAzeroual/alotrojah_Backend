@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Core\Database;
 use App\Core\Request;
 use App\Core\Response;
+use App\Core\SessionGenerator;
 use App\Core\Validator;
 
 final class GroupController extends BaseController
@@ -26,6 +27,11 @@ final class GroupController extends BaseController
         $capacity = isset($row['capacity']) && $row['capacity'] !== null ? (int) $row['capacity'] : null;
         $studentsCount = isset($row['students_count']) ? (int) $row['students_count'] : 0;
         $fillPct = $capacity && $capacity > 0 ? round(100 * $studentsCount / $capacity, 1) : null;
+        $murajaa = Database::fetchOne(
+            'SELECT u.id, u.full_name FROM `group_teachers` gt JOIN `users` u ON u.id = gt.user_id
+             WHERE gt.group_id = :gid AND gt.role = :role LIMIT 1',
+            ['gid' => (int) $row['id'], 'role' => 'murajaa'],
+        );
 
         return [
             'id' => (int) $row['id'],
@@ -36,6 +42,8 @@ final class GroupController extends BaseController
             'schedule_days' => $row['schedule_days'] ?? '',
             'is_active' => (bool) $row['is_active'],
             'teacher' => $teacher,
+            'murajaa_teacher_id' => $murajaa ? (int) $murajaa['id'] : null,
+            'murajaa_teacher_name' => $murajaa['full_name'] ?? null,
             'students_count' => $studentsCount,
             'fill_pct' => $fillPct,
         ];
@@ -282,6 +290,7 @@ final class GroupController extends BaseController
             'name' => 'required|string',
             'center_id' => 'nullable|integer',
             'teacher_id' => 'nullable|integer',
+            'murajaa_teacher_id' => 'nullable|integer',
             'academic_year' => 'nullable|string',
             'capacity' => 'nullable|integer',
             'schedule_days' => 'nullable',
@@ -297,17 +306,29 @@ final class GroupController extends BaseController
             : (int) $me['center_id'];
 
         $teacherId = $request->input('teacher_id') ? (int) $request->input('teacher_id') : null;
+        $teacherType = 'both';
         if ($teacherId) {
-            $teacher = Database::fetchOne("SELECT id, role, center_id FROM `users` WHERE id = :id", ['id' => $teacherId]);
+            $teacher = Database::fetchOne("SELECT id, role, center_id, teacher_type FROM `users` WHERE id = :id", ['id' => $teacherId]);
             if (!$teacher || $teacher['role'] !== 'teacher' || (int) $teacher['center_id'] !== $centerId) {
                 return $this->fail('Teacher must belong to the same center.', 422);
+            }
+            $teacherType = in_array($teacher['teacher_type'], ['hifz', 'murajaa', 'both'], true)
+                ? (string) $teacher['teacher_type']
+                : 'both';
+        }
+
+        $murajaaTeacherId = $request->input('murajaa_teacher_id') ? (int) $request->input('murajaa_teacher_id') : null;
+        if ($murajaaTeacherId) {
+            $murajaaTeacher = Database::fetchOne("SELECT id, role, center_id FROM `users` WHERE id = :id", ['id' => $murajaaTeacherId]);
+            if (!$murajaaTeacher || $murajaaTeacher['role'] !== 'teacher' || (int) $murajaaTeacher['center_id'] !== $centerId) {
+                return $this->fail('Murajaa teacher must belong to the same center.', 422);
             }
         }
 
         $days = $request->input('schedule_days');
         $scheduleStr = is_array($days) ? implode(',', $days) : (string) ($days ?? 'Mon,Wed,Fri');
 
-        $newId = Database::transaction(function () use ($request, $centerId, $teacherId, $scheduleStr, $days) {
+        $newId = Database::transaction(function () use ($request, $centerId, $teacherId, $teacherType, $murajaaTeacherId, $scheduleStr, $days) {
             $gid = Database::insert('groups', [
                 'center_id' => $centerId,
                 'teacher_id' => $teacherId,
@@ -317,6 +338,17 @@ final class GroupController extends BaseController
                 'schedule_days' => $scheduleStr,
                 'is_active' => $request->input('is_active') !== null ? (int) filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN) : 1,
             ]);
+
+            if ($teacherId) {
+                $this->syncGroupTeacher($gid, $teacherId, $teacherType);
+            }
+            if ($murajaaTeacherId) {
+                $this->syncGroupTeacher(
+                    $gid,
+                    $murajaaTeacherId,
+                    $murajaaTeacherId === $teacherId ? 'both' : 'murajaa',
+                );
+            }
 
             if (is_array($days)) {
                 foreach (array_unique($days) as $d) {
@@ -329,6 +361,8 @@ final class GroupController extends BaseController
 
             return $gid;
         });
+
+        $this->generateGroupSessions($newId, $centerId);
 
         $created = Database::fetchOne("
             SELECT g.*,
@@ -386,15 +420,28 @@ final class GroupController extends BaseController
         if (isset($input['is_active'])) {
             $update['is_active'] = (int) filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN);
         }
+        $primaryTeacherType = 'both';
         if (array_key_exists('teacher_id', $input)) {
             $tid = $input['teacher_id'] ? (int) $input['teacher_id'] : null;
             if ($tid) {
-                $teacher = Database::fetchOne("SELECT id, role, center_id FROM `users` WHERE id = :id", ['id' => $tid]);
+                $teacher = Database::fetchOne("SELECT id, role, center_id, teacher_type FROM `users` WHERE id = :id", ['id' => $tid]);
                 if (!$teacher || $teacher['role'] !== 'teacher' || (int) $teacher['center_id'] !== (int) $group['center_id']) {
                     return $this->fail('Teacher must belong to the same center.', 422);
                 }
+                $primaryTeacherType = in_array($teacher['teacher_type'], ['hifz', 'murajaa', 'both'], true)
+                    ? (string) $teacher['teacher_type']
+                    : 'both';
             }
             $update['teacher_id'] = $tid;
+        }
+
+        $murajaaKeyPresent = array_key_exists('murajaa_teacher_id', $input);
+        $murajaaTeacherId = $input['murajaa_teacher_id'] ? (int) $input['murajaa_teacher_id'] : null;
+        if ($murajaaTeacherId) {
+            $murajaaTeacher = Database::fetchOne("SELECT id, role, center_id FROM `users` WHERE id = :id", ['id' => $murajaaTeacherId]);
+            if (!$murajaaTeacher || $murajaaTeacher['role'] !== 'teacher' || (int) $murajaaTeacher['center_id'] !== (int) $group['center_id']) {
+                return $this->fail('Murajaa teacher must belong to the same center.', 422);
+            }
         }
 
         $days = $request->input('schedule_days');
@@ -402,9 +449,43 @@ final class GroupController extends BaseController
             $update['schedule_days'] = is_array($days) ? implode(',', $days) : (string) $days;
         }
 
-        Database::transaction(function () use ($id, $update, $days) {
+        $oldPrimaryId = (int) ($group['teacher_id'] ?? 0);
+        Database::transaction(function () use ($id, $update, $days, $primaryTeacherType, $murajaaKeyPresent, $murajaaTeacherId, $oldPrimaryId) {
             if (!empty($update)) {
                 Database::update('groups', $update, 'id = :id', ['id' => $id]);
+            }
+            $primaryId = isset($update['teacher_id'])
+                ? (int) $update['teacher_id']
+                : (int) Database::fetchValue('SELECT teacher_id FROM `groups` WHERE id = :id', ['id' => $id]);
+            if (isset($update['teacher_id']) && $update['teacher_id']) {
+                if ($oldPrimaryId > 0 && $oldPrimaryId !== $primaryId) {
+                    Database::delete(
+                        'group_teachers',
+                        'group_id = :gid AND user_id = :old',
+                        ['gid' => $id, 'old' => $oldPrimaryId],
+                    );
+                }
+                $this->syncGroupTeacher($id, $primaryId, $primaryTeacherType);
+            }
+            if ($murajaaKeyPresent) {
+                if ($murajaaTeacherId) {
+                    Database::delete(
+                        'group_teachers',
+                        'group_id = :gid AND role = :role AND user_id <> :primary AND user_id <> :murajaa',
+                        ['gid' => $id, 'role' => 'murajaa', 'primary' => $primaryId, 'murajaa' => $murajaaTeacherId],
+                    );
+                    $this->syncGroupTeacher(
+                        $id,
+                        $murajaaTeacherId,
+                        $murajaaTeacherId === $primaryId ? 'both' : 'murajaa',
+                    );
+                } else {
+                    Database::delete(
+                        'group_teachers',
+                        'group_id = :gid AND role = :role AND user_id <> :primary',
+                        ['gid' => $id, 'role' => 'murajaa', 'primary' => $primaryId],
+                    );
+                }
             }
             if (is_array($days)) {
                 Database::delete('group_weekdays', 'group_id = :gid', ['gid' => $id]);
@@ -416,6 +497,10 @@ final class GroupController extends BaseController
                 }
             }
         });
+
+        if (is_array($days)) {
+            $this->generateGroupSessions($id, (int) $group['center_id']);
+        }
 
         $fresh = Database::fetchOne("
             SELECT g.*,
@@ -432,5 +517,34 @@ final class GroupController extends BaseController
     public function destroy(Request $request, array $params): Response
     {
         return $this->fail('Groups cannot be deleted.', 422);
+    }
+
+    private function generateGroupSessions(int $groupId, int $centerId): void
+    {
+        $seasonId = (int) Database::fetchValue(
+            'SELECT id FROM `academic_seasons` WHERE center_id = :cid AND is_current = 1 ORDER BY id DESC LIMIT 1',
+            ['cid' => $centerId],
+        );
+        if ($seasonId > 0) {
+            SessionGenerator::forGroup($groupId, $seasonId);
+        }
+    }
+
+    private function syncGroupTeacher(int $groupId, int $userId, string $role): void
+    {
+        Database::getPdo()->prepare(
+            'INSERT INTO `group_teachers` (`group_id`, `user_id`, `role`)
+             VALUES (:gid, :uid, :role)
+             ON DUPLICATE KEY UPDATE
+                `role` = CASE WHEN `role` = :existing_both OR VALUES(`role`) = :new_both
+                              THEN :both_value ELSE VALUES(`role`) END',
+        )->execute([
+            'gid' => $groupId,
+            'uid' => $userId,
+            'role' => $role,
+            'existing_both' => 'both',
+            'new_both' => 'both',
+            'both_value' => 'both',
+        ]);
     }
 }

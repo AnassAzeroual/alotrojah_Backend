@@ -141,24 +141,9 @@ final class SeasonController extends BaseController
                         'end_date' => $weekEndDate,
                     ]);
 
-                    for ($s = 1; $s <= 3; $s++) {
-                        $sessionDate = (clone $curDate)->modify('+' . (($s - 1) * 2) . ' days')->format('Y-m-d');
-                        $sessionType = $weekType === 'review' ? 'revision' : 'memorization';
-
-                        Database::insert('sessions', [
-                            'season_id' => $sid,
-                            'term_id' => $termId,
-                            'week_id' => $weekId,
-                            'session_number_global' => $globalSession,
-                            'session_number_in_week' => $s,
-                            'session_type' => $sessionType,
-                            'planned_date' => $sessionDate,
-                            'status' => 'planned',
-                        ]);
-
-                        $globalSession++;
-                    }
-
+                    // Sessions are generated per group by SessionGenerator after
+                    // the season transaction: they require group_id and times.
+                    $globalSession += 3;
                     $globalWeek++;
                     $curDate->modify('+7 days');
                 }
@@ -170,6 +155,8 @@ final class SeasonController extends BaseController
 
             return $sid;
         });
+
+        \App\Core\SessionGenerator::forSeason((int) $seasonId, $centerId);
 
         $created = Database::fetchOne("
             SELECT s.*,

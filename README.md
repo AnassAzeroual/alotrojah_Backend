@@ -65,7 +65,6 @@ Backendv2PHP/
 │   │   ├── GroupController.php
 │   │   ├── HealthController.php
 │   │   ├── LevelController.php
-│   │   ├── MurajaaController.php
 │   │   ├── NotificationController.php
 │   │   ├── ReferenceController.php
 │   │   ├── RegistrationRequestController.php
@@ -216,6 +215,10 @@ Upload `Backendv2PHP/` via FTP or Git:
 | | GET | `/v1/scores` | ScoreController::index | List scores |
 | | GET | `/v1/sessions/{id}/scores` | ScoreController::bySession | Grid of scores for a session |
 | | GET | `/v1/students/{id}/weeks/{w}/followup` | ScoreController::followup | Weekly review score rollup |
+| **Session Workspace** | GET | `/v1/sessions/{id}/workspace` | SessionWorkspaceController::show | Session, students, modules, scores, notes, permissions |
+| | PUT | `/v1/sessions/{id}/workspace` | SessionWorkspaceController::save | Transactional attendance + scores + notes |
+| | POST | `/v1/groups/{id}/sessions` | SessionWorkspaceController::createSession | Create an extra group session |
+| | GET | `/v1/students/{id}/timeline` | SessionWorkspaceController::timeline | Student season/term/week/session roadmap |
 | **Weekly Goals** | PUT | `/v1/weekly-goals` | WeeklyGoalController::upsert | Upsert weekly memorization target |
 | | GET | `/v1/weekly-goals` | WeeklyGoalController::index | List weekly goals |
 | | GET | `/v1/weekly-goals/{id}` | WeeklyGoalController::show | Goal detail |
@@ -247,14 +250,6 @@ Upload `Backendv2PHP/` via FTP or Git:
 | | GET | `/v1/scoring-check` | ScoringModuleController::scoringCheck | Validate weekly total == 20 |
 | **Reference** | GET | `/v1/reference/levels` | ReferenceController::levels | Quran standard level definitions |
 | | GET | `/v1/reference/surahs` | ReferenceController::surahs | Complete Surah metadata & verse counts |
-| **Murajaa** | GET | `/v1/murajaa-reviews` | MurajaaController::indexReviews | List cycle reviews |
-| | POST | `/v1/murajaa-reviews` | MurajaaController::storeReview | Record 1-3 week review cycle |
-| | GET | `/v1/murajaa-reviews/{id}` | MurajaaController::showReview | Review detail |
-| | DELETE | `/v1/murajaa-reviews/{id}` | MurajaaController::destroyReview | Delete review |
-| | GET | `/v1/revision-logs` | MurajaaController::indexLogs | List daily revision logs |
-| | POST | `/v1/revision-logs` | MurajaaController::storeLog | Add revision log |
-| | GET | `/v1/revision-logs/{id}` | MurajaaController::showLog | Show revision log |
-| | DELETE | `/v1/revision-logs/{id}` | MurajaaController::destroyLog | Remove revision log |
 | **Exams** | GET | `/v1/exams/weekly-template` | ExamController::weeklyTemplate | Weekly exam template |
 | | POST | `/v1/exams/weekly-batch` | ExamController::weeklyBatch | Batch generate weekly exams |
 | | GET | `/v1/exams` | ExamController::index | List exams |

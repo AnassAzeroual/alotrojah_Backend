@@ -43,7 +43,6 @@ use App\Controllers\ExamQuestionController;
 use App\Controllers\GroupController;
 use App\Controllers\HealthController;
 use App\Controllers\LevelController;
-use App\Controllers\MurajaaController;
 use App\Controllers\NotificationController;
 use App\Controllers\ReferenceController;
 use App\Controllers\RegistrationRequestController;
@@ -52,6 +51,7 @@ use App\Controllers\ResultController;
 use App\Controllers\ScoreController;
 use App\Controllers\ScoringModuleController;
 use App\Controllers\SeasonController;
+use App\Controllers\SessionWorkspaceController;
 use App\Controllers\SetupController;
 use App\Controllers\StudentController;
 use App\Controllers\TermBreakdownController;
@@ -139,6 +139,10 @@ try {
             $auth->post('scores/bulk', [ScoreController::class, 'bulk']);
             $auth->get('scores', [ScoreController::class, 'index']);
             $auth->get('sessions/{session}/scores', [ScoreController::class, 'bySession']);
+            $auth->get('sessions/{session}/workspace', [SessionWorkspaceController::class, 'show']);
+            $auth->put('sessions/{session}/workspace', [SessionWorkspaceController::class, 'save']);
+            $auth->post('groups/{group}/sessions', [SessionWorkspaceController::class, 'createSession']);
+            $auth->get('students/{student}/timeline', [SessionWorkspaceController::class, 'timeline']);
             $auth->get('students/{student}/weeks/{week}/followup', [ScoreController::class, 'followup']);
 
             $auth->put('weekly-goals', [WeeklyGoalController::class, 'upsert']);
@@ -168,17 +172,7 @@ try {
             $auth->get('reference/levels', [ReferenceController::class, 'levels']);
             $auth->get('reference/surahs', [ReferenceController::class, 'surahs']);
 
-            // Reviews & Exams
-            $auth->get('murajaa-reviews', [MurajaaController::class, 'indexReviews']);
-            $auth->post('murajaa-reviews', [MurajaaController::class, 'storeReview']);
-            $auth->get('murajaa-reviews/{murajaaReview}', [MurajaaController::class, 'showReview']);
-            $auth->delete('murajaa-reviews/{murajaaReview}', [MurajaaController::class, 'destroyReview']);
-
-            $auth->get('revision-logs', [MurajaaController::class, 'indexLogs']);
-            $auth->post('revision-logs', [MurajaaController::class, 'storeLog']);
-            $auth->get('revision-logs/{revisionLog}', [MurajaaController::class, 'showLog']);
-            $auth->delete('revision-logs/{revisionLog}', [MurajaaController::class, 'destroyLog']);
-
+            // Exams
             $auth->get('exams/weekly-template', [ExamController::class, 'weeklyTemplate']);
             $auth->post('exams/weekly-batch', [ExamController::class, 'weeklyBatch']);
             $auth->apiResource('exams', ExamController::class);
