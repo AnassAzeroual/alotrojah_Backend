@@ -156,6 +156,20 @@ Upload `Backendv2PHP/` via FTP or Git:
 3. Ensure `.env` contains your production database credentials and `JWT_SECRET`.
 4. `public/.htaccess` automatically handles mod_rewrite and passes through authorization headers regardless of CGI/FastCGI configurations.
 
+### GitHub Actions deploy trigger and Imunify360
+
+The backend workflow triggers `deploy.php` over HTTPS after the FTPS upload. If the response is an HTML page containing **“Please wait while your request is being verified…”**, Imunify360 (or a CDN cache in front of it) intercepted the request before PHP ran. The workflow now sends a browser user-agent, cache-bypass headers, a unique cache-buster, and reports this case explicitly.
+
+The durable fix is server-side: whitelist the deploy trigger or the GitHub Actions egress at Imunify360, for example:
+
+```bash
+imunify360-agent whitelist domain add api.alotrojah.ma
+# or, preferably, whitelist only trusted source ranges:
+imunify360-agent ip-list local add <github-runner-cidr> --comment "GitHub deploy"
+```
+
+Whitelisting the whole API domain disables the challenge for it; prefer an allowlisted trigger hostname or targeted source ranges. The workflow also accepts an optional `DEPLOY_URL` repository secret if the deploy endpoint is moved to an allowlisted hostname. If the challenge HTML is cached at a CDN, add a cache-bypass rule for the deploy path (and purge the old object) as well; the workflow cache-buster avoids reusing a cached challenge.
+
 ---
 
 ## 📋 Complete Route Catalog (127 Routes)
