@@ -17,21 +17,30 @@ class SetupController extends BaseController
     public function status(Request $request): Response
     {
         $user = $request->user();
-        if ($user === null || $user['role'] !== 'admin') {
-            return $this->forbidden('Admin only.');
+        $role = (string) ($user['role'] ?? '');
+        if ($user === null || ! in_array($role, ['admin', 'supervisor'], true)) {
+            return $this->forbidden('Admin or supervisor only.');
         }
 
         $db = Database::getInstance();
-        $centers = $db->query('SELECT id, name FROM centers ORDER BY id ASC')->fetchAll();
-
-        $selectedCenter = null;
-        foreach ($centers as $candidate) {
-            if (!$this->isComplete((int) $candidate['id'])) {
-                $selectedCenter = $candidate;
-                break;
+        if ($role === 'supervisor') {
+            $center = $db->query(
+                'SELECT id, name FROM centers WHERE id = :cid LIMIT 1',
+                ['cid' => (int) $user['center_id']],
+            )->fetch();
+            $centers = $center ? [$center] : [];
+            $selectedCenter = $center ?: null;
+        } else {
+            $centers = $db->query('SELECT id, name FROM centers ORDER BY id ASC')->fetchAll();
+            $selectedCenter = null;
+            foreach ($centers as $candidate) {
+                if (!$this->isComplete((int) $candidate['id'])) {
+                    $selectedCenter = $candidate;
+                    break;
+                }
             }
+            $selectedCenter ??= ($centers[0] ?? null);
         }
-        $selectedCenter ??= ($centers[0] ?? null);
 
         $season = null;
         $levelsCount = 0;
@@ -41,12 +50,14 @@ class SetupController extends BaseController
 
         if ($selectedCenter !== null) {
             $cid = (int) $selectedCenter['id'];
+            // PDOStatement::fetch() returns false (not null) when there is no
+            // row; normalize it so the season step is not falsely completed.
             $season = $db->query(
                 'SELECT id, name, is_current FROM academic_seasons
                  WHERE center_id = :cid
                  ORDER BY is_current DESC, id DESC LIMIT 1',
                 ['cid' => $cid]
-            )->fetch();
+            )->fetch() ?: null;
 
             if ($season) {
                 $levelsCount = (int) $db->query(
@@ -79,6 +90,14 @@ class SetupController extends BaseController
             ['key' => 'groups', 'done' => $groupsCount > 0, 'count' => $groupsCount, 'target' => '/groups/new'],
             ['key' => 'pupils', 'done' => $pupilsCount > 0, 'count' => $pupilsCount, 'target' => '/students/new'],
         ];
+        if ($role === 'supervisor') {
+            // Levels are an admin-only screen; a supervisor guide must not link
+            // to a route they are forbidden from opening.
+            $steps = array_values(array_filter(
+                $steps,
+                static fn (array $step): bool => $step['key'] !== 'levels',
+            ));
+        }
 
         $current = null;
         $doneSteps = 0;

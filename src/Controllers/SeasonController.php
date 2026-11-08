@@ -42,7 +42,9 @@ final class SeasonController extends BaseController
         $params = [];
 
         if ($role !== 'admin') {
-            $conditions[] = "(s.center_id IS NULL OR s.center_id = :cid)";
+            // A center's seasons are its own. Global/shared rows are an admin
+            // concept and must not make a brand-new center look configured.
+            $conditions[] = "s.center_id = :cid";
             $params['cid'] = (int) $me['center_id'];
         } elseif ($request->query('center_id')) {
             $conditions[] = "(s.center_id IS NULL OR s.center_id = :cid)";

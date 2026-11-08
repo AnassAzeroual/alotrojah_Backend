@@ -149,9 +149,13 @@ class DashboardController extends BaseController
         }
 
         if ($seasonId === 0) {
-            $seasonSql = $centerId !== null
-                ? 'SELECT id, name, start_date, end_date FROM academic_seasons WHERE center_id = :cid OR center_id IS NULL ORDER BY is_current DESC, id DESC LIMIT 1'
-                : 'SELECT id, name, start_date, end_date FROM academic_seasons ORDER BY is_current DESC, id DESC LIMIT 1';
+            // A supervisor's center must not inherit the legacy global/shared
+            // season; otherwise a fresh center looks configured when it is not.
+            $seasonSql = $role === 'supervisor' && $centerId !== null
+                ? 'SELECT id, name, start_date, end_date FROM academic_seasons WHERE center_id = :cid ORDER BY is_current DESC, id DESC LIMIT 1'
+                : ($centerId !== null
+                    ? 'SELECT id, name, start_date, end_date FROM academic_seasons WHERE center_id = :cid OR center_id IS NULL ORDER BY is_current DESC, id DESC LIMIT 1'
+                    : 'SELECT id, name, start_date, end_date FROM academic_seasons ORDER BY is_current DESC, id DESC LIMIT 1');
             $season = $db->query($seasonSql, $centerId !== null ? ['cid' => $centerId] : [])->fetch();
             $seasonId = $season ? (int) $season['id'] : 0;
         } else {
