@@ -50,13 +50,18 @@ class SetupController extends BaseController
 
         if ($selectedCenter !== null) {
             $cid = (int) $selectedCenter['id'];
-            // PDOStatement::fetch() returns false (not null) when there is no
-            // row; normalize it so the season step is not falsely completed.
+            // Prefer the center's own season, then the existing shared season
+            // used by the Seasons/Levels pages. PDO returns false on no row.
             $season = $db->query(
                 'SELECT id, name, is_current FROM academic_seasons
                  WHERE center_id = :cid
                  ORDER BY is_current DESC, id DESC LIMIT 1',
                 ['cid' => $cid]
+            )->fetch() ?: null;
+            $season ??= $db->query(
+                'SELECT id, name, is_current FROM academic_seasons
+                 WHERE center_id IS NULL
+                 ORDER BY is_current DESC, id DESC LIMIT 1'
             )->fetch() ?: null;
 
             if ($season) {
@@ -129,6 +134,8 @@ class SetupController extends BaseController
         $season = $db->query(
             'SELECT id FROM academic_seasons WHERE center_id = :cid ORDER BY is_current DESC, id DESC LIMIT 1',
             ['cid' => $centerId]
+        )->fetch() ?: $db->query(
+            'SELECT id FROM academic_seasons WHERE center_id IS NULL ORDER BY is_current DESC, id DESC LIMIT 1'
         )->fetch();
 
         if (!$season) {
