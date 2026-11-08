@@ -155,6 +155,11 @@ Upload `Backendv2PHP/` via FTP or Git:
 2. Ensure the `storage/` directory is writable (`chmod 775 storage/` or cPanel write permissions).
 3. Ensure `.env` contains your production database credentials and `JWT_SECRET`.
 4. `public/.htaccess` automatically handles mod_rewrite and passes through authorization headers regardless of CGI/FastCGI configurations.
+5. Ensure the five baseline scoring modules exist. A fresh deploy seeds them
+   through `ReferenceData::seedScoringModules()` during `deploy.php?action=migrate`.
+   If deploying without the extractor, run
+   `docs/production-sql/20261108_seed_scoring_modules.sql` in phpMyAdmin.
+   These are application reference data, not demo rows.
 
 ### GitHub Actions deploy trigger and Imunify360
 

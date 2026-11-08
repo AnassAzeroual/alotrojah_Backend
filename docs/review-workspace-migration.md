@@ -34,6 +34,21 @@ The patch uses the lowest `id`. If production has duplicate Murajaa module
 rows, clean the duplicate module/scores manually first rather than allowing
 double-counting.
 
+## 2b. Baseline scoring modules
+
+Fresh production databases need the five reference modules, or `/scoring`
+shows zero modules and no weekly total. The deploy extractor seeds them
+idempotently through `ReferenceData::seedScoringModules()`.
+
+For a manual phpMyAdmin deployment, run:
+
+```text
+docs/production-sql/20261108_seed_scoring_modules.sql
+```
+
+This inserts only missing codes and does not import demo students, centers,
+scores or any other demo data.
+
 ## 3. Existing teacher memberships
 
 `groups.teacher_id` remains the lead teacher. Backfill the pivot once so the

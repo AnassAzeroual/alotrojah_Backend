@@ -192,6 +192,9 @@ $shouldMigrate = $action === 'migrate' || ($_POST['migrate'] ?? '') === '1';
 $shouldSeed = in_array($action, ['seed', 'migrate'], true) || ($_POST['seed'] ?? '') === '1';
 $migrationLog = '(not requested)';
 $migrationOk = null;
+$referenceLog = '(not requested)';
+$referenceOk = null;
+$referenceAudit = null;
 $seedLog = '(not requested)';
 $seedOk = null;
 
@@ -219,6 +222,25 @@ if ($shouldMigrate) {
     } catch (Throwable $e) {
         $migrationOk = false;
         $migrationLog = get_class($e).': '.$e->getMessage();
+    }
+}
+
+// 3b. Baseline scoring modules are reference data, not demo data. They must
+//     exist for scoring/workspace/report screens on a fresh production DB.
+if ($migrationOk !== false) {
+    try {
+        \App\Core\Config::load($dest.'/.env');
+        $referenceCreated = \App\Core\ReferenceData::seedScoringModules();
+        $referenceAudit = \App\Core\ReferenceData::audit();
+        $referenceOk = $referenceAudit['ok'];
+        $referenceLog = "scoring modules created: {$referenceCreated}; "
+            ."quran_verses: {$referenceAudit['quran_verses']}; "
+            .'missing_tables: '.(implode(',', $referenceAudit['missing_tables']) ?: 'none').'; '
+            .'missing_columns: '.(implode(',', $referenceAudit['missing_columns']) ?: 'none').'; '
+            .'missing_modules: '.(implode(',', $referenceAudit['missing_modules']) ?: 'none');
+    } catch (Throwable $e) {
+        $referenceOk = false;
+        $referenceLog = get_class($e).': '.$e->getMessage();
     }
 }
 
@@ -289,6 +311,7 @@ $extractorGone = ! file_exists(__FILE__);
 
 $ok = $extractorGone
     && ($migrationOk === null || $migrationOk)
+    && ($referenceOk === null || $referenceOk)
     && ($seedOk === null || $seedOk);
 if (! $ok) {
     http_response_code(500);
@@ -300,6 +323,9 @@ echo json_encode([
     'backup' => $backup,
     'migrations' => $migrationLog,
     'migrations_ok' => $migrationOk,
+    'reference' => $referenceLog,
+    'reference_ok' => $referenceOk,
+    'reference_audit' => $referenceAudit,
     'seed' => $seedLog,
     'seed_ok' => $seedOk,
     'extractor_deleted' => $extractorGone,
