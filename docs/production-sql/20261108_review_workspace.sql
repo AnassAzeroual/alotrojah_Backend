@@ -49,6 +49,20 @@ PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+-- 3b. explicit season plan for term/session metadata
+SET @has_sessions_per_week := (
+    SELECT COUNT(*) FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'academic_seasons' AND COLUMN_NAME = 'sessions_per_week'
+);
+SET @ddl := IF(
+    @has_sessions_per_week = 0,
+    'ALTER TABLE `academic_seasons` ADD COLUMN `sessions_per_week` TINYINT UNSIGNED NOT NULL DEFAULT 3 AFTER `total_weeks`',
+    'DO 0'
+);
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
 -- 4. preserve current lead teachers in the pivot
 INSERT IGNORE INTO `group_teachers` (`group_id`, `user_id`, `role`)
 SELECT g.`id`, g.`teacher_id`,

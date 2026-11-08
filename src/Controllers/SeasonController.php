@@ -11,6 +11,10 @@ use App\Core\Validator;
 
 final class SeasonController extends BaseController
 {
+    private const TERMS_PER_SEASON = 6;
+    private const WEEKS_PER_TERM = 7;
+    private const DEFAULT_SESSIONS_PER_WEEK = 3;
+
     private function formatSeason(array $row): array
     {
         return [
@@ -21,6 +25,7 @@ final class SeasonController extends BaseController
             'start_date' => $row['start_date'] ?? null,
             'end_date' => $row['end_date'] ?? null,
             'total_weeks' => (int) $row['total_weeks'],
+            'sessions_per_week' => isset($row['sessions_per_week']) ? (int) $row['sessions_per_week'] : self::DEFAULT_SESSIONS_PER_WEEK,
             'total_sessions' => (int) $row['total_sessions'],
             'is_current' => (bool) $row['is_current'],
             'terms_count' => isset($row['terms_count']) ? (int) $row['terms_count'] : 0,
@@ -84,28 +89,37 @@ final class SeasonController extends BaseController
 
         $startDate = $request->input('start_date') ?: date('Y-m-d');
         $hijriYear = $request->input('hijri_year');
+        $sessionsPerWeek = filter_var(
+            $request->input('sessions_per_week', self::DEFAULT_SESSIONS_PER_WEEK),
+            FILTER_VALIDATE_INT,
+        );
+        if ($sessionsPerWeek === false || $sessionsPerWeek < 1 || $sessionsPerWeek > 7) {
+            return $this->fail('Sessions per week must be between 1 and 7.', 422);
+        }
 
-        $seasonId = Database::transaction(function () use ($name, $centerId, $startDate, $hijriYear) {
+        $seasonId = Database::transaction(function () use ($name, $centerId, $startDate, $hijriYear, $sessionsPerWeek) {
             $sid = Database::insert('academic_seasons', [
                 'name' => $name,
                 'center_id' => $centerId,
                 'hijri_year' => $hijriYear,
                 'start_date' => $startDate,
-                'total_weeks' => 42,
-                'total_sessions' => 126,
+                'total_weeks' => self::TERMS_PER_SEASON * self::WEEKS_PER_TERM,
+                'sessions_per_week' => $sessionsPerWeek,
+                'total_sessions' => self::TERMS_PER_SEASON * self::WEEKS_PER_TERM * $sessionsPerWeek,
                 'is_current' => 0,
             ]);
 
-            // Generate 6 terms x 7 weeks skeleton
+            // This is the season plan used by term metadata. SessionGenerator
+            // creates actual per-group rows from each group's schedule_days.
             $globalWeek = 1;
             $globalSession = 1;
             $curDate = new \DateTime($startDate);
 
-            for ($t = 1; $t <= 6; $t++) {
+            for ($t = 1; $t <= self::TERMS_PER_SEASON; $t++) {
                 $termStartWeek = $globalWeek;
-                $termEndWeek = $globalWeek + 6;
+                $termEndWeek = $globalWeek + self::WEEKS_PER_TERM - 1;
                 $termStartSession = $globalSession;
-                $termEndSession = $globalSession + 20;
+                $termEndSession = $globalSession + (self::WEEKS_PER_TERM * $sessionsPerWeek) - 1;
 
                 $termNames = [
                     1 => 'الفصل الأول',
@@ -126,7 +140,7 @@ final class SeasonController extends BaseController
                     'end_session_no' => $termEndSession,
                 ]);
 
-                for ($w = 1; $w <= 7; $w++) {
+                for ($w = 1; $w <= self::WEEKS_PER_TERM; $w++) {
                     $weekType = $w === 7 ? 'review' : 'study';
                     $weekStartDate = $curDate->format('Y-m-d');
                     $weekEndDate = (clone $curDate)->modify('+6 days')->format('Y-m-d');
@@ -143,7 +157,7 @@ final class SeasonController extends BaseController
 
                     // Sessions are generated per group by SessionGenerator after
                     // the season transaction: they require group_id and times.
-                    $globalSession += 3;
+                    $globalSession += $sessionsPerWeek;
                     $globalWeek++;
                     $curDate->modify('+7 days');
                 }

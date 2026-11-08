@@ -94,10 +94,31 @@ final class AttendanceController extends BaseController
         if (!$session) {
             return $this->fail('Session not found.', 404);
         }
+        if (($session['status'] ?? '') === 'cancelled') {
+            return $this->fail('Cancelled sessions cannot be edited.', 422);
+        }
 
         $records = (array) $request->input('records');
         if (empty($records)) {
             return $this->fail('Records cannot be empty.', 422);
+        }
+
+        $allowedStudents = [];
+        foreach (Database::fetchAll(
+            'SELECT id FROM `students` WHERE group_id = :gid',
+            ['gid' => (int) $session['group_id']],
+        ) as $studentRow) {
+            $allowedStudents[(int) $studentRow['id']] = true;
+        }
+        foreach ($records as $record) {
+            $studentId = (int) ($record['student_id'] ?? 0);
+            $status = (string) ($record['status'] ?? '');
+            if (! isset($allowedStudents[$studentId])) {
+                return $this->fail('An attendance row references a student outside this group.', 422);
+            }
+            if (! in_array($status, ['present', 'absent', 'late', 'excused'], true)) {
+                return $this->fail('Invalid attendance status.', 422);
+            }
         }
 
         $me = $request->getUser();
@@ -118,15 +139,12 @@ final class AttendanceController extends BaseController
                     `status` = VALUES(`status`),
                     `marked_by` = VALUES(`marked_by`),
                     `marked_at` = CURRENT_TIMESTAMP,
-                    `notes` = VALUES(`notes`)
+                    `notes` = COALESCE(VALUES(`notes`), `notes`)
             ");
 
             foreach ($records as $r) {
-                if (empty($r['student_id'])) {
-                    continue;
-                }
                 $studentId = (int) $r['student_id'];
-                $status = in_array($r['status'] ?? '', ['present', 'absent', 'late', 'excused'], true) ? $r['status'] : 'present';
+                $status = (string) $r['status'];
                 $notes = $r['notes'] ?? null;
 
                 $stmt->execute([

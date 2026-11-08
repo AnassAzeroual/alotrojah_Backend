@@ -27,11 +27,18 @@ final class GroupController extends BaseController
         $capacity = isset($row['capacity']) && $row['capacity'] !== null ? (int) $row['capacity'] : null;
         $studentsCount = isset($row['students_count']) ? (int) $row['students_count'] : 0;
         $fillPct = $capacity && $capacity > 0 ? round(100 * $studentsCount / $capacity, 1) : null;
-        $murajaa = Database::fetchOne(
-            'SELECT u.id, u.full_name FROM `group_teachers` gt JOIN `users` u ON u.id = gt.user_id
-             WHERE gt.group_id = :gid AND gt.role = :role LIMIT 1',
-            ['gid' => (int) $row['id'], 'role' => 'murajaa'],
-        );
+        if (array_key_exists('murajaa_teacher_id', $row)) {
+            $murajaaId = $row['murajaa_teacher_id'] !== null ? (int) $row['murajaa_teacher_id'] : null;
+            $murajaaName = $row['murajaa_teacher_name'] ?? null;
+        } else {
+            $murajaa = Database::fetchOne(
+                'SELECT u.id, u.full_name FROM `group_teachers` gt JOIN `users` u ON u.id = gt.user_id
+                 WHERE gt.group_id = :gid AND gt.role = :role LIMIT 1',
+                ['gid' => (int) $row['id'], 'role' => 'murajaa'],
+            );
+            $murajaaId = $murajaa ? (int) $murajaa['id'] : null;
+            $murajaaName = $murajaa['full_name'] ?? null;
+        }
 
         return [
             'id' => (int) $row['id'],
@@ -42,8 +49,8 @@ final class GroupController extends BaseController
             'schedule_days' => $row['schedule_days'] ?? '',
             'is_active' => (bool) $row['is_active'],
             'teacher' => $teacher,
-            'murajaa_teacher_id' => $murajaa ? (int) $murajaa['id'] : null,
-            'murajaa_teacher_name' => $murajaa['full_name'] ?? null,
+            'murajaa_teacher_id' => $murajaaId,
+            'murajaa_teacher_name' => $murajaaName,
             'students_count' => $studentsCount,
             'fill_pct' => $fillPct,
         ];
@@ -128,7 +135,12 @@ final class GroupController extends BaseController
         $groups = Database::fetchAll("
             SELECT g.*,
                    u.full_name AS teacher_name, u.phone AS teacher_phone, u.teacher_type,
-                   (SELECT COUNT(*) FROM `students` s WHERE s.group_id = g.id) AS students_count
+                   (SELECT COUNT(*) FROM `students` s WHERE s.group_id = g.id) AS students_count,
+                   (SELECT gt.user_id FROM `group_teachers` gt
+                    WHERE gt.group_id = g.id AND gt.role = 'murajaa' ORDER BY gt.id LIMIT 1) AS murajaa_teacher_id,
+                   (SELECT u2.full_name FROM `group_teachers` gt2
+                    JOIN `users` u2 ON u2.id = gt2.user_id
+                    WHERE gt2.group_id = g.id AND gt2.role = 'murajaa' ORDER BY gt2.id LIMIT 1) AS murajaa_teacher_name
             FROM `groups` g
             LEFT JOIN `users` u ON u.id = g.teacher_id
             {$whereClause}
@@ -222,6 +234,9 @@ final class GroupController extends BaseController
 
         if (!$group) {
             return $this->fail('Group not found.', 404);
+        }
+        if (! $this->canViewGroup($group, $request->getUser() ?? [])) {
+            return $this->forbidden('You cannot access this group.');
         }
 
         $centerId = (int) $group['center_id'];
@@ -319,9 +334,12 @@ final class GroupController extends BaseController
 
         $murajaaTeacherId = $request->input('murajaa_teacher_id') ? (int) $request->input('murajaa_teacher_id') : null;
         if ($murajaaTeacherId) {
-            $murajaaTeacher = Database::fetchOne("SELECT id, role, center_id FROM `users` WHERE id = :id", ['id' => $murajaaTeacherId]);
+            $murajaaTeacher = Database::fetchOne("SELECT id, role, center_id, teacher_type FROM `users` WHERE id = :id", ['id' => $murajaaTeacherId]);
             if (!$murajaaTeacher || $murajaaTeacher['role'] !== 'teacher' || (int) $murajaaTeacher['center_id'] !== $centerId) {
                 return $this->fail('Murajaa teacher must belong to the same center.', 422);
+            }
+            if (! in_array($murajaaTeacher['teacher_type'], ['murajaa', 'both'], true)) {
+                return $this->fail('Selected teacher is not a Murajaa teacher.', 422);
             }
         }
 
@@ -391,6 +409,9 @@ final class GroupController extends BaseController
         if (!$group) {
             return $this->fail('Group not found.', 404);
         }
+        if (! $this->canViewGroup($group, $request->getUser() ?? [])) {
+            return $this->forbidden('You cannot access this group.');
+        }
 
         return $this->ok($this->formatGroup($group));
     }
@@ -421,7 +442,8 @@ final class GroupController extends BaseController
             $update['is_active'] = (int) filter_var($input['is_active'], FILTER_VALIDATE_BOOLEAN);
         }
         $primaryTeacherType = 'both';
-        if (array_key_exists('teacher_id', $input)) {
+        $teacherKeyPresent = array_key_exists('teacher_id', $input);
+        if ($teacherKeyPresent) {
             $tid = $input['teacher_id'] ? (int) $input['teacher_id'] : null;
             if ($tid) {
                 $teacher = Database::fetchOne("SELECT id, role, center_id, teacher_type FROM `users` WHERE id = :id", ['id' => $tid]);
@@ -438,9 +460,12 @@ final class GroupController extends BaseController
         $murajaaKeyPresent = array_key_exists('murajaa_teacher_id', $input);
         $murajaaTeacherId = $input['murajaa_teacher_id'] ? (int) $input['murajaa_teacher_id'] : null;
         if ($murajaaTeacherId) {
-            $murajaaTeacher = Database::fetchOne("SELECT id, role, center_id FROM `users` WHERE id = :id", ['id' => $murajaaTeacherId]);
+            $murajaaTeacher = Database::fetchOne("SELECT id, role, center_id, teacher_type FROM `users` WHERE id = :id", ['id' => $murajaaTeacherId]);
             if (!$murajaaTeacher || $murajaaTeacher['role'] !== 'teacher' || (int) $murajaaTeacher['center_id'] !== (int) $group['center_id']) {
                 return $this->fail('Murajaa teacher must belong to the same center.', 422);
+            }
+            if (! in_array($murajaaTeacher['teacher_type'], ['murajaa', 'both'], true)) {
+                return $this->fail('Selected teacher is not a Murajaa teacher.', 422);
             }
         }
 
@@ -450,14 +475,14 @@ final class GroupController extends BaseController
         }
 
         $oldPrimaryId = (int) ($group['teacher_id'] ?? 0);
-        Database::transaction(function () use ($id, $update, $days, $primaryTeacherType, $murajaaKeyPresent, $murajaaTeacherId, $oldPrimaryId) {
+        Database::transaction(function () use ($id, $update, $days, $primaryTeacherType, $teacherKeyPresent, $murajaaKeyPresent, $murajaaTeacherId, $oldPrimaryId) {
             if (!empty($update)) {
                 Database::update('groups', $update, 'id = :id', ['id' => $id]);
             }
-            $primaryId = isset($update['teacher_id'])
+            $primaryId = $teacherKeyPresent
                 ? (int) $update['teacher_id']
                 : (int) Database::fetchValue('SELECT teacher_id FROM `groups` WHERE id = :id', ['id' => $id]);
-            if (isset($update['teacher_id']) && $update['teacher_id']) {
+            if ($teacherKeyPresent) {
                 if ($oldPrimaryId > 0 && $oldPrimaryId !== $primaryId) {
                     Database::delete(
                         'group_teachers',
@@ -465,7 +490,9 @@ final class GroupController extends BaseController
                         ['gid' => $id, 'old' => $oldPrimaryId],
                     );
                 }
-                $this->syncGroupTeacher($id, $primaryId, $primaryTeacherType);
+                if ($primaryId > 0) {
+                    $this->syncGroupTeacher($id, $primaryId, $primaryTeacherType);
+                }
             }
             if ($murajaaKeyPresent) {
                 if ($murajaaTeacherId) {
@@ -517,6 +544,29 @@ final class GroupController extends BaseController
     public function destroy(Request $request, array $params): Response
     {
         return $this->fail('Groups cannot be deleted.', 422);
+    }
+
+    private function canViewGroup(array $group, array $user): bool
+    {
+        $role = (string) ($user['role'] ?? '');
+        if ($role === 'admin' || $role === 'board') {
+            return true;
+        }
+        if ($role === 'supervisor') {
+            return (int) ($user['center_id'] ?? 0) === (int) $group['center_id'];
+        }
+        if ($role !== 'teacher') {
+            return false;
+        }
+        $userId = (int) ($user['id'] ?? 0);
+        if ((int) ($group['teacher_id'] ?? 0) === $userId) {
+            return true;
+        }
+
+        return (bool) Database::fetchValue(
+            'SELECT 1 FROM `group_teachers` WHERE group_id = :gid AND user_id = :uid LIMIT 1',
+            ['gid' => (int) $group['id'], 'uid' => $userId],
+        );
     }
 
     private function generateGroupSessions(int $groupId, int $centerId): void

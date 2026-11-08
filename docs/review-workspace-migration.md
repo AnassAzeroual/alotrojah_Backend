@@ -19,7 +19,8 @@ docs/production-sql/20261108_review_workspace.sql
 ```
 
 The patch is idempotent: it creates `session_notes` and `group_teachers` only
-if missing, adds `groups.schedule_days` through an `information_schema` guard,
+if missing, adds `groups.schedule_days` and
+`academic_seasons.sessions_per_week` through `information_schema` guards,
 backfills the teacher pivot, copies legacy Murajaa reviews, and recomputes
 term/season totals. It is safe to run twice.
 

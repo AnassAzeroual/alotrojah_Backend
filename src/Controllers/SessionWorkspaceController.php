@@ -50,6 +50,10 @@ final class SessionWorkspaceController extends BaseController
             return $ctx;
         }
 
+        if ((string) $ctx['session']['status'] === 'cancelled') {
+            return $this->unprocessable(['session' => ['Cancelled sessions cannot be edited.']]);
+        }
+
         $permissions = $this->permissions($ctx, $user);
         $session = $ctx['session'];
         $students = $this->studentIds((int) $ctx['group']['id']);
@@ -61,6 +65,17 @@ final class SessionWorkspaceController extends BaseController
 
         if ($attendance !== [] && ! $permissions['attendance']) {
             return $this->forbidden('You cannot edit attendance for this group.');
+        }
+
+        foreach ($attendance as $row) {
+            $studentId = (int) ($row['student_id'] ?? 0);
+            $status = (string) ($row['status'] ?? '');
+            if (! isset($students[$studentId])) {
+                return $this->unprocessable(['attendance' => ['An attendance row references a student outside this group.']]);
+            }
+            if (! in_array($status, self::ATTENDANCE_STATES, true)) {
+                return $this->unprocessable(['attendance' => ['Invalid attendance status.']]);
+            }
         }
 
         $moduleById = [];
@@ -133,16 +148,14 @@ final class SessionWorkspaceController extends BaseController
             foreach ($attendance as $row) {
                 $studentId = (int) ($row['student_id'] ?? 0);
                 $status = (string) ($row['status'] ?? '');
-                if (! in_array($status, self::ATTENDANCE_STATES, true)) {
-                    continue;
-                }
                 Database::getPdo()->prepare(
                     'INSERT INTO `attendance`
                         (`student_id`, `season_id`, `term_id`, `week_id`, `session_id`, `status`, `marked_by`, `notes`)
                      VALUES (:sid, :season, :term, :week, :session, :status, :by, :notes)
                      ON DUPLICATE KEY UPDATE
                         `status` = VALUES(`status`), `marked_by` = VALUES(`marked_by`),
-                        `marked_at` = CURRENT_TIMESTAMP, `notes` = VALUES(`notes`)',
+                        `marked_at` = CURRENT_TIMESTAMP,
+                        `notes` = COALESCE(VALUES(`notes`), `notes`)',
                 )->execute([
                     'sid' => $studentId,
                     'season' => $seasonId,
@@ -264,11 +277,31 @@ final class SessionWorkspaceController extends BaseController
 
         $weekId = (int) $request->input('week_id', 0);
         $week = Database::fetchOne(
-            'SELECT w.*, t.id AS term_id FROM `weeks` w JOIN `terms` t ON t.id = w.term_id WHERE w.id = :id',
+            'SELECT w.*, t.id AS term_id, t.season_id AS term_season_id,
+                    se.center_id AS season_center_id, se.is_current AS season_is_current
+             FROM `weeks` w
+             JOIN `terms` t ON t.id = w.term_id
+             JOIN `academic_seasons` se ON se.id = w.season_id
+             WHERE w.id = :id',
             ['id' => $weekId],
         );
         if (! $week) {
             return $this->unprocessable(['week_id' => ['The selected week is invalid.']]);
+        }
+        if ($week['season_center_id'] !== null && (int) $week['season_center_id'] !== (int) $group['center_id']) {
+            return $this->unprocessable(['week_id' => ['The selected week belongs to another center.']]);
+        }
+        if ((int) $week['season_id'] !== (int) $week['term_season_id']) {
+            return $this->unprocessable(['week_id' => ['The selected week has inconsistent season data.']]);
+        }
+        if (! (bool) $week['season_is_current']) {
+            $hasGroupSession = (bool) Database::fetchValue(
+                'SELECT 1 FROM `sessions` WHERE group_id = :gid AND season_id = :sid LIMIT 1',
+                ['gid' => $groupId, 'sid' => (int) $week['season_id']],
+            );
+            if (! $hasGroupSession) {
+                return $this->unprocessable(['week_id' => ['The selected week is outside the group’s current season.']]);
+            }
         }
 
         $type = (string) $request->input('session_type', 'revision');
@@ -277,6 +310,10 @@ final class SessionWorkspaceController extends BaseController
         }
 
         $date = (string) ($request->input('planned_date') ?: $week['start_date'] ?: date('Y-m-d'));
+        $dateObj = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+        if (! $dateObj || $dateObj->format('Y-m-d') !== $date) {
+            return $this->unprocessable(['planned_date' => ['The session date must use YYYY-MM-DD.']]);
+        }
         if ($week['start_date'] && $date < $week['start_date']) {
             return $this->unprocessable(['planned_date' => ['The session date is before its week.']]);
         }
@@ -286,6 +323,10 @@ final class SessionWorkspaceController extends BaseController
 
         $startTime = (string) ($request->input('start_time') ?: '16:00');
         $endTime = (string) ($request->input('end_time') ?: '18:00');
+        $timePattern = '/^(?:[01]\d|2[0-3]):[0-5]\d$/';
+        if (! preg_match($timePattern, $startTime) || ! preg_match($timePattern, $endTime)) {
+            return $this->unprocessable(['start_time' => ['Start and end time must use HH:MM (24-hour).']]);
+        }
         if ($endTime <= $startTime) {
             return $this->unprocessable(['end_time' => ['End time must be after start time.']]);
         }
@@ -375,11 +416,17 @@ final class SessionWorkspaceController extends BaseController
         foreach ($modules as $module) {
             $moduleById[(int) $module['id']] = $module;
         }
+        $sessionStatusById = [];
+        foreach ($sessions as $sessionRow) {
+            $sessionStatusById[(int) $sessionRow['id']] = (string) $sessionRow['status'];
+        }
 
         $scoreRows = $seasonId > 0
             ? Database::fetchAll(
                 'SELECT sc.*, m.code AS module_code, m.name_ar AS module_name, m.scope
-                 FROM `session_scores` sc JOIN `scoring_modules` m ON m.id = sc.module_id
+                 FROM `session_scores` sc
+                 JOIN `scoring_modules` m ON m.id = sc.module_id
+                 JOIN `sessions` ses ON ses.id = sc.session_id AND ses.status <> \'cancelled\'
                  WHERE sc.student_id = :sid AND sc.season_id = :season',
                 ['sid' => $studentId, 'season' => $seasonId],
             )
@@ -406,6 +453,9 @@ final class SessionWorkspaceController extends BaseController
             : [];
         foreach ($legacyReviews as $review) {
             $sid = (int) $review['session_id'];
+            if (($sessionStatusById[$sid] ?? '') === 'cancelled') {
+                continue;
+            }
             $already = false;
             foreach ($scoresBySession[$sid] ?? [] as $existing) {
                 if ($existing['module_code'] === 'murajaa') {
@@ -593,8 +643,11 @@ final class SessionWorkspaceController extends BaseController
         $role = (string) $user['role'];
         $type = (string) ($user['teacher_type'] ?? '');
         $staff = in_array($role, ['admin', 'supervisor'], true);
-        $hifz = $staff || in_array($type, ['hifz', 'both'], true);
-        $murajaa = $staff || in_array($type, ['murajaa', 'both'], true);
+        $groupRole = $role === 'teacher'
+            ? ($this->groupTeacherRole((int) $ctx['group']['id'], (int) $user['id']) ?? $type)
+            : $type;
+        $hifz = $staff || in_array($groupRole, ['hifz', 'both'], true);
+        $murajaa = $staff || in_array($groupRole, ['murajaa', 'both'], true);
 
         return [
             'attendance' => $hifz,
@@ -716,6 +769,16 @@ final class SessionWorkspaceController extends BaseController
             return null;
         }
         return $this->forbidden('You cannot access this student timeline.');
+    }
+
+    private function groupTeacherRole(int $groupId, int $userId): ?string
+    {
+        $role = Database::fetchValue(
+            'SELECT role FROM `group_teachers` WHERE group_id = :gid AND user_id = :uid LIMIT 1',
+            ['gid' => $groupId, 'uid' => $userId],
+        );
+
+        return $role !== false && $role !== null ? (string) $role : null;
     }
 
     private function teacherInGroup(int $groupId, int $userId): bool

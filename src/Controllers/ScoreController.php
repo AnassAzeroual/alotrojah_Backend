@@ -104,9 +104,30 @@ final class ScoreController extends BaseController
         if (!$session) {
             return $this->fail('Session not found.', 404);
         }
+        if (($session['status'] ?? '') === 'cancelled') {
+            return $this->fail('Cancelled sessions cannot be edited.', 422);
+        }
 
         $rows = (array) $request->input('records');
         $memorizations = (array) ($request->input('memorizations') ?? []);
+
+        $allowedStudents = [];
+        foreach (Database::fetchAll(
+            'SELECT id FROM `students` WHERE group_id = :gid',
+            ['gid' => (int) $session['group_id']],
+        ) as $studentRow) {
+            $allowedStudents[(int) $studentRow['id']] = true;
+        }
+        foreach ($rows as $row) {
+            if (! isset($allowedStudents[(int) ($row['student_id'] ?? 0)])) {
+                return $this->fail('A score row references a student outside this group.', 422);
+            }
+        }
+        foreach ($memorizations as $row) {
+            if (! isset($allowedStudents[(int) ($row['student_id'] ?? 0)])) {
+                return $this->fail('A memorization row references a student outside this group.', 422);
+            }
+        }
 
         // Preload active weekly modules
         $modules = Database::fetchAll("SELECT * FROM `scoring_modules` WHERE is_active = 1 AND scope = 'weekly'");

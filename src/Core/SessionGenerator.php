@@ -46,7 +46,7 @@ final class SessionGenerator
             ['gid' => $groupId, 'sid' => $seasonId],
         );
         $days = self::scheduleDays((string) ($group['schedule_days'] ?? ''));
-        $created = 0;
+        $rows = [];
 
         foreach ($weeks as $week) {
             if (empty($week['start_date'])) {
@@ -73,25 +73,53 @@ final class SessionGenerator
 
                 $global++;
                 $inWeek++;
-                Database::insert('sessions', [
-                    'season_id' => $seasonId,
-                    'term_id' => (int) $week['term_id'],
-                    'week_id' => (int) $week['id'],
-                    'group_id' => $groupId,
-                    'session_number_global' => $global,
-                    'session_number_in_week' => $inWeek,
-                    'session_type' => $week['week_type'] === 'review' ? 'revision' : 'memorization',
-                    'planned_date' => $date,
-                    'status' => 'planned',
-                    'start_time' => self::START_TIME,
-                    'end_time' => self::END_TIME,
-                ]);
+                $rows[] = [
+                    $seasonId,
+                    (int) $week['term_id'],
+                    (int) $week['id'],
+                    $groupId,
+                    $global,
+                    $inWeek,
+                    $week['week_type'] === 'review' ? 'revision' : 'memorization',
+                    $date,
+                    'planned',
+                    self::START_TIME,
+                    self::END_TIME,
+                ];
                 $existing[$key] = true;
-                $created++;
             }
         }
 
-        return $created;
+        self::insertRows($rows);
+
+        return count($rows);
+    }
+
+    /**
+     * Insert generated sessions in bounded chunks instead of issuing one
+     * round-trip per row.
+     *
+     * @param array<int, array<int, mixed>> $rows
+     */
+    private static function insertRows(array $rows): void
+    {
+        foreach (array_chunk($rows, 200) as $chunk) {
+            if ($chunk === []) {
+                continue;
+            }
+            $placeholders = implode(', ', array_fill(0, count($chunk), '(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'));
+            $params = [];
+            foreach ($chunk as $row) {
+                array_push($params, ...$row);
+            }
+            Database::execute(
+                'INSERT INTO `sessions`
+                    (`season_id`, `term_id`, `week_id`, `group_id`, `session_number_global`,
+                     `session_number_in_week`, `session_type`, `planned_date`, `status`, `start_time`, `end_time`)
+                 VALUES ' . $placeholders,
+                $params,
+            );
+        }
     }
 
     public static function forSeason(int $seasonId, ?int $centerId = null): int
