@@ -263,7 +263,11 @@ final class UserController extends BaseController
         $revLogsCount = (int) Database::fetchValue("SELECT COUNT(*) FROM `revision_logs` WHERE entered_by = :id", ['id' => $id]);
         $murajaaCount = (int) Database::fetchValue("SELECT COUNT(*) FROM `murajaa_reviews` WHERE entered_by = :id", ['id' => $id]);
         $annCount = (int) Database::fetchValue("SELECT COUNT(*) FROM `announcements` WHERE author_id = :id", ['id' => $id]);
-        $tokensCount = (int) Database::fetchValue("SELECT COUNT(*) FROM `delegation_tokens` WHERE granter_teacher_id = :id OR used_by_teacher_id = :id", ['id' => $id]);
+        $tokensCount = (int) Database::fetchValue(
+            'SELECT COUNT(*) FROM `delegation_tokens`
+             WHERE granter_teacher_id = :granter OR used_by_teacher_id = :used',
+            ['granter' => $id, 'used' => $id],
+        );
 
         $enteredScores = $revLogsCount + $murajaaCount;
 
@@ -288,7 +292,11 @@ final class UserController extends BaseController
 
         Database::transaction(function () use ($id) {
             Database::delete('announcements', 'author_id = :id', ['id' => $id]);
-            Database::delete('delegation_tokens', 'granter_teacher_id = :id OR used_by_teacher_id = :id', ['id' => $id]);
+            Database::delete(
+                'delegation_tokens',
+                'granter_teacher_id = :granter OR used_by_teacher_id = :used',
+                ['granter' => $id, 'used' => $id],
+            );
             Database::delete('users', 'id = :id', ['id' => $id]);
         });
 
@@ -343,7 +351,11 @@ final class UserController extends BaseController
             Database::update('revision_logs', ['entered_by' => $replacerId], 'entered_by = :old', ['old' => $id]);
             Database::update('murajaa_reviews', ['entered_by' => $replacerId], 'entered_by = :old', ['old' => $id]);
             $moved['announcements'] = Database::delete('announcements', 'author_id = :id', ['id' => $id]);
-            $moved['tokens'] = Database::delete('delegation_tokens', 'granter_teacher_id = :id OR used_by_teacher_id = :id', ['id' => $id]);
+            $moved['tokens'] = Database::delete(
+                'delegation_tokens',
+                'granter_teacher_id = :granter OR used_by_teacher_id = :used',
+                ['granter' => $id, 'used' => $id],
+            );
             Database::delete('users', 'id = :id', ['id' => $id]);
         });
 
