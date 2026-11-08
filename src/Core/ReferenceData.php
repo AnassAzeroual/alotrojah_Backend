@@ -69,7 +69,9 @@ final class ReferenceData
 
         $moduleCodes = [];
         if (isset($existing['scoring_modules'])) {
-            foreach (Database::fetchAll('SELECT code FROM `scoring_modules`') as $row) {
+            foreach (Database::fetchAll(
+                'SELECT code FROM `scoring_modules` WHERE center_id IS NULL',
+            ) as $row) {
                 $moduleCodes[(string) $row['code']] = true;
             }
         }
@@ -98,8 +100,10 @@ final class ReferenceData
     {
         $created = 0;
         foreach (self::SCORING_MODULES as $module) {
+            // Defaults are global rows. A center-specific override alone must
+            // not suppress the shared default set used by the no-center view.
             $exists = Database::fetchValue(
-                'SELECT 1 FROM `scoring_modules` WHERE code = :code LIMIT 1',
+                'SELECT 1 FROM `scoring_modules` WHERE code = :code AND center_id IS NULL LIMIT 1',
                 ['code' => $module['code']],
             );
             if ($exists !== null) {

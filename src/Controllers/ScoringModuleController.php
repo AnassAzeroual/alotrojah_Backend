@@ -32,7 +32,7 @@ final class ScoringModuleController extends BaseController
             SELECT * FROM `scoring_modules`
             WHERE is_active = 1 AND scope = 'weekly' AND is_in_weekly_total = 1
               AND (center_id = :cid OR center_id IS NULL)
-            ORDER BY center_id IS NULL ASC
+            ORDER BY center_id IS NULL DESC
         ", ['cid' => $centerId]);
 
         // Override set wins per code
@@ -55,7 +55,7 @@ final class ScoringModuleController extends BaseController
         $modules = Database::fetchAll("
             SELECT * FROM `scoring_modules`
             WHERE center_id = :cid OR center_id IS NULL
-            ORDER BY center_id IS NULL ASC, sort_order ASC, id ASC
+            ORDER BY center_id IS NULL DESC, sort_order ASC, id ASC
         ", ['cid' => $centerId]);
 
         // Key by code so center override replaces null-center default
@@ -207,7 +207,7 @@ final class ScoringModuleController extends BaseController
         $freshModules = Database::fetchAll("
             SELECT * FROM `scoring_modules`
             WHERE center_id = :cid OR center_id IS NULL
-            ORDER BY center_id IS NULL ASC, sort_order ASC
+            ORDER BY center_id IS NULL DESC, sort_order ASC
         ", ['cid' => $centerId]);
 
         $effective = [];

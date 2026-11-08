@@ -736,7 +736,7 @@ final class SessionWorkspaceController extends BaseController
             'SELECT id, code, name_ar, scope, max_points, is_in_weekly_total, sort_order
              FROM `scoring_modules`
              WHERE is_active = 1 AND (center_id IS NULL OR center_id = :cid)
-             ORDER BY sort_order, id',
+             ORDER BY center_id IS NULL ASC, sort_order, id',
             ['cid' => $centerId],
         );
         $seen = [];
